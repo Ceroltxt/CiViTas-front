@@ -39,7 +39,7 @@ const myTasks = computed(() =>
         </template>
         <template #action>
           <UButton
-            to="/calendario"
+            to="/colaborador/calendario"
             variant="link"
             color="primary"
             trailing-icon="i-heroicons-arrow-right"
@@ -49,7 +49,7 @@ const myTasks = computed(() =>
         </template>
         <InicioAgendaList :items="agenda" />
         <UButton
-          to="/minhas-tarefas"
+          to="/colaborador/minhas-tarefas"
           variant="link"
           trailing-icon="i-heroicons-arrow-right"
           label="Ver Todas As Tarefas de Hoje"
@@ -68,7 +68,7 @@ const myTasks = computed(() =>
     <div class="grid grid-cols-1 gap-5 lg:grid-cols-2">
       <UiSectionCard title="Minhas Tarefas">
         <template #action>
-          <UButton to="/minhas-tarefas" variant="link" trailing-icon="i-heroicons-arrow-right" label="Ver Todos" class="!p-0 text-indigo-500" />
+          <UButton to="/colaborador/minhas-tarefas" variant="link" trailing-icon="i-heroicons-arrow-right" label="Ver Todos" class="!p-0 text-indigo-500" />
         </template>
         <InicioTasksCard :tasks="myTasks" />
       </UiSectionCard>
