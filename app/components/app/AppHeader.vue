@@ -17,7 +17,7 @@ function toggleTheme() {
 const userMenu = [
   [
     { label: 'Meu perfil', icon: 'i-heroicons-user' },
-    { label: 'Configurações', icon: 'i-heroicons-cog-6-tooth', to: '/configuracoes' },
+    { label: 'Configurações', icon: 'i-heroicons-cog-6-tooth', to: '/colaborador/configuracoes' },
   ],
   [{ label: 'Sair', icon: 'i-heroicons-arrow-right-on-rectangle' }],
 ]
