@@ -4,6 +4,7 @@ import { brandGradient } from '~/utils/tw'
 const emit = defineEmits<{ openMenu: [] }>()
 
 const user = useCurrentUser()
+const { appRole } = useAppNavigation()
 const colorMode = useColorMode()
 const search = ref('')
 
@@ -14,13 +15,17 @@ function toggleTheme() {
   colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'
 }
 
-const userMenu = [
-  [
-    { label: 'Meu perfil', icon: 'i-heroicons-user' },
-    { label: 'Configurações', icon: 'i-heroicons-cog-6-tooth', to: '/colaborador/configuracoes' },
-  ],
-  [{ label: 'Sair', icon: 'i-heroicons-arrow-right-on-rectangle' }],
-]
+const userMenu = computed(() => {
+  const primary = [{ label: 'Meu perfil', icon: 'i-heroicons-user' }]
+  if (appRole.value === 'colaborador') {
+    primary.push({
+      label: 'Configurações',
+      icon: 'i-heroicons-cog-6-tooth',
+      to: '/colaborador/configuracoes',
+    })
+  }
+  return [primary, [{ label: 'Sair', icon: 'i-heroicons-arrow-right-on-rectangle' }]]
+})
 </script>
 
 <template>

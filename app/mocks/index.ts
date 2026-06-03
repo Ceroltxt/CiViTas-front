@@ -26,6 +26,7 @@ import type {
   TimelineGroup,
   UserSummary,
 } from '~/types'
+import { getNavigationForRole, resolveAppRole } from '~/utils/navigation'
 
 /* ---------------------------------------------------------------- Pessoas */
 
@@ -80,14 +81,8 @@ export const mockProjectDetail: ProjectDetail = {
 
 /* -------------------------------------------------------------- Navegação */
 
-export const mockNavigation: NavItem[] = [
-  { label: 'Início', icon: 'i-heroicons-home', to: '/' },
-  { label: 'Minhas Tarefas', icon: 'i-heroicons-clipboard-document-list', to: '/minhas-tarefas' },
-  { label: 'Quadros', icon: 'i-heroicons-squares-2x2', to: '/quadros' },
-  { label: 'Calendário', icon: 'i-heroicons-calendar-days', to: '/calendario' },
-  { label: 'Relatórios', icon: 'i-heroicons-document-chart-bar', to: '/relatorios' },
-  { label: 'Configurações', icon: 'i-heroicons-cog-6-tooth', to: '/configuracoes' },
-]
+/** Menu lateral — alinhado ao perfil de `mockCurrentUser` (mesmo contrato da API `/navigation`). */
+export const mockNavigation: NavItem[] = getNavigationForRole(resolveAppRole(mockCurrentUser.role))
 
 /* ----------------------------------------------------------- Notificações */
 

@@ -47,9 +47,28 @@ function removeTag(tag: string) {
   tags.value = tags.value.filter((t) => t !== tag)
 }
 
+function resetForm() {
+  title.value = ''
+  description.value = ''
+  project.value = ''
+  priority.value = undefined
+  startDate.value = ''
+  deadline.value = ''
+  tags.value = []
+  tagInput.value = ''
+  notifyUpdates.value = true
+  allowComments.value = true
+  privateTask.value = false
+}
+
+function closeModal() {
+  open.value = false
+  resetForm()
+}
+
 function createTask() {
   // TODO: persistir tarefa via ~/services
-  open.value = false
+  closeModal()
 }
 </script>
 
@@ -57,8 +76,20 @@ function createTask() {
   <UModal
     v-model:open="open"
     title="Nova Tarefa"
+    scrollable
     :ui="{ content: 'max-w-2xl' }"
   >
+    <template #close>
+      <UButton
+        type="button"
+        color="neutral"
+        variant="ghost"
+        icon="i-heroicons-x-mark"
+        aria-label="Fechar"
+        @click="closeModal"
+      />
+    </template>
+
     <template #body>
       <div class="mb-5 flex gap-3 rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 dark:border-violet-900 dark:bg-violet-950/30">
         <UIcon name="i-heroicons-lock-closed" class="mt-0.5 size-5 shrink-0 text-violet-600" />
@@ -219,17 +250,19 @@ function createTask() {
       </section>
     </template>
 
-    <template #footer="{ close }">
+    <template #footer>
       <div class="flex w-full gap-3">
         <UButton
+          type="button"
           color="neutral"
           variant="outline"
           block
           class="flex-1"
           label="Cancelar"
-          @click="close"
+          @click="closeModal"
         />
         <UButton
+          type="button"
           block
           class="flex-1 font-bold text-white"
           :class="brandGradient"
