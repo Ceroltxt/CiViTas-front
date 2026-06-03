@@ -6,14 +6,24 @@ defineProps<{
 
 const emit = defineEmits<{ navigate: [] }>()
 
-const nav = useNavigation()
+const route = useRoute()
+const { homePath, items: nav } = useAppNavigation()
+
+const navLinkClass =
+  'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800'
+const navLinkActiveClass =
+  '!bg-orange-50 !text-orange-600 dark:!bg-orange-500/10 dark:!text-orange-400'
+
+function isNavActive(to: string) {
+  return route.path === to
+}
 </script>
 
 <template>
   <div class="flex h-full flex-col bg-white dark:bg-slate-900">
     <!-- Marca -->
     <div class="flex h-16 items-center px-5">
-      <NuxtLink to="/" aria-label="CiViTas — início" @click="emit('navigate')">
+      <NuxtLink :to="homePath" aria-label="CiViTas — início" @click="emit('navigate')">
         <AppLogo />
       </NuxtLink>
     </div>
@@ -24,8 +34,7 @@ const nav = useNavigation()
         v-for="item in nav"
         :key="item.to"
         :to="item.to"
-        class="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800"
-        active-class="!bg-orange-50 !text-orange-600 dark:!bg-orange-500/10 dark:!text-orange-400"
+        :class="[navLinkClass, isNavActive(item.to) && navLinkActiveClass]"
         @click="emit('navigate')"
       >
         <UIcon :name="item.icon" class="size-5 shrink-0" />
