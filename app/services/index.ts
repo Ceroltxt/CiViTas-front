@@ -52,6 +52,7 @@ import {
   mockTimeline,
 } from '~/mocks'
 import type { InicioOverview } from '~/types'
+import { getNavigationForRole, resolveAppRole } from '~/utils/navigation'
 
 export function fetchCurrentUser() {
   return useApi().get(ENDPOINTS.currentUser, userSummarySchema, () => mockCurrentUser)
@@ -62,7 +63,10 @@ export function fetchCurrentProject() {
 }
 
 export function fetchNavigation() {
-  return useApi().get(ENDPOINTS.navigation, navigationSchema, () => mockNavigation)
+  return useApi().get(ENDPOINTS.navigation, navigationSchema, async () => {
+    const user = await fetchCurrentUser()
+    return getNavigationForRole(resolveAppRole(user.role))
+  })
 }
 
 export function fetchNotifications() {

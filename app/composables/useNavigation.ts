@@ -1,11 +1,7 @@
 import type { NavItem } from '~/types'
-import { navigationSchema } from '~/schemas'
-import { mockNavigation } from '~/mocks'
 
-// Backend: `fetchNavigation()` em `~/services`.
-const items = navigationSchema.parse(mockNavigation, 'navigation')
-
-/** Itens do menu lateral principal. */
-export function useNavigation(): NavItem[] {
+/** Itens do menu lateral principal (por perfil do usuário). */
+export function useNavigation(): ComputedRef<NavItem[]> {
+  const { items } = useAppNavigation()
   return items
 }
