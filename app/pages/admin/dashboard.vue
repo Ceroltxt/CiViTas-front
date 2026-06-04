@@ -66,7 +66,7 @@ const modelValue = shallowRef(new CalendarDate(2026, 6, 16));
             class="w-96 min-h-48"
           />
         </template> </UModal
-      ><!--Modal para adicionar um relatório-->
+      ><!--Modal para adicionar um relatorio-->
     </div>
     <!-- Botões de ação (Calendário e relatórios)-->
 
