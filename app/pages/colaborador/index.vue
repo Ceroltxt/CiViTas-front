@@ -44,7 +44,7 @@ const myTasks = computed(() =>
             color="primary"
             trailing-icon="i-heroicons-arrow-right"
             label="Ver Meu Calendário"
-            class="!p-0 text-indigo-500"
+            class="p-0 text-indigo-500"
           />
         </template>
         <InicioAgendaList :items="agenda" />
@@ -53,7 +53,7 @@ const myTasks = computed(() =>
           variant="link"
           trailing-icon="i-heroicons-arrow-right"
           label="Ver Todas As Tarefas de Hoje"
-          class="mt-4 !p-0 font-semibold text-indigo-500"
+          class="mt-4 p-0 font-semibold text-indigo-500"
         />
       </UiSectionCard>
 
