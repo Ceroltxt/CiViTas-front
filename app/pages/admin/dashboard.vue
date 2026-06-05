@@ -70,8 +70,61 @@ const modelValue = shallowRef(new CalendarDate(2026, 6, 16));
     </div>
     <!-- Botões de ação (Calendário e relatórios)-->
 
-    <UiSectionCard title="Painel administrativo">
-      <p class="text-sm text-slate-400">Em construção.</p>
-    </UiSectionCard>
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <UCard title="Desempenho das equipes" class="w-full">
+        <Placeholder class="h-24" />
+      </UCard>
+      <UCard title="Colaboradores" class="w-full">
+        <Placeholder class="h-24" />
+      </UCard>
+      <UCard title="Ranking das equipes" class="w-full">
+        <Placeholder class="h-24" />
+      </UCard>
+    </div>
+    <!--Grid para os cards antes do gráfico bonitinho, ou seja, os cards de cima kksksksksks-->
+    <div class="mt-4 flex flex-col gap-4 md:flex-col lg:flex-row">
+      <UCard title="Desempnho de entregas" class="w-full">
+        <Placeholder class="h-32" />
+      </UCard>
+
+      <ul
+        class="mt-4 flex flex-col gap-4 md:flex-col lg:flex-col md:w-20% lg:w-1/3"
+      >
+        <li>
+          <div
+            class="rounded-lg bg-yellow-200 p-4 flex flex-row items-center gap-4"
+          >
+            <h2 class="font-display font-bold text-orange-500 text-3xl">85</h2>
+            <p class="text-xl text-orange-500 font-bold">
+              Tarefas em andamento.
+            </p>
+          </div>
+        </li>
+        <li>
+          <div
+            class="rounded-lg bg-rose-200 p-4 flex flex-row items-center gap-4"
+          >
+            <h2 class="font-display font-bold text-red-600 text-3xl">10</h2>
+            <p class="text-xl text-red-600 font-bold">Tarefas atrasadas.</p>
+          </div>
+        </li>
+        <li>
+          <div
+            class="rounded-lg bg-emerald-200 p-4 flex flex-row items-center gap-4"
+          >
+            <h2 class="font-display font-bold text-green-600 text-3xl">194</h2>
+            <p class="text-xl text-green-600 font-bold">Tarefas concluídas.</p>
+          </div>
+        </li>
+      </ul>
+      <!--Esses cards me deixaram um pouco louco devo admitir, mas pelo menos estão bem feitas e flexiveis ksksksk-->
+
+      <UCard title="Notificações" class="md:w-20% lg:w-1/3">
+        <Placeholder class="h-32" />
+      </UCard>
+    </div>
+    <UCard title="Desempnho de entregas" class="w-full">
+      <Placeholder class="h-32" />
+    </UCard>
   </div>
 </template>
