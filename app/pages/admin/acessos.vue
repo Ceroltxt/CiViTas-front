@@ -145,7 +145,16 @@ const items: DropdownMenuItem[][] = [
     <div class="flex items-center justify-between md:flex-col lg:flex-row gap-4">
       <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">Acessos</h1>
       <div class="flex items-center justify-end gap-2">
-        <UButton trailing-icon="i-heroicons-plus" size="md" color="secondary" variant="subtle">Convidar novo usuário</UButton>
+          <UModal title="Convidar novo colaborador">
+    <UButton label="Convidar novo colaborador" trailing-icon="i-heroicons-plus" size="md" color="secondary" variant="subtle" />
+
+    <template #body>
+      <Placeholder class="h-48" />
+        <UFormField label="Email">
+    <UInput placeholder="Enter your email" />
+  </UFormField>
+    </template>
+  </UModal>
           <UDropdownMenu :items="items" :ui="{ content: 'w-(--reka-dropdown-menu-trigger-width)' }">
     <UButton
       class="w-16 border-2 border-slate-200 dark:border-slate-700"

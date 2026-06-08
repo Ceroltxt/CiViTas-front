@@ -18,7 +18,7 @@ const filters = [
 </script>
 
 <template>
-  <div class="space-y-5 p-4 sm:p-6">
+  <div class="space-y-5 p-4 sm:p-6 dark:bg-slate-900 h-full">
     <!-- Cabeçalho -->
     <div class="flex flex-wrap items-center justify-between gap-3">
       <h1 class="flex items-center gap-2 font-display text-2xl font-bold text-slate-800 dark:text-slate-100">
