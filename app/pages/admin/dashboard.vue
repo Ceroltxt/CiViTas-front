@@ -14,7 +14,7 @@ const modelValue = shallowRef(new CalendarDate(2026, 6, 16));
 </script>
 
 <template>
-  <div class="mx-auto max-w-7xl space-y-5 p-4 sm:p-6">
+  <div class="mx-auto max-w-7xl space-y-5 p-4 sm:p-6 dark:bg-slate-900 h-full">
     <div>
       <h1
         class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100"
@@ -45,7 +45,7 @@ const modelValue = shallowRef(new CalendarDate(2026, 6, 16));
         <!-- Calendar popover -->
 
         <template #content>
-          <UCalendar v-model="modelValue" class="p-2" />
+          <UCalendar v-model="modelValue" class="p-2" color="secondary" />
         </template>
       </UPopover>
       <UModal :modal="false" title="Exportar relatório">
@@ -83,7 +83,7 @@ const modelValue = shallowRef(new CalendarDate(2026, 6, 16));
     </div>
     <!--Grid para os cards antes do gráfico bonitinho, ou seja, os cards de cima kksksksksks-->
     <div class="mt-4 flex flex-col gap-4 md:flex-col lg:flex-row">
-      <UCard title="Desempnho de entregas" class="w-full">
+      <UCard title="Desempenho de entregas" class="w-full">
         <Placeholder class="h-32" />
       </UCard>
 
@@ -119,11 +119,11 @@ const modelValue = shallowRef(new CalendarDate(2026, 6, 16));
       </ul>
       <!--Esses cards me deixaram um pouco louco devo admitir, mas pelo menos estão bem feitas e flexiveis ksksksk-->
 
-      <UCard title="Notificações" class="md:w-20% lg:w-1/3">
+      <UCard title="Notificações" class="md:w-20% lg:w-1/3 p-0">
         <Placeholder class="h-32" />
       </UCard>
     </div>
-    <UCard title="Desempnho de entregas" class="w-full">
+    <UCard title="Desempenho de entregas" class="w-full">
       <Placeholder class="h-32" />
     </UCard>
   </div>
