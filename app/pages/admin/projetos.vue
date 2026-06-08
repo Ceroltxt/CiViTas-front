@@ -197,7 +197,7 @@ const globalFilter = ref("");
         <UInput
           v-model="globalFilter"
           class="max-w-sm"
-          placeholder="Filter..."
+          placeholder="Filtro..."
           color="secondary"
         />
       </div>
@@ -219,7 +219,7 @@ const globalFilter = ref("");
           :page="(table?.tableApi?.getState().pagination.pageIndex || 0) + 1"
           :items-per-page="table?.tableApi?.getState().pagination.pageSize"
           :total="table?.tableApi?.getFilteredRowModel().rows.length"
-          @update:page="(p) => table?.tableApi?.setPageIndex(p - 1)"
+          @update:page="(p) => table?.tableApi?.setPageIndex(p - 1)" 
         />
       </div>
     </div>
