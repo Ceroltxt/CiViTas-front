@@ -13,8 +13,10 @@ const isDark = computed({
 </script>
 
 <template>
-  <div class="mx-auto max-w-3xl space-y-5 p-4 sm:p-6">
-    <div>
+  <div class="space-y-5 p-4 sm:p-4 dark:bg-slate-900 h-full">
+
+
+          <div>
       <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">Configurações</h1>
       <p class="text-sm text-slate-400">Gerencie sua conta e preferências</p>
     </div>
@@ -55,5 +57,7 @@ const isDark = computed({
         </div>
       </div>
     </UiSectionCard>
-  </div>
+    </div>
+
+
 </template>

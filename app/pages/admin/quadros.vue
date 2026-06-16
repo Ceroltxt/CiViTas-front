@@ -25,7 +25,7 @@ const projectOpen = ref(false)
 </script>
 
 <template>
-  <div class="space-y-5 p-4 sm:p-6">
+  <div class="space-y-5 p-4 sm:p-6 dark:bg-slate-900 h-full">
     <!-- Cabeçalho -->
     <div class="flex flex-wrap items-start justify-between gap-3">
       <div>
