@@ -154,8 +154,7 @@ const globalFilter = ref("");
         <h1
           class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100"
         >
-          Projetos
-        </h1>
+          Projetos        </h1>
       </div>
       <UModal title="Criar novo projeto">
         <UButton
@@ -167,25 +166,25 @@ const globalFilter = ref("");
         />
 
         <template #body>
-          <div>
+          <div class="flex flex-col w-full max-w-lg mx-auto gap-4 justify-center">
             <h1>Informações gerais</h1>
             <UFormField label="Nome do projeto" required>
-              <UInput placeholder="Nome do projeto" />
+              <UInput placeholder="Nome do projeto" color="secondary" class="w-full" />
             </UFormField>
             <!-- Nome do projetoooo-->
             <UFormField label="Descrição">
-              <UTextarea placeholder="Digite a descrição do projeto..." />
+              <UTextarea placeholder="Digite a descrição do projeto..." color="secondary" class="w-full" />
             </UFormField>
             <!-- Descrição do projeto, para o gestor colocar mais detalhes sobre o projeto e tals, tipo o que é, quais são os objetivos, essas coisas todas. -->
-            <ul>
+            <ul class="flex flex-col gap-4">
               <li>
                 <UFormField label="Categoria" required>
-                  <UInput placeholder="Categoria..." />
+                  <UInput placeholder="Categoria..." color="secondary" class="w-full"/>
                 </UFormField>
               </li>
               <li>
                 <UFormField label="Prioridade" required>
-                  <UInputTags placeholder="Selecionar a prioridade..." />
+                  <UInputTags placeholder="Selecionar a prioridade..." color="secondary" class="w-full"/>
                 </UFormField>
                 <ul class="flex items-center gap-2 flex-row mt-2">
                   <li>
@@ -223,7 +222,7 @@ const globalFilter = ref("");
                   <UPopover :content="{ align: 'center' }">
                   <UButton
                     color="neutral"
-                    variant="subtle"
+                    variant="soft"
                     icon="i-heroicons-calendar-days"
                   >
                     {{ label }}
@@ -265,6 +264,10 @@ const globalFilter = ref("");
               </li> <!--Calendário do início e término-->
             </ul>
           </div>
+           <div class="flex justify-center gap-2 mt-4 w-full">
+        <UButton color="error" variant="outline" class="w-full justify-center">Cancelar</UButton>
+        <UButton color="secondary" variant="subtle" class="w-full justify-center">Criar</UButton>
+      </div>
         </template>
       </UModal>
     </div>
@@ -278,9 +281,9 @@ const globalFilter = ref("");
         >
           <UIcon
             name="i-heroicons-inbox-stack"
-            class="size-12 text-violet-300 bg-violet-600 rounded-full p-2 shadow-lg shadow-violet-800/50"
+            class="size-12 text-violet-300 bg-violet-600 rounded-full p-2 shadow-lg shadow-violet-800/50 hover:translate-y-[-4px] transition-transform duration-400"
           />
-          <div class="flex flex-col">
+          <div class="flex flex-col sm:items-center md:items-start lg:items-start">
             <p class="font-medium text-slate-700 dark:text-slate-300">
               Total de projetos
             </p>
@@ -294,9 +297,9 @@ const globalFilter = ref("");
         >
           <UIcon
             name="i-heroicons-play-circle"
-            class="size-12 text-yellow-200 bg-orange-400 rounded-full p-2 shadow-lg shadow-orange-800/50"
+            class="size-12 text-yellow-200 bg-orange-400 rounded-full p-2 shadow-lg shadow-orange-800/50 hover:translate-y-[-4px] transition-transform duration-400"
           />
-          <div class="flex flex-col">
+          <div class="flex flex-col sm:items-center md:items-center lg:items-start">
             <p class="font-medium text-slate-700 dark:text-slate-300">
               em andamento
             </p>
@@ -310,9 +313,9 @@ const globalFilter = ref("");
         >
           <UIcon
             name="i-heroicons-check-badge"
-            class="size-12 text-emerald-200 bg-green-600 rounded-full p-2 shadow-lg shadow-emerald-800/50"
+            class="size-12 text-emerald-200 bg-green-600 rounded-full p-2 shadow-lg shadow-emerald-800/50 hover:translate-y-[-4px] transition-transform duration-400"
           />
-          <div class="flex flex-col">
+          <div class="flex flex-col  sm:items-center md:items-center lg:items-start">
             <p class="font-medium text-slate-700 dark:text-slate-300">
               Concluídos
             </p>
@@ -326,9 +329,9 @@ const globalFilter = ref("");
         >
           <UIcon
             name="i-heroicons-exclamation-circle"
-            class="size-12 text-rose-200 bg-red-500 rounded-full p-2 shadow-lg shadow-red-800/50"
+            class="size-12 text-rose-200 bg-red-500 rounded-full p-2 shadow-lg shadow-red-800/50 hover:translate-y-[-4px] transition-transform duration-400"
           />
-          <div class="flex flex-col">
+          <div class="flex flex-col sm:items-center md:items-center lg:items-start">
             <p class="font-medium text-slate-700 dark:text-slate-300">
               Atrasados
             </p>
@@ -342,9 +345,9 @@ const globalFilter = ref("");
         >
           <UIcon
             name="i-heroicons-user-group"
-            class="size-12 text-sky-300 bg-blue-600 rounded-full p-2 shadow-lg shadow-sky-800/50"
+            class="size-12 text-sky-300 bg-blue-600 rounded-full p-2 shadow-lg shadow-sky-800/50 hover:translate-y-[-4px] transition-transform duration-400"
           />
-          <div class="flex flex-col">
+          <div class="flex flex-col sm:items-center md:items-center lg:items-start">
             <p class="font-medium text-slate-700 dark:text-slate-300">
               Gestores ativos
             </p>
@@ -375,6 +378,8 @@ const globalFilter = ref("");
         }"
         class="flex-1"
       />
+     
+      
 
       <div class="flex justify-end border-t border-default pt-4 px-4">
         <UPagination

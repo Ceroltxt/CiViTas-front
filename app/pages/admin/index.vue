@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import chartBarVertical from "@/components/chart/chartBarVertical.vue";
+import chartDonut from "@/components/chart/chartDonut.vue";
+import chartLine from "@/components/chart/chartLine.vue";
 import {
   CalendarDate,
   DateFormatter,
@@ -73,9 +76,11 @@ const modelValue = shallowRef(new CalendarDate(2026, 6, 16));
     <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
       <UCard title="Desempenho das equipes" class="w-full">
         <Placeholder class="h-24" />
+        <chartBarVertical />
       </UCard>
       <UCard title="Colaboradores" class="w-full">
         <Placeholder class="h-24" />
+        <chartDonut />
       </UCard>
       <UCard title="Ranking das equipes" class="w-full">
         <Placeholder class="h-24" />
@@ -85,6 +90,7 @@ const modelValue = shallowRef(new CalendarDate(2026, 6, 16));
     <div class="mt-4 flex flex-col gap-4 md:flex-col lg:flex-row">
       <UCard title="Desempenho de entregas" class="w-full">
         <Placeholder class="h-32" />
+        <chartLine />
       </UCard>
 
       <ul
@@ -123,8 +129,8 @@ const modelValue = shallowRef(new CalendarDate(2026, 6, 16));
         <Placeholder class="h-32" />
       </UCard>
     </div>
-    <UCard title="Desempenho de entregas" class="w-full">
+    <!--<UCard title="Desempenho de entregas" class="w-full">
       <Placeholder class="h-32" />
-    </UCard>
+    </UCard>-->
   </div>
 </template>
