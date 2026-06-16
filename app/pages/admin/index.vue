@@ -131,6 +131,6 @@ const modelValue = shallowRef(new CalendarDate(2026, 6, 16));
     </div>
     <!--<UCard title="Desempenho de entregas" class="w-full">
       <Placeholder class="h-32" />
-    </UCard>-->
+    </UCard>[-->
   </div>
 </template>
