@@ -1,15 +1,42 @@
+import { reactive, watchEffect } from 'vue'
 import type { CurrentProject, ProjectDetail, UserSummary } from '~/types'
-import { currentProjectSchema, projectDetailSchema, userSummarySchema } from '~/schemas'
-import { mockCurrentProject, mockCurrentUser, mockProjectDetail } from '~/mocks'
+import { currentProjectSchema, projectDetailSchema } from '~/schemas'
+import { mockCurrentProject, mockProjectDetail } from '~/mocks'
 
-// Backend: `fetchCurrentUser()` / `fetchCurrentProject()` em `~/services`.
-// Os dados mock são validados pelo mesmo schema usado nas respostas da API.
-const user = userSummarySchema.parse(mockCurrentUser, 'currentUser')
 const project = currentProjectSchema.parse(mockCurrentProject, 'currentProject')
 const projectDetail = projectDetailSchema.parse(mockProjectDetail, 'projectDetail')
 
+const currentUser = reactive<UserSummary>({
+  id: 'u-costa',
+  name: 'Costa Neves',
+  role: 'Colaborador',
+  avatar: 'https://i.pravatar.cc/80?img=47',
+})
+
 export function useCurrentUser(): UserSummary {
-  return user
+  try {
+    const route = useRoute()
+    watchEffect(() => {
+      const path = route.path
+      if (path.startsWith('/admin')) {
+        currentUser.id = 'u-admin'
+        currentUser.name = 'Costa Neves'
+        currentUser.role = 'Administrador'
+      } else if (path.startsWith('/gestor')) {
+        currentUser.id = 'u-gestor'
+        currentUser.name = 'Costa Neves'
+        currentUser.role = 'Gestor'
+      } else {
+        currentUser.id = 'u-costa'
+        currentUser.name = 'Costa Neves'
+        currentUser.role = 'Colaborador'
+      }
+    })
+  } catch (e) {
+    // Evita erros em SSR ou fora de contexto setup
+  }
+
+  return currentUser
 }
 
 export function useCurrentProject(): CurrentProject {
@@ -19,3 +46,4 @@ export function useCurrentProject(): CurrentProject {
 export function useProjectDetail(): ProjectDetail {
   return projectDetail
 }
+
