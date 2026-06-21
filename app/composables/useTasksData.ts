@@ -1,6 +1,9 @@
 import type { PriorityKey, Task } from '~/types'
 import { tasksSchema } from '~/schemas'
 import { mockTasks } from '~/mocks'
+import { ref } from 'vue'
+
+const tasksRef = ref<Task[]>(tasksSchema.parse(mockTasks, 'tasks'))
 
 /** Cor do "chip" de equipe/área. */
 export function useTeamTagClass(team?: string): string {
@@ -14,7 +17,7 @@ export function useTeamTagClass(team?: string): string {
 
 // Backend: `fetchTasks()` em `~/services`.
 export function useTasksData(): Task[] {
-  return tasksSchema.parse(mockTasks, 'tasks')
+  return tasksRef.value
 }
 
 /** Agrupa tarefas por prioridade preservando a ordem alta → média → baixa. */

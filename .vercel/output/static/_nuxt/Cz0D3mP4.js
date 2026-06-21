@@ -1,0 +1,1 @@
+import{d as r,i as e,D as t,j as c,w as o,o as s}from"./B9QF-IJP.js";const a=t.parse(c,"currentUser"),u=r.parse(e,"currentProject"),n=o.parse(s,"projectDetail");function i(){return a}function m(){return u}function p(){return n}export{i as a,p as b,m as u};

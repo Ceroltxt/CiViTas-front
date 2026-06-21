@@ -21,6 +21,12 @@
     @apply bg-app font-sans text-slate-800 antialiased;
   }
 
+  .dark {
+    --color-app: #0f172a; /* Softer slate-900 for dark mode background */
+    --color-line: #1e293b; /* Softer slate-800 for borders/lines */
+    color-scheme: dark;
+  }
+
   .dark html,
   .dark body {
     @apply bg-slate-950 text-slate-200;

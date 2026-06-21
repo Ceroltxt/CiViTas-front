@@ -18,7 +18,7 @@ function lineClass(index: number) {
     <li
       v-for="(item, index) in items"
       :key="item.id"
-      class="grid grid-cols-[56px_28px_minmax(0,1fr)_7.5rem_minmax(0,1fr)_20px] items-center gap-x-3 border-b border-slate-100 px-5 py-4 dark:border-slate-800"
+      class="grid grid-cols-[56px_28px_minmax(0,1fr)_auto_20px] items-center gap-x-3 border-b border-slate-100 px-5 py-4 dark:border-slate-800"
     >
       <!-- Horário -->
       <span class="text-sm font-bold text-slate-800 dark:text-slate-100">{{ item.time }}</span>
@@ -41,18 +41,18 @@ function lineClass(index: number) {
         <p class="truncate text-xs text-slate-400">{{ item.description }}</p>
       </div>
 
-      <!-- Tag (alinhada à esquerda, mesma coluna em todas as linhas) -->
+      <!-- Tag (alinhada à direita) -->
       <span
-        class="justify-self-start rounded-full px-3.5 py-1.5 text-xs font-semibold"
+        class="justify-self-end rounded-full px-3.5 py-1.5 text-xs font-semibold"
         :class="item.tag.color"
       >
         {{ item.tag.label }}
       </span>
 
-      <!-- Chevron (todas as linhas) -->
+      <!-- Chevron -->
       <UIcon
         name="i-heroicons-chevron-right"
-        class="col-start-6 size-5 justify-self-end text-slate-400"
+        class="size-5 justify-self-end text-slate-400"
       />
     </li>
   </ul>

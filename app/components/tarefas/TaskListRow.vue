@@ -13,7 +13,12 @@ const isDone = computed(() => props.task.status === 'concluido')
 const isLate = computed(() => props.task.status === 'atrasado')
 const isPersonal = computed(() => props.task.personal === true)
 const isNotStarted = computed(() => props.task.notStarted === true && !isDone.value && !isLate.value)
-const done = ref(isDone.value)
+const done = computed({
+  get: () => isDone.value,
+  set: (val) => {
+    props.task.status = val ? 'concluido' : 'em-andamento'
+  }
+})
 const teamClass = computed(() => useTeamTagClass(props.task.team))
 
 const projectProgress = computed(() =>
