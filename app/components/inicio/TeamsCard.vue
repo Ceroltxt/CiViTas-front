@@ -17,7 +17,6 @@ defineProps<{ teams: TeamSummary[] }>()
         <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ team.name }}</p>
         <p class="truncate text-xs text-slate-400">{{ team.description }}</p>
       </div>
-      <UiAvatarStack :users="team.members" :max="3" />
     </li>
   </ul>
 </template>

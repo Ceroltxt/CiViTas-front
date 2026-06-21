@@ -1,0 +1,1 @@
+import{u as o}from"./BuaNctJI.js";import{H as n,bn as r,t as s,ae as p,ao as c}from"./CocvQrLA.js";import"./VXHZtsHr.js";const d=n({__name:"index",async setup(i){let e,t;const{homePath:a}=o();return[e,t]=r(()=>p(a.value,{replace:!0})),await e,t(),(_,m)=>(c(),s("div"))}});export{d as default};

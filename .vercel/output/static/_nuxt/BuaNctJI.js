@@ -1,0 +1,1 @@
+import{a as s,g as n}from"./VXHZtsHr.js";import{bc as i,n as o}from"./CocvQrLA.js";function p(){const a=i(),t=o(()=>a.path.startsWith("/gestor")?"gestor":a.path.startsWith("/admin")?"admin":"colaborador"),e=o(()=>n(t.value)),r=o(()=>s(t.value));return{appRole:t,homePath:e,items:r}}export{p as u};

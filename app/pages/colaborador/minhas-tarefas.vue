@@ -5,9 +5,15 @@ definePageMeta({ sidebarWidget: 'none' })
 
 const tasks = useTasksData()
 
-const tabs = ['Atribuídas', 'Pendentes', 'Concluídas', 'Pessoais']
+const mainTabs = [
+  { id: 'trabalho', icon: 'i-heroicons-briefcase', tooltip: 'Tarefas de Trabalho' },
+  { id: 'pessoais', icon: 'i-heroicons-user', tooltip: 'Tarefas Pessoais' },
+]
+const subTabs = ['Atribuídas', 'Pendentes', 'Concluídas']
 const sortOptions = ['Prazo', 'Prioridade', 'Progresso']
-const activeTab = ref('Atribuídas')
+
+const activeMainTab = ref('trabalho')
+const activeSubTab = ref('Atribuídas')
 
 const search = ref('')
 const projectFilter = ref('Todos')
@@ -35,10 +41,13 @@ const filtered = computed(() => {
   const priorityKey = priorityByLabel.get(priorityFilter.value)
 
   let list = tasks.filter((t) => {
-    if (activeTab.value === 'Atribuídas' && (t.personal || t.status === 'concluido' || t.status === 'atrasado')) return false
-    if (activeTab.value === 'Pendentes' && t.status !== 'atrasado') return false
-    if (activeTab.value === 'Concluídas' && (t.personal || t.status !== 'concluido')) return false
-    if (activeTab.value === 'Pessoais' && !t.personal) return false
+    const isPersonalTask = !!t.personal
+    if ((activeMainTab.value === 'pessoais') !== isPersonalTask) return false
+
+    if (activeSubTab.value === 'Atribuídas' && (t.status === 'concluido' || t.status === 'atrasado')) return false
+    if (activeSubTab.value === 'Pendentes' && t.status !== 'atrasado') return false
+    if (activeSubTab.value === 'Concluídas' && t.status !== 'concluido') return false
+
     if (term && !`${t.title} ${t.project ?? ''} ${t.team ?? ''}`.toLowerCase().includes(term)) return false
     if (projectFilter.value !== 'Todos' && t.project !== projectFilter.value) return false
     if (priorityKey && t.priority !== priorityKey) return false
@@ -59,7 +68,7 @@ const filtered = computed(() => {
     list = [...list].sort((a, b) => dueDateOrder(a.dueDate) - dueDateOrder(b.dueDate))
   }
 
-  if (activeTab.value === 'Pessoais') {
+  if (activeMainTab.value === 'pessoais') {
     list = [...list].sort((a, b) => {
       const aDone = a.status === 'concluido' ? 1 : 0
       const bDone = b.status === 'concluido' ? 1 : 0
@@ -72,7 +81,7 @@ const filtered = computed(() => {
 })
 
 const showAccent = computed(
-  () => activeTab.value === 'Atribuídas' || activeTab.value === 'Pessoais',
+  () => activeSubTab.value === 'Atribuídas' || activeMainTab.value === 'pessoais',
 )
 
 const groups = computed(() => groupTasksByPriority(filtered.value))
@@ -97,21 +106,40 @@ const groups = computed(() => groupTasksByPriority(filtered.value))
       </div>
     </div>
 
-    <!-- Abas -->
+    <!-- Abas Principais (Trabalho / Pessoais) -->
+    <div class="flex gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl w-fit">
+      <button
+        v-for="tab in mainTabs"
+        :key="tab.id"
+        type="button"
+        class="p-2 text-sm font-semibold rounded-lg transition-all flex items-center justify-center"
+        :class="
+          activeMainTab === tab.id
+            ? 'bg-white dark:bg-slate-900 text-violet-600 shadow-sm'
+            : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'
+        "
+        :title="tab.tooltip"
+        @click="activeMainTab = tab.id"
+      >
+        <UIcon :name="tab.icon" class="size-5" />
+      </button>
+    </div>
+
+    <!-- Sub-abas -->
     <div class="flex gap-6 border-b border-slate-200 dark:border-slate-800">
       <button
-        v-for="tab in tabs"
-        :key="tab"
+        v-for="subTab in subTabs"
+        :key="subTab"
         type="button"
         class="-mb-px border-b-2 pb-3 text-sm font-medium transition-colors"
         :class="
-          activeTab === tab
+          activeSubTab === subTab
             ? 'border-violet-500 text-violet-600'
             : 'border-transparent text-slate-400 hover:text-slate-600'
         "
-        @click="activeTab = tab"
+        @click="activeSubTab = subTab"
       >
-        {{ tab }}
+        {{ subTab }}
       </button>
     </div>
 
@@ -124,7 +152,7 @@ const groups = computed(() => groupTasksByPriority(filtered.value))
         class="w-full sm:w-56"
       />
       <UiLabeledSelect
-        v-if="activeTab !== 'Pessoais'"
+        v-if="activeMainTab !== 'pessoais'"
         v-model="projectFilter"
         label="Projeto:"
         :items="projectFilterItems"
@@ -132,7 +160,7 @@ const groups = computed(() => groupTasksByPriority(filtered.value))
       />
       <UiLabeledSelect v-model="priorityFilter" label="Prioridade:" :items="priorityFilterItems" class="w-44" />
       <UiLabeledSelect
-        v-if="activeTab !== 'Pessoais'"
+        v-if="activeMainTab !== 'pessoais'"
         v-model="sortBy"
         label="Ordenar:"
         :items="sortOptions"

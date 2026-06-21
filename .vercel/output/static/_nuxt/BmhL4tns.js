@@ -1,0 +1,1 @@
+const e=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];function u(t){if(!t)return Number.MAX_SAFE_INTEGER;const[n,o]=t.split(" "),r=e.indexOf(o??"");return(r<0?12:r)*100+Number(n??0)}function a(t,n){return`${e[n]} ${t}`}export{u as d,a as f};

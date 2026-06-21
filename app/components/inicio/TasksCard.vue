@@ -18,10 +18,6 @@ function projectProgress(task: Task) {
         <p class="truncate text-sm font-medium text-slate-700 dark:text-slate-200">
           {{ task.title }}
         </p>
-        <span class="mt-0.5 flex items-center gap-1 text-xs text-slate-400">
-          <UIcon name="i-heroicons-calendar-days" class="size-3.5" />
-          {{ task.dueDate }}
-        </span>
       </div>
       <div class="flex shrink-0 items-center gap-2">
         <div class="w-20">
