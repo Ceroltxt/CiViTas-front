@@ -8,6 +8,9 @@ import LineBarEmpty from "~/components/progressBar/lineBarEmpty.vue";
 import LineBarQuater from "~/components/progressBar/lineBarQuater.vue";
 import notificationNewTask from "~/components/notifications/notificationNewTask.vue";
 import notificationNewUser from "~/components/notifications/notificationNewUser.vue";
+import rakingFirst from "~/components/ranking/rakingFirst.vue";
+import rakingSecond from "~/components/ranking/rakingSecond.vue";
+import rakingThird from "~/components/ranking/rakingThird.vue";
 import {
   CalendarDate,
   DateFormatter,
@@ -92,11 +95,21 @@ const modelValue = shallowRef(new CalendarDate(2026, 6, 16));
       </UCard>
       <UCard title="Ranking das equipes" class="w-full">
         <Placeholder class="h-24" />
-        
+        <ul>
+          <li>
+            <rakingFirst />
+          </li>
+          <li>
+            <rakingSecond />
+          </li>
+          <li>
+            <rakingThird />
+          </li>
+        </ul>
       </UCard>
     </div>
     <!--Grid para os cards antes do gráfico bonitinho, ou seja, os cards de cima kksksksksks-->
-    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+    <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
       <!--Coluna da esquerda-->
       <div class="lg:col-span-2 flex flex-col gap-6">
         <!-- Gráfico -->
@@ -105,19 +118,41 @@ const modelValue = shallowRef(new CalendarDate(2026, 6, 16));
         </UCard>
         <div class="lg:col-span-2">
           <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <div class="rounded-lg bg-yellow-200 p-4 flex items-center gap-4 dark:bg-orange-500">
-              <h2 class="text-3xl font-bold text-orange-500 dark:text-yellow-200">85</h2>
-              <p class="font-bold text-orange-500 dark:text-yellow-200">Tarefas em andamento.</p>
+            <div
+              class="rounded-lg bg-yellow-200 p-4 flex items-center gap-4 dark:bg-orange-500"
+            >
+              <h2
+                class="text-3xl font-bold text-orange-500 dark:text-yellow-200"
+              >
+                85
+              </h2>
+              <p class="font-bold text-orange-500 dark:text-yellow-200">
+                Tarefas em andamento.
+              </p>
             </div>
 
-            <div class="rounded-lg bg-rose-200 dark:bg-rose-600 p-4 flex items-center gap-4">
-              <h2 class="text-3xl font-bold text-red-600 dark:text-rose-200">10</h2>
-              <p class="font-bold text-red-600 dark:text-rose-200">Tarefas atrasadas.</p>
+            <div
+              class="rounded-lg bg-rose-200 dark:bg-rose-600 p-4 flex items-center gap-4"
+            >
+              <h2 class="text-3xl font-bold text-red-600 dark:text-rose-200">
+                10
+              </h2>
+              <p class="font-bold text-red-600 dark:text-rose-200">
+                Tarefas atrasadas.
+              </p>
             </div>
 
-            <div class="rounded-lg bg-emerald-200 dark:bg-green-600 p-4 flex items-center gap-4">
-              <h2 class="text-3xl font-bold text-green-600 dark:text-emerald-200">194</h2>
-              <p class="font-bold text-green-600 dark:text-emerald-200">Tarefas concluídas.</p>
+            <div
+              class="rounded-lg bg-emerald-200 dark:bg-green-600 p-4 flex items-center gap-4"
+            >
+              <h2
+                class="text-3xl font-bold text-green-600 dark:text-emerald-200"
+              >
+                194
+              </h2>
+              <p class="font-bold text-green-600 dark:text-emerald-200">
+                Tarefas concluídas.
+              </p>
             </div>
           </div>
         </div>
@@ -143,17 +178,11 @@ const modelValue = shallowRef(new CalendarDate(2026, 6, 16));
       <ul class="flex flex-wrap gap-4 justify-center lg:justify-start">
         <li class="w-full sm:w-[calc(50%-0.5rem)] xl:w-[calc(25%-0.75rem)]">
           <div
-            class="rounded-lg bg-slate-100 dark:bg-slate-800
-         p-4 flex items-center gap-4
-         shadow-md
-         h-32
-         w-full
-         transition-transform duration-300
-         hover:-translate-y-1"
+            class="rounded-lg bg-slate-100 dark:bg-slate-800 p-4 flex items-center gap-4 shadow-md h-32 w-full transition-transform duration-300 hover:-translate-y-1"
           >
             <UIcon
               name="i-heroicons-briefcase"
-              class="size-12 bg-sky-500 p-2 rounded-full text-slate-100"
+              class="size-12 bg-sky-100 p-2 rounded-full text-sky-500 dark:text-sky-100 dark:bg-sky-500"
             />
             <div class="flex flex-col">
               <p class="font-bold">Sistema de gestão de RH</p>
@@ -166,17 +195,11 @@ const modelValue = shallowRef(new CalendarDate(2026, 6, 16));
         </li>
         <li class="w-full sm:w-[calc(50%-0.5rem)] xl:w-[calc(25%-0.75rem)]">
           <div
-            class="rounded-lg bg-slate-100 dark:bg-slate-800
-         p-4 flex items-center gap-4
-         shadow-md
-         h-32
-         w-full
-         transition-transform duration-300
-         hover:-translate-y-1"
+            class="rounded-lg bg-slate-100 dark:bg-slate-800 p-4 flex items-center gap-4 shadow-md h-32 w-full transition-transform duration-300 hover:-translate-y-1"
           >
             <UIcon
               name="i-heroicons-device-phone-mobile"
-              class="size-12 bg-rose-500 p-2 rounded-full text-slate-100"
+              class="size-12 text-rose-500 p-2 rounded-full bg-rose-100 dark:bg-rose-500 dark:text-rose-100"
             />
             <div class="flex flex-col">
               <p class="font-bold">Aplicativo mobile</p>
@@ -189,17 +212,11 @@ const modelValue = shallowRef(new CalendarDate(2026, 6, 16));
         </li>
         <li class="w-full sm:w-[calc(50%-0.5rem)] xl:w-[calc(25%-0.75rem)]">
           <div
-            class="rounded-lg bg-slate-100 dark:bg-slate-800
-         p-4 flex items-center gap-4
-         shadow-md
-         h-32
-         w-full
-         transition-transform duration-300
-         hover:-translate-y-1"
+            class="rounded-lg bg-slate-100 dark:bg-slate-800 p-4 flex items-center gap-4 shadow-md h-32 w-full transition-transform duration-300 hover:-translate-y-1"
           >
             <UIcon
               name="i-heroicons-user"
-              class="size-12 bg-fuchsia-500 p-2 rounded-full text-slate-100"
+              class="size-12 text-fuchsia-500 p-2 rounded-full bg-fuchsia-100 dark:text-fuchsia-100 dark:bg-fuchsia-500"
             />
             <div class="flex flex-col">
               <p class="font-bold">Portal do cliente</p>
@@ -212,17 +229,11 @@ const modelValue = shallowRef(new CalendarDate(2026, 6, 16));
         </li>
         <li class="w-full sm:w-[calc(50%-0.5rem)] xl:w-[calc(25%-0.75rem)]">
           <div
-            class="rounded-lg bg-slate-100 dark:bg-slate-800
-         p-4 flex items-center gap-4
-         shadow-md
-         h-32
-         w-full
-         transition-transform duration-300
-         hover:-translate-y-1"
+            class="rounded-lg bg-slate-100 dark:bg-slate-800 p-4 flex items-center gap-4 shadow-md h-32 w-full transition-transform duration-300 hover:-translate-y-1"
           >
             <UIcon
               name="i-heroicons-newspaper"
-              class="size-12 bg-amber-500 p-2 rounded-full text-slate-100"
+              class="size-12 text-amber-500 p-2 rounded-full bg-amber-100 dark:text-amber-100 dark:bg-amber-500"
             />
             <div class="flex flex-col">
               <p class="font-bold">Campanha de marketing</p>
