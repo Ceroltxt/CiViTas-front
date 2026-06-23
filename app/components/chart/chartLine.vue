@@ -5,34 +5,55 @@ import Chart from "chart.js/auto";
 const chartRef = ref<HTMLCanvasElement | null>(null);
 
 onMounted(() => {
-  if (!chartRef.value) return;
+new Chart(chartRef.value, {
+  type: "line",
 
-  new Chart(chartRef.value, {
-    type: "bar",
-    data: {
-      labels: ["Atrasadas", "Entregues"],
-      datasets: [
-        {
-          data: [1, 5],
-          label: "Desempenho de entregas",
-          borderWidth: 1,
-          borderRadius: 5,
-          backgroundColor: [
-            "rgba(255, 217, 0)",
-            "rgba(97, 70, 234)",
-            
-          ],
-        },
-      ],
-    },
+  data: {
+    labels: ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul"],
+
+    datasets: [
+  {
+    label: "Demanda de projetos",
+    data: [8, 10, 8, 6, 8, 6, 10],
+    borderColor: "rgba(253, 128, 9)",
+    backgroundColor: "rgba(253, 128, 9)",
+    tension: 0.4,
+  },
+  {
+    label: "Projetos entregues",
+    data: [6, 8, 10, 8, 4, 9, 7],
+    borderColor:"rgba(97, 70, 234)",
+    backgroundColor:"rgba(97, 70, 234)",
+    tension: 0.4,
+  },
+],
+  },
+
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
     options: {
-      scales: {
-        y: {
-          beginAtZero: true,
+  plugins: {
+    legend: {
+      position: "bottom",
+
+      labels: {
+        color: "#0f172a",
+
+        font: {
+          size: 16,
+          weight: "bold",
         },
+
+        usePointStyle: true,
+        pointStyle: "circle",
+        padding: 20,
       },
     },
-  });
+  },
+}
+  },
+});
 });
 </script>
 

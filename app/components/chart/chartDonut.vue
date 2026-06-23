@@ -10,12 +10,12 @@ onMounted(() => {
   new Chart(chartRef.value, {
     type: "doughnut",
     data: {
-      labels: ["Marketing", "HR", "Developers", "Design"],
+      labels: ["Marketing", "RH", "Developers", "Design"],
       datasets: [
         {
           data: [1, 5, 3, 10],
           circumference: 360,
-          borderWidth: 1,
+          borderWidth: 0,
           borderRadius: 5,
           backgroundColor: [
             "rgba(255, 217, 0)",
@@ -38,5 +38,8 @@ onMounted(() => {
 </script>
 
 <template>
-  <canvas ref="chartRef"></canvas>
+  <div class="w-full h-56 items-center justify-center">
+      <canvas ref="chartRef"></canvas>
+
+  </div>
 </template>

@@ -13,7 +13,7 @@ const isDark = computed({
 </script>
 
 <template>
-  <div class="space-y-5 p-4 sm:p-4 dark:bg-slate-900 h-full">
+  <div class="space-y-5 p-4 sm:p-4 dark:bg-slate-900 min-h-screen">
 
 
           <div>

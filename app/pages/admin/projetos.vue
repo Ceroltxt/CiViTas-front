@@ -146,7 +146,7 @@ const globalFilter = ref("");
 </script>
 
 <template>
-  <div class="mx-auto max-w-7xl space-y-5 p-4 sm:p-6 dark:bg-slate-900 h-full">
+  <div class="mx-auto max-w-7xl space-y-5 p-4 sm:p-6 dark:bg-slate-900 min-h-screen">
     <div
       class="flex items-center justify-between md:flex-col lg:flex-row gap-4"
     >
@@ -269,7 +269,7 @@ const globalFilter = ref("");
         <UButton color="secondary" variant="subtle" class="w-full justify-center">Criar</UButton>
       </div>
         </template>
-      </UModal>
+      </UModal> <!--Modal para criar um novo projeto-->
     </div>
     <!-- Os elementos do topo da págima, talez meser no icone do botção se acharem melhor a outra opção-->
     <ul
@@ -277,13 +277,13 @@ const globalFilter = ref("");
     >
       <li>
         <div
-          class="flex items-center gap-4 flex-col md:flex-row lg:flex-row border-2 rounded-lg p-2 border-slate-200 dark:border-slate-700 lg:w-54 lg:h-32 border-t-violet-600 border-t-4 dark:border-t-violet-600"
+          class="flex items-center gap-4 flex-col md:flex-row lg:flex-row border-2 rounded-lg p-2 border-slate-200 dark:border-slate-700 lg:w-54 lg:h-32 border-t-violet-600 border-t-4 dark:border-t-violet-600 hover:translate-y-1 transition-transform duration-400 hover:shadow-lg"
         >
           <UIcon
             name="i-heroicons-inbox-stack"
-            class="size-12 text-violet-300 bg-violet-600 rounded-full p-2 shadow-lg shadow-violet-800/50 hover:translate-y-[-4px] transition-transform duration-400"
+            class="size-12 text-violet-300 bg-violet-600 rounded-full p-2 shadow-lg shadow-violet-800/50"
           />
-          <div class="flex flex-col sm:items-center md:items-start lg:items-start">
+          <div class="flex flex-col sm:items-center md:items-start lg:items-start hover:translate-y-1 transition-transform duration-400">
             <p class="font-medium text-slate-700 dark:text-slate-300">
               Total de projetos
             </p>
@@ -293,11 +293,11 @@ const globalFilter = ref("");
       </li>
       <li>
         <div
-          class="flex items-center gap-4 flex-col md:flex-row lg:flex-row border-2 rounded-lg p-2 border-slate-200 dark:border-slate-700 lg:w-54 lg:h-32 border-t-orange-400 border-t-4 dark:border-t-orange-400"
+          class="flex items-center gap-4 flex-col md:flex-row lg:flex-row border-2 rounded-lg p-2 border-slate-200 dark:border-slate-700 lg:w-54 lg:h-32 border-t-orange-400 border-t-4 dark:border-t-orange-400 hover:translate-y-1 transition-transform duration-400 hover:shadow-lg"
         >
           <UIcon
             name="i-heroicons-play-circle"
-            class="size-12 text-yellow-200 bg-orange-400 rounded-full p-2 shadow-lg shadow-orange-800/50 hover:translate-y-[-4px] transition-transform duration-400"
+            class="size-12 text-yellow-200 bg-orange-400 rounded-full p-2 shadow-lg shadow-orange-800/50"
           />
           <div class="flex flex-col sm:items-center md:items-center lg:items-start">
             <p class="font-medium text-slate-700 dark:text-slate-300">
@@ -309,13 +309,13 @@ const globalFilter = ref("");
       </li>
       <li>
         <div
-          class="flex items-center gap-4 flex-col md:flex-row lg:flex-row border-2 rounded-lg p-2 border-slate-200 dark:border-slate-700 lg:w-54 lg:h-32 border-t-green-600 border-t-4 dark:border-t-green-600"
+          class="flex items-center gap-4 flex-col md:flex-row lg:flex-row border-2 rounded-lg p-2 border-slate-200 dark:border-slate-700 lg:w-54 lg:h-32 border-t-green-600 border-t-4 dark:border-t-green-600 hover:translate-y-1 transition-transform duration-400 hover:shadow-lg"
         >
           <UIcon
             name="i-heroicons-check-badge"
-            class="size-12 text-emerald-200 bg-green-600 rounded-full p-2 shadow-lg shadow-emerald-800/50 hover:translate-y-[-4px] transition-transform duration-400"
+            class="size-12 text-emerald-200 bg-green-600 rounded-full p-2 shadow-lg shadow-emerald-800/50"
           />
-          <div class="flex flex-col  sm:items-center md:items-center lg:items-start">
+          <div class="flex flex-col  sm:items-center md:items-center lg:items-start hover:translate-y-1 transition-transform duration-400">
             <p class="font-medium text-slate-700 dark:text-slate-300">
               Concluídos
             </p>
@@ -325,13 +325,13 @@ const globalFilter = ref("");
       </li>
       <li>
         <div
-          class="flex items-center gap-4 flex-col md:flex-row lg:flex-row border-2 rounded-lg p-2 border-slate-200 dark:border-slate-700 lg:w-54 lg:h-32 border-t-red-600 border-t-4 dark:border-t-red-600"
+          class="flex items-center gap-4 flex-col md:flex-row lg:flex-row border-2 rounded-lg p-2 border-slate-200 dark:border-slate-700 lg:w-54 lg:h-32 border-t-red-600 border-t-4 dark:border-t-red-600 hover:translate-y-1 transition-transform duration-400 hover:shadow-lg"
         >
           <UIcon
             name="i-heroicons-exclamation-circle"
-            class="size-12 text-rose-200 bg-red-500 rounded-full p-2 shadow-lg shadow-red-800/50 hover:translate-y-[-4px] transition-transform duration-400"
+            class="size-12 text-rose-200 bg-red-500 rounded-full p-2 shadow-lg shadow-red-800/50"
           />
-          <div class="flex flex-col sm:items-center md:items-center lg:items-start">
+          <div class="flex flex-col sm:items-center md:items-center lg:items-start  hover:translate-y-1 transition-transform duration-400">
             <p class="font-medium text-slate-700 dark:text-slate-300">
               Atrasados
             </p>
@@ -341,13 +341,13 @@ const globalFilter = ref("");
       </li>
       <li>
         <div
-          class="flex items-center gap-4 flex-col md:flex-row lg:flex-row border-2 rounded-lg p-2 border-slate-200 dark:border-slate-700 lg:w-54 lg:h-32 border-t-blue-600 border-t-4 dark:border-t-blue-600"
+          class="flex items-center gap-4 flex-col md:flex-row lg:flex-row border-2 rounded-lg p-2 border-slate-200 dark:border-slate-700 lg:w-54 lg:h-32 border-t-blue-600 border-t-4 dark:border-t-blue-600 hover:translate-y-1 transition-transform duration-400 hover:shadow-lg"
         >
           <UIcon
             name="i-heroicons-user-group"
-            class="size-12 text-sky-300 bg-blue-600 rounded-full p-2 shadow-lg shadow-sky-800/50 hover:translate-y-[-4px] transition-transform duration-400"
+            class="size-12 text-sky-300 bg-blue-600 rounded-full p-2 shadow-lg shadow-sky-800/50"
           />
-          <div class="flex flex-col sm:items-center md:items-center lg:items-start">
+          <div class="flex flex-col sm:items-center md:items-center lg:items-start hover:translate-y-1 transition-transform duration-400">
             <p class="font-medium text-slate-700 dark:text-slate-300">
               Gestores ativos
             </p>

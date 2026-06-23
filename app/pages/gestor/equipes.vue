@@ -191,7 +191,8 @@ watch(selectedTeam, (team) => {
 
           <UButton
             icon="i-heroicons-plus"
-            class="h-9 bg-violet-500 text-white hover:bg-violet-600"
+           color="secondary"
+            class="h-9"
           >
             Equipe
           </UButton>
