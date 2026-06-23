@@ -141,7 +141,7 @@ const items: DropdownMenuItem[][] = [
 </script>
 
 <template>
-  <div class="mx-auto max-w-7xl space-y-5 p-4 sm:p-6 dark:bg-slate-900 h-full">
+  <div class="mx-auto max-w-7xl space-y-5 p-4 sm:p-6 dark:bg-slate-900 min-h-screen">
     <div class="flex items-center justify-between md:flex-col lg:flex-row gap-4">
       <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">Acessos</h1>
       <div class="flex items-center justify-end gap-2">
