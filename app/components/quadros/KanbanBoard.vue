@@ -1,7 +1,14 @@
 <script setup lang="ts">
-const tasks = useBoardData()
+import type { Task } from '~/types'
+
+const props = defineProps<{
+  tasks?: Task[]
+}>()
+
+const defaultTasks = useBoardData()
+const boardTasks = computed(() => props.tasks ?? defaultTasks)
 const columns = useStatusList()
-const grouped = computed(() => groupByStatus(tasks))
+const grouped = computed(() => groupByStatus(boardTasks.value))
 </script>
 
 <template>
@@ -14,3 +21,4 @@ const grouped = computed(() => groupByStatus(tasks))
     />
   </div>
 </template>
+

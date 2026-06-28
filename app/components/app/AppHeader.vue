@@ -26,6 +26,56 @@ const userMenu = computed(() => {
   }
   return [primary, [{ label: 'Sair', icon: 'i-heroicons-arrow-right-on-rectangle', to: '/ponte' }]]
 })
+
+const createOptions = computed(() => {
+  const role = user.role
+  if (role === 'Colaborador') {
+    return [
+      {
+        label: 'Criar tarefa pessoal',
+        icon: 'i-heroicons-user',
+        description: 'Crie uma tarefa privada para organizar sua rotina pessoal.',
+        click: () => alert('Abertura de nova tarefa pessoal!')
+      }
+    ]
+  } else if (role === 'Gestor') {
+    return [
+      {
+        label: 'Criar tarefa',
+        icon: 'i-heroicons-clipboard-document-list',
+        description: 'Adicione uma nova tarefa para um colaborador no projeto.',
+        click: () => alert('Criar nova tarefa no projeto!')
+      },
+      {
+        label: 'Criar equipe',
+        icon: 'i-heroicons-user-group',
+        description: 'Monte um novo time de trabalho e defina os membros.',
+        click: () => alert('Criar nova equipe!')
+      }
+    ]
+  } else {
+    return [
+      {
+        label: 'Criar tarefa',
+        icon: 'i-heroicons-clipboard-document-list',
+        description: 'Adicione uma nova tarefa para um colaborador no projeto.',
+        click: () => alert('Criar nova tarefa no projeto!')
+      },
+      {
+        label: 'Criar equipe',
+        icon: 'i-heroicons-user-group',
+        description: 'Monte um novo time de trabalho e defina os membros.',
+        click: () => alert('Criar nova equipe!')
+      },
+      {
+        label: 'Criar projeto',
+        icon: 'i-heroicons-briefcase',
+        description: 'Inicie um novo projeto corporativo com metas e prazos.',
+        click: () => alert('Criar novo projeto!')
+      }
+    ]
+  }
+})
 </script>
 
 <template>
@@ -52,11 +102,30 @@ const userMenu = computed(() => {
         :ui="{ root: 'flex-1', base: 'rounded-l-full rounded-r-none bg-slate-50 ring-slate-200' }"
         aria-label="Pesquisar"
       />
-      <UButton
-        label="Criar"
-        size="lg"
-        :class="[brandGradient, 'rounded-l-none rounded-r-full px-5 font-semibold text-white hover:opacity-95']"
-      />
+      <UPopover>
+        <UButton
+          label="Criar"
+          size="lg"
+          :class="[brandGradient, 'rounded-l-none rounded-r-full px-5 font-semibold text-white hover:opacity-95']"
+        />
+        <template #content>
+          <div class="p-1 w-72 bg-white dark:bg-slate-900 rounded-lg shadow-lg ring-1 ring-black/5 dark:ring-white/10">
+            <button
+              v-for="opt in createOptions"
+              :key="opt.label"
+              type="button"
+              class="flex w-full items-start gap-3 rounded-lg p-2.5 text-left text-sm transition-colors hover:bg-slate-50 dark:hover:bg-slate-800"
+              @click="opt.click"
+            >
+              <UIcon :name="opt.icon" class="size-5 mt-0.5 shrink-0 text-slate-500 dark:text-slate-400" />
+              <div class="space-y-0.5">
+                <span class="block font-semibold text-slate-800 dark:text-slate-100">{{ opt.label }}</span>
+                <span class="block text-xs text-slate-400 dark:text-slate-500 leading-normal">{{ opt.description }}</span>
+              </div>
+            </button>
+          </div>
+        </template>
+      </UPopover>
     </div>
 
     <div class="ml-auto flex items-center gap-1 sm:gap-2">

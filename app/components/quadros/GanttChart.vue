@@ -1,8 +1,58 @@
 <script setup lang="ts">
-import type { TimelineBarColor } from '~/types'
+import type { TimelineBarColor, Task } from '~/types'
+import { computed } from 'vue'
+
+const props = defineProps<{
+  tasks?: Task[]
+}>()
 
 const { months, totalDays } = useTimelineRuler()
 const { groups } = useTimelineData()
+
+const chartGroups = computed(() => {
+  if (props.tasks) {
+    const groupsMap: Record<string, any[]> = {}
+    
+    props.tasks.forEach(task => {
+      const statusLabel = task.status === 'planejado' ? 'A Planejar' 
+                          : task.status === 'em-andamento' ? 'Em Desenvolvimento'
+                          : task.status === 'em-revisao' ? 'Em Revisão'
+                          : task.status === 'concluido' ? 'Concluídas'
+                          : 'Outros'
+                          
+      if (!groupsMap[statusLabel]) {
+        groupsMap[statusLabel] = []
+      }
+      
+      const charSum = task.title.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
+      const startIndex = (charSum % 18) + 2
+      const span = (charSum % 6) + 4
+      
+      const priorityColorMap: Record<string, string> = {
+        critica: 'pink',
+        alta: 'violet',
+        media: 'blue',
+        baixa: 'neutral'
+      }
+      const color = priorityColorMap[task.priority] || 'neutral'
+      
+      groupsMap[statusLabel].push({
+        id: task.id,
+        title: task.title,
+        assignee: task.assignees?.[0] || { id: 'u-costa', name: 'Costa Neves', avatar: 'https://i.pravatar.cc/80?img=47' },
+        startIndex,
+        span,
+        color
+      })
+    })
+    
+    return Object.entries(groupsMap).map(([title, tasks]) => ({
+      title,
+      tasks
+    }))
+  }
+  return groups
+})
 
 const zoom = ref<'Dias' | 'Semana' | 'Meses'>('Semana')
 const DAY_WIDTH = 30
@@ -90,7 +140,7 @@ const timelineWidth = computed(() => ({ width: `${totalDays * DAY_WIDTH}px` }))
         </div>
 
         <!-- Linhas -->
-        <template v-for="(group, gi) in groups" :key="gi">
+        <template v-for="(group, gi) in chartGroups" :key="gi">
           <div
             v-if="group.title"
             class="flex items-center gap-1 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200"

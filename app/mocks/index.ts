@@ -42,6 +42,7 @@ const PEOPLE: Record<string, UserSummary> = {
   helena: { id: 'helena', name: 'Helena Dias', avatar: 'https://i.pravatar.cc/48?img=44' },
   igor: { id: 'igor', name: 'Igor Pinto', avatar: 'https://i.pravatar.cc/48?img=15' },
   dimitri: { id: 'dimitri', name: 'Dimitri Brito', avatar: 'https://i.pravatar.cc/48?img=13' },
+  costa: { id: 'u-costa', name: 'Costa Neves', avatar: 'https://i.pravatar.cc/80?img=47' },
 }
 
 /* ----------------------------------------------------------- Usuário/conta */
@@ -288,7 +289,7 @@ export const mockTasks: Task[] = [
     dueDate: '25 Mai',
     projectProgress: 45,
     progress: 45,
-    assignees: [PEOPLE.ana, PEOPLE.beatriz, PEOPLE.cecilia],
+    assignees: [PEOPLE.costa, PEOPLE.ana, PEOPLE.beatriz, PEOPLE.cecilia],
   },
   {
     id: 't2',
@@ -300,7 +301,7 @@ export const mockTasks: Task[] = [
     dueDate: '16 Jun',
     projectProgress: 45,
     progress: 75,
-    assignees: [PEOPLE.daniel, PEOPLE.eduardo, PEOPLE.fernanda],
+    assignees: [PEOPLE.costa, PEOPLE.daniel, PEOPLE.eduardo, PEOPLE.fernanda],
   },
   {
     id: 't3',
@@ -312,7 +313,7 @@ export const mockTasks: Task[] = [
     dueDate: '25 Mai',
     projectProgress: 62,
     progress: 45,
-    assignees: [PEOPLE.gabriel, PEOPLE.helena, PEOPLE.igor],
+    assignees: [PEOPLE.costa, PEOPLE.gabriel, PEOPLE.helena, PEOPLE.igor],
   },
   {
     id: 't4',
@@ -324,7 +325,7 @@ export const mockTasks: Task[] = [
     dueDate: '16 Jun',
     projectProgress: 77,
     progress: 75,
-    assignees: [PEOPLE.beatriz, PEOPLE.daniel, PEOPLE.gabriel],
+    assignees: [PEOPLE.costa, PEOPLE.beatriz, PEOPLE.daniel, PEOPLE.gabriel],
   },
   {
     id: 't5',
@@ -336,7 +337,7 @@ export const mockTasks: Task[] = [
     dueDate: '8 Jun',
     projectProgress: 45,
     progress: 49,
-    assignees: [PEOPLE.ana, PEOPLE.eduardo, PEOPLE.helena],
+    assignees: [PEOPLE.costa, PEOPLE.ana, PEOPLE.eduardo],
   },
   {
     id: 't6',
@@ -349,20 +350,20 @@ export const mockTasks: Task[] = [
     projectProgress: 0,
     notStarted: true,
     progress: 0,
-    assignees: [PEOPLE.cecilia, PEOPLE.fernanda, PEOPLE.igor],
+    assignees: [PEOPLE.costa, PEOPLE.cecilia, PEOPLE.fernanda, PEOPLE.igor],
   },
   {
     id: 't7',
     title: 'Otimizar consultas do banco',
     priority: 'baixa',
     status: 'planejado',
-    project: 'Data Warehouse',
+    project: 'Sistema de Logística',
     team: 'Backend',
     dueDate: '27 Jul',
     projectProgress: 0,
     notStarted: true,
     progress: 0,
-    assignees: [PEOPLE.beatriz, PEOPLE.eduardo, PEOPLE.gabriel],
+    assignees: [PEOPLE.costa, PEOPLE.beatriz, PEOPLE.eduardo, PEOPLE.gabriel],
   },
   {
     id: 't8',
@@ -373,7 +374,7 @@ export const mockTasks: Task[] = [
     team: 'DevOps',
     dueDate: '12 Mai',
     progress: 100,
-    assignees: [PEOPLE.daniel, PEOPLE.gabriel],
+    assignees: [PEOPLE.costa, PEOPLE.daniel, PEOPLE.gabriel],
   },
   {
     id: 't9',
@@ -384,7 +385,7 @@ export const mockTasks: Task[] = [
     team: 'Frontend',
     dueDate: '05 Mai',
     progress: 100,
-    assignees: [PEOPLE.beatriz, PEOPLE.helena],
+    assignees: [PEOPLE.costa, PEOPLE.beatriz, PEOPLE.helena],
   },
   {
     id: 't10',
@@ -395,7 +396,7 @@ export const mockTasks: Task[] = [
     team: 'Backend',
     dueDate: '28 Abr',
     progress: 100,
-    assignees: [PEOPLE.ana, PEOPLE.igor, PEOPLE.eduardo],
+    assignees: [PEOPLE.costa, PEOPLE.ana, PEOPLE.igor, PEOPLE.eduardo],
   },
   {
     id: 't11',
@@ -406,7 +407,7 @@ export const mockTasks: Task[] = [
     team: 'DevOps',
     dueDate: '20 Abr',
     progress: 100,
-    assignees: [PEOPLE.cecilia, PEOPLE.fernanda],
+    assignees: [PEOPLE.costa, PEOPLE.cecilia, PEOPLE.fernanda],
   },
   {
     id: 't12',
@@ -418,7 +419,7 @@ export const mockTasks: Task[] = [
     dueDate: '15 Abr',
     progress: 30,
     note: 'Atrasada há 6 semanas',
-    assignees: [PEOPLE.daniel, PEOPLE.igor],
+    assignees: [PEOPLE.costa, PEOPLE.daniel, PEOPLE.igor],
   },
   {
     id: 't13',
@@ -430,7 +431,7 @@ export const mockTasks: Task[] = [
     dueDate: '02 Mai',
     progress: 55,
     note: 'Atrasada há 4 semanas',
-    assignees: [PEOPLE.ana, PEOPLE.eduardo],
+    assignees: [PEOPLE.costa, PEOPLE.ana, PEOPLE.eduardo],
   },
   {
     id: 't14',
@@ -442,19 +443,19 @@ export const mockTasks: Task[] = [
     dueDate: '08 Mai',
     progress: 40,
     note: 'Atrasada há 3 semanas',
-    assignees: [PEOPLE.gabriel, PEOPLE.helena],
+    assignees: [PEOPLE.costa, PEOPLE.gabriel, PEOPLE.helena],
   },
   {
     id: 't15',
     title: 'Ajustar acessibilidade do formulário',
     priority: 'baixa',
     status: 'atrasado',
-    project: 'Data Warehouse',
+    project: 'Plataforma MEI',
     team: 'Frontend',
     dueDate: '19 Mai',
     progress: 15,
     note: 'Atrasada há 1 semana',
-    assignees: [PEOPLE.beatriz, PEOPLE.cecilia],
+    assignees: [PEOPLE.costa, PEOPLE.beatriz, PEOPLE.cecilia],
   },
   /* Tarefas pessoais (sem projeto, equipe ou progresso) */
   {
