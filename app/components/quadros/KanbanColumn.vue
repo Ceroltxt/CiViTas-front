@@ -5,6 +5,9 @@ const props = defineProps<{ status: StatusKey; tasks: Task[] }>()
 
 const meta = computed(() => useStatusMeta(props.status))
 
+const currentUser = useCurrentUser()
+const isColaborador = computed(() => currentUser.role === 'Colaborador')
+
 /** Fundo da área atrás dos cartões (não dos cards em si). */
 const COLUMN_TRACK: Record<StatusKey, string> = {
   planejado: 'bg-blue-100/70 dark:bg-blue-950/25',
@@ -55,6 +58,7 @@ const trackClass = computed(() => COLUMN_TRACK[props.status])
     </div>
 
     <button
+      v-if="!isColaborador"
       type="button"
       class="mt-3 flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-slate-300 py-2.5 text-sm font-medium text-slate-500 transition-colors hover:border-violet-300 hover:text-violet-600 dark:border-slate-700"
     >
