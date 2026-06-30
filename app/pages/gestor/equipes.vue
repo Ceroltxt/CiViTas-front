@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { id } from '@nuxt/ui/runtime/locale/index.js';
+import type { truncate } from 'node:fs';
 import { title } from 'node:process';
 
 definePageMeta({ sidebarWidget: 'none' })
@@ -155,6 +156,60 @@ watch(selectedTeam, (team) => {
   selectedTask.value = team.tasks[0]?.name ?? ''
 }, {immediate: true})
 
+//CRIANDO EQUIPE
+const isCreateTeamModalOpen = ref(false)
+
+const newTeam = reactive({
+  name: '',
+  leader: '',
+  members: [] as string[]
+})
+
+const colaboradores =[
+  'Costa Neves',
+  'Bea Ribeiro',
+  'Carolzinha Ramiro',
+  'Dimi Jow',
+  'Danizin Macena',
+  'Ana Carol',
+  'Ceci Hub Pai'
+]
+
+
+//DELETANDO AS EQUIPES
+const isDeleteTeamModalOpen = ref(false)
+const deleteConfirmation = ref('')
+
+//EDITANDO AS EQUIPES
+const isEditTeamModalOpen = ref(false)
+
+const editTeam = reactive({
+  name: '',
+  leader: '',
+  members: [] as string[]
+})
+
+function openEditTeamModal(){
+  if (!selectedTeam.value) return
+
+  editTeam.name = selectedTeam.value.name
+  editTeam.leader = selectedTeam.value.leader
+  editTeam.members = selectedTeam.value.integrantes.map(member => member.name)
+
+  isEditTeamModalOpen.value = true
+}
+
+//EDITAR NOME DA EQUIPE
+const isRenameTeamModalOpen = ref(false)
+const teamName = ref('')
+
+function openRenameTeamModal(){
+  if (!selectedTeam.value) return
+
+  teamName.value = selectedTeam.value.name
+  isRenameTeamModalOpen.value = true
+}
+
 </script>
 
 <template>
@@ -170,6 +225,7 @@ watch(selectedTeam, (team) => {
       </p>
     </div>
 
+    <!--CARD ESQUERDO-->
     <!--Aqui you selecionará a equipe na qual deseja visualizar as informações (aquele array gigantesco do script)-->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
       
@@ -191,8 +247,9 @@ watch(selectedTeam, (team) => {
 
           <UButton
             icon="i-heroicons-plus"
-           color="secondary"
+            color="secondary"
             class="h-9"
+            @click="isCreateTeamModalOpen = true"
           >
             Equipe
           </UButton>
@@ -226,6 +283,7 @@ watch(selectedTeam, (team) => {
         <button
           type="button"
           class="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-violet-500 p-3 text-sm font-medium text-violet-600 transition hover:bg-violet-50 dark:hover:bg-violet-950/20"
+          @click="isCreateTeamModalOpen = true"
         >
           <UIcon 
             name="i-heroicons-plus"
@@ -236,6 +294,8 @@ watch(selectedTeam, (team) => {
 
       </UCard>
 
+
+      <!--CARD DIREITO-->
       <!--E é aqui que visualizamos as informações de cada equipe-->
       <UCard class="h-full lg:col-span-8">
         <template #header>
@@ -246,6 +306,7 @@ watch(selectedTeam, (team) => {
               <UIcon
                 name="i-heroicons-pencil-square"
                 class="size-5 text-violet-500"
+                @click="openRenameTeamModal"
               />
             </h2>
             
@@ -254,6 +315,7 @@ watch(selectedTeam, (team) => {
             <button
               type="button"
               class="flex items-center gap-2 rounded-lg border border-dashed border-[#1D1D1D] px-3 py-2 text-sm font-medium text-[1D1D1D] transition hover:bg-slate-50"
+              @click="openEditTeamModal"
             >
               <UIcon
                 name="i-heroicons-pencil-square"
@@ -265,6 +327,7 @@ watch(selectedTeam, (team) => {
             <button
               type="button"
               class="flex items-center gap-2 rounded-lg border border-dashed border-red-500 px-3 py-2 text-sm font-medium text-red-500 transition hover:bg-red-50"
+              @click="isDeleteTeamModalOpen = true"
             >
               <UIcon
                 name="i-heroicons-trash"
@@ -478,4 +541,296 @@ watch(selectedTeam, (team) => {
     </div>
 
   </div>
+
+  <!--Modal que vou mudar posteriormente para component = EQUIPES -->
+  <UModal
+    v-model:open="isCreateTeamModalOpen"
+    title="Nova Equipe"
+    description="Preencha as informações da equipe."
+  >
+    <template #body>
+      <div class="space-y-5">
+
+        <UFormField
+          label="Nome da equipe"
+          required
+        >
+          <UInput
+            v-model="newTeam.name"
+            placeholder="Ex.: Front-End"
+          />
+        </UFormField>
+
+        <UFormField
+          label="Líder"
+          required
+        >
+          <USelectMenu
+            v-model="newTeam.leader"
+            :items="colaboradores"
+            placeholder="Selecione um líder"
+          />
+        </UFormField>
+
+        <UFormField label="Membros">
+          <USelectMenu
+            v-model="newTeam.members"
+            :items="colaboradores"
+            multiple
+            searchable
+            placeholder="Selecione os membros"
+          />
+        </UFormField>
+
+      </div>
+    </template>
+
+    <template #footer>
+      <div class="flex justify-end gap-3">
+
+        <UButton
+          color="error"
+          variant="outline"
+          class="border-dashed"
+          @click="isCreateTeamModalOpen = false"
+        >
+          Cancelar
+        </UButton>
+        <UButton
+          color="secondary"
+        >
+          Criar Equipe
+        </UButton>
+
+      </div>
+    </template>
+
+  </UModal>
+
+  <!--Modal que vou mudar posteriormente para component = DELETAR EQUIPE -->
+  <UModal
+    v-model:open="isDeleteTeamModalOpen"
+    title="Excluir Equipe"
+  >
+  <template #body>
+
+    <UAlert
+      color="error"
+      vaariant="soft"
+      icon="i-heroicons-exclamation-triangle"
+      title="Esta ação é permanente."
+      description="Depois que a equipe for excluída, não será possível recuperá-la"
+    />
+    <div class="mt-6 space-y-4">
+
+      <div>
+        <p class="text-sm text-slate-500">
+          Equipe
+        </p>
+
+        <p class="font-semibold">
+          {{ selectedTeam?.name }} 
+        </p>
+      </div>
+
+      <div>
+        <p class="text-sm text-slate-500">
+          Líder
+        </p>
+
+        <p class="font-semibold">
+          {{ selectedTeam?.leader }}
+        </p>
+      </div>
+
+      <div>
+        <p class="text-sm text-slate-500">
+          Membros
+        </p>
+
+        <p class="font-semibold">
+          {{ selectedTeam?.members }} membros
+        </p>
+      </div>
+
+      <div>
+        <p class="text-sm text-slate-500">
+          Tarefas
+        </p>
+
+        <p class="font-semibold">
+          {{ selectedTeam?.projects }} tarefas
+        </p>
+      </div>
+
+      <UDivider />
+
+      <UFormField
+        label='Digite "excluir" para confirmar'
+      >
+        <UInput
+          v-model="deleteConfirmation"
+          placeholder="excluir"
+        />
+      </UFormField>
+
+    </div>
+  </template>
+
+  <template #footer>
+    <div class="flex justify-end gap-3">
+
+      <UButton
+        color="error"
+        variant="outline"
+        class="border-dashed"
+        @click="isCreateTeamModalOpen = false"
+      >
+        Cancelar
+      </UButton>
+      <UButton
+        color="error"
+        :disabled="deleteConfirmation !== 'excluir'"
+      >
+        Excluir Equipe
+      </UButton>
+
+    </div>
+  </template>
+
+  </UModal>
+
+  <!--Modal que vou mudar posteriormente para component = EDITAR EQUIPE -->
+  <UModal
+    v-model:open="isEditTeamModalOpen"
+    title="Editar Equipe"
+    description="Atualize as informações da equipe."
+  >
+
+    <template #body>
+      <div class="mb-6 rounded-lg border border-slate-200 bg-slate-50 p-4">
+
+        <h3 class="font-semibold">
+          {{ selectedTeam?.name }}
+        </h3>
+
+        <p class="mt-1 text-sm text-slate-500">
+          {{ selectedTeam?.members }} colaboradores •
+          {{ selectedTeam?.projects }} projetos •
+          Criada em {{ selectedTeam?.createdAt }}
+        </p>
+
+      </div>
+
+      <div class="space-y-5">
+
+        <UFormField
+          label="Nome da equipe"
+          required
+        >
+          <UInput
+            v-model="editTeam.name"
+          />
+        </UFormField>
+
+        <UFormField
+          label="Líder"
+          required
+        >
+          <USelectMenu
+            v-model="editTeam.leader"
+            :items="colaboradores"
+          />
+        </UFormField>
+
+        <UFormField label="Membros">
+
+          <USelectMenu
+            v-model="editTeam.members"
+            :items="colaboradores"
+            multiple
+            searchable
+            placeholder="Selecione os membros"
+          />
+
+        </UFormField>
+
+      </div>
+    </template>
+
+    <template #footer>
+
+      <div class="flex justify-end gap-3">
+
+        <UButton
+          variant="ghost"
+          class="border border-dashed border-red-500 text-red-500 hover:bg-red-50"
+          @click="isEditTeamModalOpen = false"
+        >
+          Cancelar
+        </UButton>
+        <UButton
+          color="secondary"
+        >
+          <UIcon
+            name="i-heroicons-check"
+            class="size-4"
+          />
+
+          Salvar Alterações
+        </UButton>
+
+      </div>
+    </template>
+
+  </UModal>
+
+    <!--Modal que vou mudar posteriormente para component = EDITAR NOME DA EQUIPE -->
+  <UModal
+    v-model:open="isRenameTeamModalOpen"
+    title="Renomear Equipe"
+    description="Altere apenas o nome da equipe."
+  >
+    <template #body>
+      <div class="space-y-5">
+
+        <UFormField
+          label="Nome da equipe"
+          required
+        >
+          <UInput
+            v-model="teamName"
+            placeholder="Digite o novo nome"
+            autofocus
+          />
+        </UFormField>
+
+      </div>
+    </template>
+
+    <template #footer>
+      <div class="flex justify-end gap-3">
+
+        <UButton
+          variant="ghost"
+          class="border border-dashed border-red-500 text-red-500 hover:bg-red-50"
+          @click="isRenameTeamModalOpen = false"
+        >
+          Cancelar
+        </UButton>
+        <UButton
+          color="secondary"
+        >
+          <UIcon
+            name="i-heroicons-pencil-square"
+            class="size-4"
+          />
+          Renomear
+        </UButton>
+
+      </div>
+    </template>
+
+  </UModal>
+
 </template>
