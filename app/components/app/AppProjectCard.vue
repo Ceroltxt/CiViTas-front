@@ -1,71 +1,41 @@
 <script setup lang="ts">
-const projectDetail = useProjectDetail()
+const userProjects = useUserProjects()
+const defaultDetail = useProjectDetail()
 const detailOpen = ref(false)
 
-const projects = [
-  {
-    name: 'Plataforma E-commerce',
-    deadline: '25 de Dez. 2026',
-    progress: 90,
-    detail: projectDetail,
-  },
-  {
-    name: 'Civitas Mobile',
-    deadline: '15 de Set. 2026',
-    progress: 77,
+const projects = computed(() => {
+  if (!userProjects || userProjects.length === 0) return []
+  return userProjects.map(p => ({
+    name: p.name,
+    deadline: 'Indefinido',
+    progress: p.progress,
     detail: {
-      name: 'Civitas Mobile',
-      deadline: '15 de Set. 2026',
-      progress: 77,
-      description: 'Aplicativo mobile para colaboradores em campo.',
-      daysRemaining: 86,
-      totalTasks: 32,
-      priority: 'media',
-      taskStatus: { completed: 25, inProgress: 5, pending: 2 },
-      progressTimeline: [
-        { month: 'Mar', value: 15 },
-        { month: 'Mai', value: 40 },
-        { month: 'Jul', value: 65 },
-        { month: 'Set', value: 77 },
-      ],
-    },
-  },
-  {
-    name: 'Plataforma MEI',
-    deadline: '30 de Out. 2026',
-    progress: 45,
-    detail: {
-      name: 'Plataforma MEI',
-      deadline: '30 de Out. 2026',
-      progress: 45,
-      description: 'Plataforma de gestão simplificada para microempreendedores individuais.',
-      daysRemaining: 131,
-      totalTasks: 20,
-      priority: 'media',
-      taskStatus: { completed: 9, inProgress: 8, pending: 3 },
-      progressTimeline: [
-        { month: 'Jun', value: 10 },
-        { month: 'Ago', value: 30 },
-        { month: 'Out', value: 45 },
-      ],
-    },
-  },
-]
+      ...defaultDetail,
+      name: p.name,
+      progress: p.progress,
+    }
+  }))
+})
 
 const currentIndex = ref(0)
-const currentProj = computed(() => projects[currentIndex.value])
+const currentProj = computed(() => {
+  if (projects.value.length === 0) return null
+  return projects.value[currentIndex.value]
+})
 
 function nextProject() {
-  currentIndex.value = (currentIndex.value + 1) % projects.length
+  if (projects.value.length === 0) return
+  currentIndex.value = (currentIndex.value + 1) % projects.value.length
 }
 
 function prevProject() {
-  currentIndex.value = (currentIndex.value - 1 + projects.length) % projects.length
+  if (projects.value.length === 0) return
+  currentIndex.value = (currentIndex.value - 1 + projects.value.length) % projects.value.length
 }
 </script>
 
 <template>
-  <div class="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+  <div v-if="currentProj" class="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
     <div class="flex items-center justify-between">
       <p class="text-xs text-slate-400">Projeto atual</p>
       <div class="flex items-center gap-1">

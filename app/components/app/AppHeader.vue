@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { brandGradient } from '~/utils/tw'
+import type { Task } from '~/types'
 
 const emit = defineEmits<{ openMenu: [] }>()
 
@@ -7,6 +8,32 @@ const user = useCurrentUser()
 const { appRole } = useAppNavigation()
 const colorMode = useColorMode()
 const search = ref('')
+const searchOpen = ref(false)
+const tasks = useTasksData()
+
+const taskSearchResults = computed(() => {
+  const term = search.value.trim().toLowerCase()
+  if (!term) return []
+
+  return tasks.filter((task) => {
+    // Colaboradores só encontram tarefas próprias; as demais ficam visíveis
+    // apenas na tela consolidada, em modo de leitura.
+    if (appRole.value === 'colaborador' && !task.personal && !task.assignees.some((assignee) => assignee.id === user.id)) return false
+    const searchable = [
+      task.title,
+      task.project,
+      task.team,
+      ...task.assignees.map((assignee) => assignee.name),
+    ].filter(Boolean).join(' ').toLowerCase()
+    return searchable.includes(term)
+  }).slice(0, 7)
+})
+
+function openTaskFromSearch(task: Task) {
+  search.value = ''
+  searchOpen.value = false
+  navigateTo(`/colaborador/tarefa/${task.id}`)
+}
 
 const { items: notifications, unreadCount } = useNotifications()
 const helpOpen = ref(false)
@@ -35,7 +62,9 @@ const createOptions = computed(() => {
         label: 'Criar tarefa pessoal',
         icon: 'i-heroicons-user',
         description: 'Crie uma tarefa privada para organizar sua rotina pessoal.',
-        click: () => alert('Abertura de nova tarefa pessoal!')
+        click: () => {
+          useRouter().push('/colaborador/minhas-tarefas?aba=pessoais&nova_tarefa=1')
+        }
       }
     ]
   } else if (role === 'Gestor') {
@@ -93,14 +122,17 @@ const createOptions = computed(() => {
     />
 
     <!-- Busca + Criar -->
-    <div class="flex w-full max-w-xl items-center">
+    <div class="relative flex w-full max-w-xl items-center">
       <UInput
         v-model="search"
         icon="i-heroicons-magnifying-glass"
-        placeholder="Pesquisar"
+        placeholder="Buscar tarefas"
         size="lg"
         :ui="{ root: 'flex-1', base: 'rounded-l-full rounded-r-none bg-slate-50 ring-slate-200' }"
-        aria-label="Pesquisar"
+        aria-label="Buscar tarefas"
+        @focus="searchOpen = true"
+        @blur="searchOpen = false"
+        @keydown.esc="searchOpen = false"
       />
       <UPopover>
         <UButton
@@ -126,6 +158,35 @@ const createOptions = computed(() => {
           </div>
         </template>
       </UPopover>
+
+      <div
+        v-if="searchOpen && search.trim()"
+        class="absolute left-0 top-[calc(100%+0.5rem)] z-50 w-full overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl shadow-slate-950/35"
+      >
+        <div class="flex items-center justify-between border-b border-slate-800 px-4 py-3">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Tarefas encontradas</span>
+          <span class="text-xs text-slate-500">{{ taskSearchResults.length }}</span>
+        </div>
+        <div v-if="taskSearchResults.length" class="max-h-80 overflow-y-auto p-1.5">
+          <button
+            v-for="task in taskSearchResults"
+            :key="task.id"
+            type="button"
+            class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-slate-800"
+            @mousedown.prevent="openTaskFromSearch(task)"
+          >
+            <span class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/15 text-violet-300">
+              <UIcon name="i-heroicons-clipboard-document-list" class="size-4" />
+            </span>
+            <span class="min-w-0 flex-1">
+              <span class="block truncate text-sm font-semibold text-slate-100">{{ task.title }}</span>
+              <span class="block truncate text-xs text-slate-400">{{ task.project || (task.personal ? 'Tarefa pessoal' : 'Sem projeto') }}</span>
+            </span>
+            <UiStatusBadge :status="task.status" />
+          </button>
+        </div>
+        <p v-else class="px-4 py-8 text-center text-sm text-slate-400">Nenhuma tarefa encontrada.</p>
+      </div>
     </div>
 
     <div class="ml-auto flex items-center gap-1 sm:gap-2">

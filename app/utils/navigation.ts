@@ -7,8 +7,8 @@ const NAV_BY_ROLE: Record<AppRole, NavItem[]> = {
   colaborador: [
     { label: 'Início', icon: 'i-heroicons-home', to: '/colaborador' },
     { label: 'Minhas Tarefas', icon: 'i-heroicons-clipboard-document-list', to: '/colaborador/minhas-tarefas' },
-    { label: 'Quadros', icon: 'i-heroicons-squares-2x2', to: '/colaborador/quadros' },
-    { label: 'Calendário', icon: 'i-heroicons-calendar-days', to: '/colaborador/calendario' },
+    { label: 'Visualização de tarefas', icon: 'i-heroicons-view-columns', to: '/colaborador/quadros' },
+    { label: 'Ranking', icon: 'i-heroicons-trophy', to: '/colaborador/ranking' },
     { label: 'Relatórios', icon: 'i-heroicons-document-chart-bar', to: '/colaborador/relatorios' },
     { label: 'Configurações', icon: 'i-heroicons-cog-6-tooth', to: '/colaborador/configuracoes' },
   ],

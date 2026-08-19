@@ -21,7 +21,9 @@ import type {
   ProjectDetail,
   ProjectProgress,
   RankingEntry,
+  Subtask,
   Task,
+  TaskAuditEntry,
   TeamDetail,
   TeamProject,
   TeamRecentTask,
@@ -53,12 +55,15 @@ export const navItemSchema = v.object({
 export const prioritySchema = v.enum('critica', 'alta', 'media', 'baixa')
 
 export const statusSchema = v.enum(
-  'planejado',
+  'a-fazer',
   'em-andamento',
   'em-revisao',
+  'validar',
   'bloqueado',
   'atrasado',
   'concluido',
+  'pausado',
+  'cancelado',
 )
 
 export const projectDetailSchema = v.object({
@@ -80,6 +85,22 @@ export const projectDetailSchema = v.object({
   })),
 }) satisfies Schema<ProjectDetail>
 
+export const subtaskSchema = v.object({
+  id: v.string(),
+  title: v.string(),
+  completed: v.boolean(),
+  assignee: v.optional(userSummarySchema),
+  dueDate: v.optional(v.string()),
+}) satisfies Schema<Subtask>
+
+export const taskAuditEntrySchema = v.object({
+  id: v.string(),
+  icon: v.string(),
+  message: v.string(),
+  user: v.string(),
+  timestamp: v.string(),
+}) satisfies Schema<TaskAuditEntry>
+
 export const taskSchema = v.object({
   id: v.string(),
   title: v.string(),
@@ -94,6 +115,16 @@ export const taskSchema = v.object({
   note: v.optional(v.string()),
   personal: v.optional(v.boolean()),
   notStarted: v.optional(v.boolean()),
+  subtasks: v.optional(v.array(subtaskSchema)),
+  auditLog: v.optional(v.array(taskAuditEntrySchema)),
+  stars: v.optional(v.number()),
+  description: v.optional(v.string()),
+  startDate: v.optional(v.string()),
+  type: v.optional(v.string()),
+  complexity: v.optional(v.string()),
+  category: v.optional(v.string()),
+  program: v.optional(v.string()),
+  completedDate: v.optional(v.string()),
 }) satisfies Schema<Task>
 
 export const dashboardMetricSchema = v.object({
@@ -112,10 +143,18 @@ export const agendaItemSchema = v.object({
   eventId: v.optional(v.string()),
 }) satisfies Schema<AgendaItem>
 
+export const userStatsSchema = v.object({
+  completedBeforeDeadline: v.number(),
+  completedOnTime: v.number(),
+  completedLate: v.number(),
+  reopened: v.number(),
+})
+
 export const rankingEntrySchema = v.object({
   position: v.number(),
   user: userSummarySchema,
-  points: v.number(),
+  stars: v.number(),
+  stats: v.optional(userStatsSchema)
 }) satisfies Schema<RankingEntry>
 
 export const projectProgressSchema = v.object({

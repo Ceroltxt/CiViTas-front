@@ -14,7 +14,7 @@ const chartGroups = computed(() => {
     const groupsMap: Record<string, any[]> = {}
     
     props.tasks.forEach(task => {
-      const statusLabel = task.status === 'planejado' ? 'A Planejar' 
+      const statusLabel = task.status === 'a-fazer' ? 'A Fazer' 
                           : task.status === 'em-andamento' ? 'Em Desenvolvimento'
                           : task.status === 'em-revisao' ? 'Em Revisão'
                           : task.status === 'concluido' ? 'Concluídas'

@@ -44,7 +44,7 @@ const selectedProjectTasks = computed(() => {
         id: 'ecom-add-1',
         title: 'Design responsivo da vitrine de produtos',
         priority: 'alta',
-        status: 'planejado',
+        status: 'a-fazer',
         dueDate: '12 Jul',
         assignees: [{ id: 'beatriz', name: 'Beatriz Ribeiro', avatar: 'https://i.pravatar.cc/48?img=20' }]
       },
@@ -86,7 +86,7 @@ const selectedProjectTasks = computed(() => {
         id: 'ecom-add-6',
         title: 'Relatório de vendas por região',
         priority: 'baixa',
-        status: 'planejado',
+        status: 'a-fazer',
         dueDate: '25 Jul',
         assignees: [{ id: 'eduardo', name: 'Eduardo Lima', avatar: 'https://i.pravatar.cc/48?img=33' }]
       },
@@ -104,7 +104,7 @@ const selectedProjectTasks = computed(() => {
         id: 'mob-add-1',
         title: 'Desenvolver splash screen e onboarding do app',
         priority: 'media',
-        status: 'planejado',
+        status: 'a-fazer',
         dueDate: '08 Jul',
         assignees: [{ id: 'helena', name: 'Helena Dias', avatar: 'https://i.pravatar.cc/48?img=44' }]
       },
@@ -183,7 +183,7 @@ const selectedProjectTasks = computed(() => {
         id: 'mei-add-1',
         title: 'Emissão automatizada de guias DAS',
         priority: 'critica',
-        status: 'planejado',
+        status: 'a-fazer',
         dueDate: '22 Jul',
         assignees: [{ id: 'daniel', name: 'Daniel Macena', avatar: 'https://i.pravatar.cc/48?img=12' }]
       },
@@ -216,7 +216,7 @@ const selectedProjectTasks = computed(() => {
         id: 'mei-add-5',
         title: 'Suporte a parcelamento de débitos MEI',
         priority: 'alta',
-        status: 'planejado',
+        status: 'a-fazer',
         dueDate: '12 Ago',
         assignees: [{ id: 'ana', name: 'Ana Carol', avatar: 'https://i.pravatar.cc/48?img=9' }]
       },
@@ -233,7 +233,7 @@ const selectedProjectTasks = computed(() => {
         id: 'mei-add-7',
         title: 'Calculadora de faturamento mensal do MEI',
         priority: 'media',
-        status: 'planejado',
+        status: 'a-fazer',
         dueDate: '05 Ago',
         assignees: [{ id: 'beatriz', name: 'Beatriz Ribeiro', avatar: 'https://i.pravatar.cc/48?img=20' }]
       }
@@ -243,7 +243,7 @@ const selectedProjectTasks = computed(() => {
         id: 'corp-add-1',
         title: 'Painel de relatórios consolidados em PDF',
         priority: 'alta',
-        status: 'planejado',
+        status: 'a-fazer',
         dueDate: '15 Jul',
         assignees: [{ id: 'ana', name: 'Ana Carol', avatar: 'https://i.pravatar.cc/48?img=9' }]
       },
@@ -276,7 +276,7 @@ const selectedProjectTasks = computed(() => {
         id: 'corp-add-5',
         title: 'Exportação de logs para auditoria de compliance',
         priority: 'alta',
-        status: 'planejado',
+        status: 'a-fazer',
         dueDate: '30 Jul',
         assignees: [{ id: 'cecilia', name: 'Cecília Neves', avatar: 'https://i.pravatar.cc/48?img=25' }]
       },
@@ -339,7 +339,7 @@ const selectedProjectTasks = computed(() => {
         id: 'log-add-1',
         title: 'Roteirização inteligente de frotas de entrega',
         priority: 'critica',
-        status: 'planejado',
+        status: 'a-fazer',
         dueDate: '28 Jul',
         assignees: [{ id: 'igor', name: 'Igor Pinto', avatar: 'https://i.pravatar.cc/48?img=15' }]
       },
@@ -356,7 +356,7 @@ const selectedProjectTasks = computed(() => {
         id: 'log-add-3',
         title: 'Integração com coletores de dados de código de barras',
         priority: 'media',
-        status: 'planejado',
+        status: 'a-fazer',
         dueDate: '24 Ago',
         assignees: [{ id: 'eduardo', name: 'Eduardo Lima', avatar: 'https://i.pravatar.cc/48?img=33' }]
       },
@@ -372,7 +372,7 @@ const selectedProjectTasks = computed(() => {
         id: 'log-add-5',
         title: 'Notificações SMS/WhatsApp de status de entrega para clientes',
         priority: 'alta',
-        status: 'planejado',
+        status: 'a-fazer',
         dueDate: '10 Ago',
         assignees: [{ id: 'fernanda', name: 'Fernanda Souza', avatar: 'https://i.pravatar.cc/48?img=47' }]
       },
@@ -380,7 +380,7 @@ const selectedProjectTasks = computed(() => {
         id: 'log-add-6',
         title: 'Cálculo de pedágios automáticos na rota',
         priority: 'media',
-        status: 'planejado',
+        status: 'a-fazer',
         dueDate: '15 Ago',
         assignees: [{ id: 'daniel', name: 'Daniel Macena', avatar: 'https://i.pravatar.cc/48?img=12' }]
       },
@@ -407,7 +407,7 @@ const selectedProjectTasks = computed(() => {
         id: 'port-add-1',
         title: 'Área de download de notas fiscais e faturas',
         priority: 'alta',
-        status: 'planejado',
+        status: 'a-fazer',
         dueDate: '11 Jul',
         assignees: [{ id: 'cecilia', name: 'Cecília Neves', avatar: 'https://i.pravatar.cc/48?img=25' }]
       },
