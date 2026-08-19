@@ -40,12 +40,31 @@ export interface ProjectDetail extends CurrentProject {
 export type PriorityKey = 'critica' | 'alta' | 'media' | 'baixa'
 
 export type StatusKey =
-  | 'planejado'
+  | 'a-fazer'
   | 'em-andamento'
   | 'em-revisao'
+  | 'validar'
   | 'bloqueado'
   | 'atrasado'
   | 'concluido'
+  | 'pausado'
+  | 'cancelado'
+
+export interface Subtask {
+  id: string
+  title: string
+  completed: boolean
+  assignee?: UserSummary
+  dueDate?: string
+}
+
+export interface TaskAuditEntry {
+  id: string
+  icon: string
+  message: string
+  user: string
+  timestamp: string
+}
 
 export interface Task {
   id: string
@@ -65,6 +84,26 @@ export interface Task {
   personal?: boolean
   /** Indica tarefa atribuída ainda não iniciada (0% do projeto). */
   notStarted?: boolean
+  /** Subtarefas vinculadas a esta tarefa. */
+  subtasks?: Subtask[]
+  /** Histórico de auditoria da tarefa. */
+  auditLog?: TaskAuditEntry[]
+  /** Estrelas de avaliação (0–3). */
+  stars?: number
+  /** Descrição detalhada da tarefa. */
+  description?: string
+  /** Data de início da tarefa. */
+  startDate?: string
+  /** Tipo da tarefa (ex: Infraestrutura, Desenvolvimento). */
+  type?: string
+  /** Complexidade da tarefa (ex: Alta, Média, Baixa). */
+  complexity?: string
+  /** Categoria da tarefa (ex: Montagem, Revisão). */
+  category?: string
+  /** Programa ou evento associado (ex: Festa 2026). */
+  program?: string
+  /** Data em que a tarefa foi concluída (formato DD/MM/YYYY). */
+  completedDate?: string
 }
 
 export interface TimelineTask {
@@ -108,10 +147,18 @@ export interface AgendaItem {
   eventId?: string
 }
 
+export interface UserStats {
+  completedBeforeDeadline: number
+  completedOnTime: number
+  completedLate: number
+  reopened: number
+}
+
 export interface RankingEntry {
   position: number
   user: UserSummary
-  points: number
+  stars: number
+  stats?: UserStats
 }
 
 export interface ProjectProgress {

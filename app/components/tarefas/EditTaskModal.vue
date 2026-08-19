@@ -1,15 +1,16 @@
 <script setup lang="ts">
-import type { PriorityKey, Task, Subtask } from '~/types'
-import { addTask } from '~/composables/useTasksData'
+import type { PriorityKey, StatusKey, Task, Subtask } from '~/types'
+import { updatePersonalTask } from '~/composables/useTasksData'
 
 const open = defineModel<boolean>('open', { default: false })
-
-const emit = defineEmits<{ created: [] }>()
+const props = defineProps<{ taskToEdit: Task | null }>()
+const emit = defineEmits<{ updated: [] }>()
 
 /* ── Form state ── */
 const title = ref('')
 const description = ref('')
 const priority = ref<PriorityKey | ''>('')
+const status = ref<StatusKey>('a-fazer')
 const deadline = ref('')
 const subtaskInput = ref('')
 const subtasks = ref<string[]>([])
@@ -29,6 +30,8 @@ const todayISO = computed(() => {
   const d = new Date()
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 })
+
+const isDeadlineOverdue = computed(() => !!deadline.value && deadline.value < todayISO.value)
 
 const priorityPills: { value: PriorityKey; label: string; dot: string }[] = [
   { value: 'alta', label: 'Alta', dot: 'bg-rose-500' },
@@ -78,13 +81,48 @@ function onDragEnd() {
   draggedIndex.value = null
 }
 
+function unformatDate(formatted: string): string {
+  if (!formatted) return ''
+  const parts = formatted.split(' ')
+  if (parts.length < 2) return ''
+  const d = parts[0].padStart(2, '0')
+  const mStr = parts[1].slice(0, 3)
+  const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+  const mIndex = monthNames.indexOf(mStr)
+  if (mIndex === -1) return ''
+  const m = String(mIndex + 1).padStart(2, '0')
+  const y = new Date().getFullYear()
+  return `${y}-${m}-${d}`
+}
+
+watch(() => props.taskToEdit, (val) => {
+  if (val) {
+    title.value = val.title
+    description.value = val.description || ''
+    priority.value = val.priority
+    status.value = ['a-fazer', 'em-andamento', 'concluido'].includes(val.status) ? val.status : 'a-fazer'
+    deadline.value = val.dueDate ? unformatDate(val.dueDate) : ''
+    subtasks.value = val.subtasks?.map(s => s.title) || []
+  }
+}, { immediate: true })
+
 function resetForm() {
-  title.value = ''
-  description.value = ''
-  priority.value = ''
-  deadline.value = ''
+  if (props.taskToEdit) {
+    title.value = props.taskToEdit.title
+    description.value = props.taskToEdit.description || ''
+    priority.value = props.taskToEdit.priority
+    status.value = ['a-fazer', 'em-andamento', 'concluido'].includes(props.taskToEdit.status) ? props.taskToEdit.status : 'a-fazer'
+    deadline.value = props.taskToEdit.dueDate ? unformatDate(props.taskToEdit.dueDate) : ''
+    subtasks.value = props.taskToEdit.subtasks?.map(s => s.title) || []
+  } else {
+    title.value = ''
+    description.value = ''
+    priority.value = ''
+    status.value = 'a-fazer'
+    deadline.value = ''
+    subtasks.value = []
+  }
   subtaskInput.value = ''
-  subtasks.value = []
   notifyUpdates.value = true
   submitted.value = false
 }
@@ -100,53 +138,36 @@ function formatDate(dateStr: string): string {
   return `${d} ${['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'][Number(m) - 1]}`
 }
 
-function createTask() {
+function updateTask() {
   submitted.value = true
 
-  // Validate required fields
-  if (!title.value.trim() || !priority.value || !deadline.value || deadline.value < todayISO.value) {
+  if (!title.value.trim() || !priority.value || !deadline.value) {
     return
   }
+  if (!props.taskToEdit) return
 
-  const taskId = `tp-${Date.now()}`
+  const taskSubtasks: Subtask[] = subtasks.value.map((st, i) => {
+    // try to keep existing id if it matches
+    const existing = props.taskToEdit?.subtasks?.find(s => s.title === st)
+    return {
+      id: existing ? existing.id : `${props.taskToEdit!.id}-st${Date.now() + i}`,
+      title: st,
+      completed: existing ? existing.completed : false,
+    }
+  })
 
-  // Build subtasks array
-  const taskSubtasks: Subtask[] = subtasks.value.map((st, i) => ({
-    id: `${taskId}-st${i + 1}`,
-    title: st,
-    completed: false,
-  }))
-
-  const newTask: Task = {
-    id: taskId,
+  const updatedTask: Task = {
+    ...props.taskToEdit,
     title: title.value.trim(),
     description: description.value.trim(),
     priority: priority.value as PriorityKey,
-    status: 'a-fazer',
-    personal: true,
+    status: status.value,
     dueDate: formatDate(deadline.value),
-    startDate: new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', ''),
-    assignees: [],
     subtasks: taskSubtasks.length > 0 ? taskSubtasks : undefined,
-    auditLog: [
-      {
-        id: `al-${Date.now()}`,
-        icon: 'i-heroicons-plus-circle',
-        message: 'Tarefa pessoal criada',
-        user: 'Você',
-        timestamp: new Date().toLocaleString('pt-BR', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-        }).replace(',', ' às'),
-      },
-    ],
   }
 
-  addTask(newTask)
-  emit('created')
+  updatePersonalTask(updatedTask)
+  emit('updated')
   closeModal()
 }
 </script>
@@ -158,7 +179,7 @@ function createTask() {
   >
     <template #header>
       <div class="flex items-center justify-between w-full">
-        <h2 class="text-lg font-bold text-slate-900 dark:text-slate-100">Nova Tarefa Pessoal</h2>
+        <h2 class="text-lg font-bold text-slate-900 dark:text-slate-100">Editar Tarefa Pessoal</h2>
         <button
           type="button"
           class="flex items-center justify-center size-8 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
@@ -275,6 +296,29 @@ function createTask() {
               <p v-else-if="errors.deadlinePast" class="mt-1 text-xs text-rose-500">A data deve ser hoje ou futura</p>
             </div>
           </div>
+
+          <!-- Status: disponível somente ao editar tarefas pessoais. -->
+          <div>
+            <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
+              Status
+            </label>
+            <div class="relative">
+              <select
+                v-model="status"
+                :disabled="isDeadlineOverdue"
+                class="h-[38px] w-full appearance-none rounded-lg border border-slate-200 bg-white px-3 pr-8 text-sm text-slate-700 outline-none transition-colors focus:border-violet-400 focus:ring-1 focus:ring-violet-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                :class="isDeadlineOverdue && 'cursor-not-allowed opacity-50'"
+              >
+                <option value="a-fazer">A fazer</option>
+                <option value="em-andamento">Em andamento</option>
+                <option value="concluido">Concluído</option>
+              </select>
+              <UIcon name="i-heroicons-chevron-down" class="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+            </div>
+            <p v-if="isDeadlineOverdue" class="mt-1 text-xs text-amber-600 dark:text-amber-400">
+              Atualize o prazo para uma data futura antes de alterar o status.
+            </p>
+          </div>
         </section>
 
         <!-- Subtarefas -->
@@ -354,9 +398,9 @@ function createTask() {
         <button
           type="button"
           class="flex-1 h-[42px] rounded-lg bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 text-sm font-bold text-white shadow-sm transition-all hover:shadow-md hover:brightness-110"
-          @click="createTask"
+          @click="updateTask"
         >
-          Criar Tarefa Pessoal
+          Salvar Alterações
         </button>
       </div>
     </template>

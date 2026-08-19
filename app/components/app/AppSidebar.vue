@@ -22,7 +22,7 @@ function isNavActive(to: string) {
 <template>
   <div class="flex h-full flex-col bg-white dark:bg-slate-900">
     <!-- Marca -->
-    <div class="flex h-16 items-center px-5">
+    <div class="flex h-20 items-center px-5 pt-2">
       <NuxtLink :to="homePath" aria-label="CiViTas — início" @click="emit('navigate')">
         <AppLogo />
       </NuxtLink>

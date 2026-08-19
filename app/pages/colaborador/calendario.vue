@@ -1,5 +1,9 @@
 <script setup lang="ts">
-definePageMeta({ sidebarWidget: 'none' })
+// O calendário agora faz parte da Visualização de tarefas consolidada.
+definePageMeta({
+  sidebarWidget: 'none',
+  middleware: () => navigateTo('/colaborador/quadros'),
+})
 
 const events = useCalendarEvents()
 

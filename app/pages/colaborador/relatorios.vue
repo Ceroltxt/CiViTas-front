@@ -153,63 +153,70 @@ function exportLogs() {
     </div>
 
     <UiSectionCard class="!p-0">
+    <!-- Área de Controles (Busca + Filtros) -->
+    <div class="space-y-2.5 p-5">
+      <!-- Buscar Tarefa -->
+      <div class="w-full sm:w-[480px] lg:w-[520px] xl:w-[560px]">
+        <UInput
+          v-model="selectedTarefa"
+          icon="i-heroicons-magnifying-glass"
+          placeholder="Buscar no relatório..."
+          size="lg"
+          class="w-full"
+          :ui="{ rounded: 'rounded-lg', icon: { trailing: { pointer: '' } } }"
+        />
+      </div>
+
       <!-- Filtros -->
-      <div class="grid grid-cols-2 gap-4 p-5 md:grid-cols-3 lg:grid-cols-5 border-b border-slate-100 dark:border-slate-800">
-        <!-- Projetos -->
-        <div>
-          <label class="mb-1.5 block text-sm font-semibold text-slate-500 dark:text-slate-400">Projetos</label>
-          <USelect
-            v-model="selectedProjeto"
-            :items="projetoItems"
-            trailing-icon="i-heroicons-chevron-down"
-            class="w-full text-slate-600 bg-white border border-slate-200 dark:border-slate-800"
-          />
+      <div class="flex flex-nowrap items-center justify-start gap-1.5 py-1 w-full overflow-x-auto hide-scrollbar border-b border-slate-100 dark:border-slate-800 pb-4">
+        <!-- Projeto -->
+        <div class="flex items-center h-[30px] px-1.5 rounded-md border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 transition-all hover:border-violet-300 shadow-sm relative group cursor-pointer shrink">
+          <UIcon name="i-heroicons-folder" class="size-3.5 text-violet-500 shrink-0 mr-1" />
+          <span class="text-[11px] xl:text-[12px] text-slate-500 whitespace-nowrap mr-1 pointer-events-none hidden md:inline">Projeto:</span>
+          <select v-model="selectedProjeto" class="appearance-none bg-transparent text-[11px] xl:text-[12px] font-medium text-slate-700 dark:text-slate-200 outline-none cursor-pointer pr-4 w-16 sm:w-20 lg:w-24 text-ellipsis overflow-hidden whitespace-nowrap">
+            <option v-for="item in projetoItems" :key="item" :value="item">{{ item }}</option>
+          </select>
+          <UIcon name="i-heroicons-chevron-down" class="size-3 text-slate-400 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none group-hover:text-violet-500 transition-colors" />
         </div>
 
-        <!-- Equipes -->
-        <div>
-          <label class="mb-1.5 block text-sm font-semibold text-slate-500 dark:text-slate-400">Equipes</label>
-          <USelect
-            v-model="selectedEquipe"
-            :items="equipeItems"
-            trailing-icon="i-heroicons-chevron-down"
-            class="w-full text-slate-600 bg-white border border-slate-200 dark:border-slate-800"
-          />
+        <!-- Equipe -->
+        <div class="flex items-center h-[30px] px-1.5 rounded-md border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 transition-all hover:border-violet-300 shadow-sm relative group cursor-pointer shrink">
+          <UIcon name="i-heroicons-users" class="size-3.5 text-violet-500 shrink-0 mr-1" />
+          <span class="text-[11px] xl:text-[12px] text-slate-500 whitespace-nowrap mr-1 pointer-events-none hidden md:inline">Equipe:</span>
+          <select v-model="selectedEquipe" class="appearance-none bg-transparent text-[11px] xl:text-[12px] font-medium text-slate-700 dark:text-slate-200 outline-none cursor-pointer pr-4 w-16 sm:w-20 lg:w-24 text-ellipsis overflow-hidden whitespace-nowrap">
+            <option v-for="item in equipeItems" :key="item" :value="item">{{ item }}</option>
+          </select>
+          <UIcon name="i-heroicons-chevron-down" class="size-3 text-slate-400 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none group-hover:text-violet-500 transition-colors" />
         </div>
 
-        <!-- Gestores -->
-        <div>
-          <label class="mb-1.5 block text-sm font-semibold text-slate-500 dark:text-slate-400">Gestores</label>
-          <USelect
-            v-model="selectedGestor"
-            :items="gestorItems"
-            trailing-icon="i-heroicons-chevron-down"
-            class="w-full text-slate-600 bg-white border border-slate-200 dark:border-slate-800"
-          />
-        </div>
-
-        <!-- Tarefas -->
-        <div>
-          <label class="mb-1.5 block text-sm font-semibold text-slate-500 dark:text-slate-400">Tarefas</label>
-          <USelect
-            v-model="selectedTarefa"
-            :items="tarefaItems"
-            trailing-icon="i-heroicons-chevron-down"
-            class="w-full text-slate-600 bg-white border border-slate-200 dark:border-slate-800"
-          />
+        <!-- Gestor -->
+        <div class="flex items-center h-[30px] px-1.5 rounded-md border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 transition-all hover:border-violet-300 shadow-sm relative group cursor-pointer shrink">
+          <UIcon name="i-heroicons-user" class="size-3.5 text-violet-500 shrink-0 mr-1" />
+          <span class="text-[11px] xl:text-[12px] text-slate-500 whitespace-nowrap mr-1 pointer-events-none hidden md:inline">Gestor:</span>
+          <select v-model="selectedGestor" class="appearance-none bg-transparent text-[11px] xl:text-[12px] font-medium text-slate-700 dark:text-slate-200 outline-none cursor-pointer pr-4 w-16 sm:w-20 lg:w-24 text-ellipsis overflow-hidden whitespace-nowrap">
+            <option v-for="item in gestorItems" :key="item" :value="item">{{ item }}</option>
+          </select>
+          <UIcon name="i-heroicons-chevron-down" class="size-3 text-slate-400 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none group-hover:text-violet-500 transition-colors" />
         </div>
 
         <!-- Período -->
-        <div>
-          <label class="mb-1.5 block text-sm font-semibold text-slate-500 dark:text-slate-400">Período</label>
-          <USelect
-            v-model="selectedPeriodo"
-            :items="periodoItems"
-            trailing-icon="i-heroicons-chevron-down"
-            class="w-full text-slate-600 bg-white border border-slate-200 dark:border-slate-800"
-          />
+        <div class="flex items-center h-[30px] px-1.5 rounded-md border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 transition-all hover:border-violet-300 shadow-sm relative group cursor-pointer shrink">
+          <UIcon name="i-heroicons-calendar" class="size-3.5 text-violet-500 shrink-0 mr-1" />
+          <span class="text-[11px] xl:text-[12px] text-slate-500 whitespace-nowrap mr-1 pointer-events-none hidden md:inline">Período:</span>
+          <select v-model="selectedPeriodo" class="appearance-none bg-transparent text-[11px] xl:text-[12px] font-medium text-slate-700 dark:text-slate-200 outline-none cursor-pointer pr-4 w-16 sm:w-20 lg:w-28 text-ellipsis overflow-hidden whitespace-nowrap">
+            <option v-for="item in periodoItems" :key="item" :value="item">{{ item }}</option>
+          </select>
+          <UIcon name="i-heroicons-chevron-down" class="size-3 text-slate-400 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none group-hover:text-violet-500 transition-colors" />
         </div>
+
+        <div class="flex-grow"></div>
+        <button class="flex items-center gap-1 h-[30px] px-2 rounded-md border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 transition-all hover:border-violet-300 hover:text-violet-600 shadow-sm text-[11px] xl:text-[12px] font-medium text-slate-700 dark:text-slate-200 shrink-0">
+          <UIcon name="i-heroicons-funnel" class="size-3.5 text-violet-500" />
+          Filtros
+          <span class="ml-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-violet-100 px-1 text-[9px] font-bold text-violet-600 dark:bg-violet-900 dark:text-violet-300">0</span>
+        </button>
       </div>
+    </div>
 
       <!-- Tabela / Lista -->
       <div v-if="view === 'list'" class="overflow-x-auto">

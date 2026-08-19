@@ -3,9 +3,12 @@ const route = useRoute()
 const mobileOpen = ref(false)
 const main = ref<HTMLElement | null>(null)
 
-const widget = computed(
-  () => (route.meta.sidebarWidget as 'project' | 'goal' | 'none') ?? 'none',
-)
+const widget = computed(() => {
+  // O projeto atual é contextual para toda a experiência do colaborador,
+  // não somente para a sua página inicial.
+  if (route.path.startsWith('/colaborador')) return 'project'
+  return (route.meta.sidebarWidget as 'project' | 'goal' | 'none') ?? 'none'
+})
 
 // ao trocar de rota: fecha o drawer e volta o conteúdo para o topo
 // (o scroll fica no <main>, não na janela, então é preciso resetar manualmente)

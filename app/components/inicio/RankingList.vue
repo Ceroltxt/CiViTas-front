@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { RankingEntry } from '~/types'
 
-defineProps<{ entries: RankingEntry[]; me?: RankingEntry }>()
+const props = defineProps<{ entries: RankingEntry[]; me?: RankingEntry }>()
 
 const medal: Record<number, string> = {
   1: 'text-amber-400',
@@ -9,8 +9,10 @@ const medal: Record<number, string> = {
   3: 'text-orange-400',
 }
 
-function formatPoints(value: number) {
-  return `${value.toLocaleString('pt-BR')} pontos`
+const topEntries = computed(() => props.entries.slice(0, 5))
+
+function formatStars(value: number) {
+  return `${value.toLocaleString('pt-BR')} estrelas`
 }
 </script>
 
@@ -18,7 +20,7 @@ function formatPoints(value: number) {
   <div class="flex h-full min-h-0 flex-col">
     <ul class="shrink-0 space-y-4">
       <li
-        v-for="entry in entries"
+        v-for="entry in topEntries"
         :key="entry.user.id"
         class="flex items-center gap-3"
       >
@@ -35,7 +37,10 @@ function formatPoints(value: number) {
         <span class="flex-1 truncate text-sm font-medium text-slate-700 dark:text-slate-200">
           {{ entry.user.name }}
         </span>
-        <span class="text-sm font-semibold text-violet-500">{{ formatPoints(entry.points) }}</span>
+        <div class="flex items-center gap-1 text-orange-500 font-semibold text-sm">
+          <UIcon name="i-heroicons-star-solid" class="size-4" />
+          <span>{{ entry.stars }}</span>
+        </div>
       </li>
     </ul>
 
@@ -51,7 +56,10 @@ function formatPoints(value: number) {
       <span class="flex-1 truncate text-sm font-semibold text-slate-700 dark:text-slate-200">
         {{ me.user.name }}
       </span>
-      <span class="shrink-0 text-sm font-semibold text-violet-500">{{ formatPoints(me.points) }}</span>
+      <div class="shrink-0 flex items-center gap-1 text-orange-500 font-semibold text-sm">
+        <UIcon name="i-heroicons-star-solid" class="size-4" />
+        <span>{{ me.stars }}</span>
+      </div>
     </div>
   </div>
 </template>
