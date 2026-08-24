@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { StatusKey, Task } from '~/types'
+import type { StatusKey, Task, ProjectTeam } from '~/types'
 import { isPersonalTaskOverdue, updatePersonalTask } from '~/composables/useTasksData'
 
-const props = defineProps<{ task: Task, isPersonal?: boolean, isSelecting?: boolean, selected?: boolean, readonly?: boolean }>()
+const props = defineProps<{ task: Task, isPersonal?: boolean, isSelecting?: boolean, selected?: boolean, readonly?: boolean, teamMode?: boolean, teams?: ProjectTeam[] }>()
 
 const isDone = computed(() => props.task.status === 'concluido')
 const isOverdue = computed(() => props.isPersonal && isPersonalTaskOverdue(props.task))
@@ -61,6 +61,13 @@ function handleRowClick(e: Event) {
 
 const emit = defineEmits(['edit', 'delete', 'toggle-select'])
 
+// In team mode, assign a team to the task based on task id hash
+const assignedTeam = computed(() => {
+  if (!props.teamMode || !props.teams?.length) return null
+  const hash = props.task.id.split('').reduce((a, c) => a + c.charCodeAt(0), 0)
+  return props.teams[hash % props.teams.length]
+})
+
 const actions = [
   [{
     label: 'Editar',
@@ -106,9 +113,13 @@ const actions = [
         </div>
       </div>
     </td>
-    <!-- Projeto -->
+    <!-- Projeto / Equipe -->
     <td v-if="!isPersonal" class="px-4 py-3 text-sm text-slate-600 whitespace-nowrap dark:text-slate-400">
-      <div v-if="task.project" class="flex items-center gap-2">
+      <div v-if="teamMode && assignedTeam" class="flex items-center gap-2">
+        <span class="grid size-5 shrink-0 place-items-center rounded text-[9px] font-bold text-white" :class="assignedTeam.color">{{ assignedTeam.initial }}</span>
+        <span>{{ assignedTeam.name }}</span>
+      </div>
+      <div v-else-if="task.project" class="flex items-center gap-2">
         <div class="size-2 rounded-full" :class="useProjectDotColor(task.project)" />
         <span>{{ task.project }}</span>
       </div>

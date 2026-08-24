@@ -1,26 +1,23 @@
 <script setup lang="ts">
+import { ref, computed, nextTick } from 'vue'
+import { getTaskById, toggleSubtask } from '~/composables/useTasksData'
+
 definePageMeta({ sidebarWidget: 'none' })
 
 const route = useRoute()
 const router = useRouter()
 const taskId = route.params.id as string
-const currentUser = useCurrentUser()
 
-const task = computed(() => {
-  const foundTask = getTaskById(taskId)
-  if (!foundTask) return undefined
-  return foundTask.personal || foundTask.assignees.some((assignee) => assignee.id === currentUser.id)
-    ? foundTask
-    : undefined
-})
+const task = computed(() => getTaskById(taskId))
 
 function goBack() {
   router.back()
 }
 
 const progress = computed(() => {
-  if (!task.value) return 0
-  return getTaskProgress(task.value)
+  if (!task.value || !task.value.subtasks || task.value.subtasks.length === 0) return 0
+  const done = task.value.subtasks.filter(s => s.completed).length
+  return Math.round((done / task.value.subtasks.length) * 100)
 })
 
 function onToggleSubtask(subtaskId: string) {
@@ -38,30 +35,23 @@ function exportTask() {
   const currentTask = task.value
   const header = [
     'ID', 'Tarefa', 'Projeto', 'Equipe', 'Status', 'Prioridade', 'Responsáveis',
-    'Prazo', 'Data de início', 'Data de conclusão', 'Tipo', 'Complexidade',
-    'Categoria', 'Programa', 'Descrição', 'Observação', 'Avaliação', 'Subtarefas',
+    'Prazo', 'Data de início', 'Data de conclusão', 'Descrição', 'Observação', 'Subtarefas',
   ]
   const row = [
     currentTask.id,
     currentTask.title,
     currentTask.project,
     currentTask.team,
-    useStatusMeta(currentTask.status).label,
-    usePriorityMeta(currentTask.priority).label,
-    currentTask.assignees.map((assignee) => assignee.name).join(', '),
+    currentTask.status,
+    currentTask.priority,
+    'Costa Neves', // Forçado como usuário
     currentTask.dueDate,
     currentTask.startDate,
     currentTask.completedDate,
-    currentTask.type,
-    currentTask.complexity,
-    currentTask.category,
-    currentTask.program,
     currentTask.description,
     currentTask.note,
-    currentTask.stars,
     currentTask.subtasks?.map((subtask) => `${subtask.title} (${subtask.completed ? 'concluída' : 'pendente'})`).join(', '),
   ]
-  // O BOM preserva os caracteres acentuados ao abrir diretamente no Excel.
   const csv = `\uFEFF${[header, row].map((values) => values.map(escapeCsvValue).join(';')).join('\r\n')}`
   const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
   const link = document.createElement('a')
@@ -73,6 +63,158 @@ function exportTask() {
   URL.revokeObjectURL(url)
 }
 
+// === EDIÇÃO ===
+const titleInputRef = ref<HTMLInputElement | null>(null)
+const descInputRef = ref<HTMLTextAreaElement | null>(null)
+const subtaskInputRefs = ref<Record<string, HTMLInputElement | null>>({})
+
+const isEditingTitle = ref(false)
+const titleModel = ref('')
+function editTitle() {
+  if (!task.value) return
+  titleModel.value = task.value.title
+  isEditingTitle.value = true
+  nextTick(() => titleInputRef.value?.focus())
+}
+function saveTitle() {
+  if (task.value && titleModel.value.trim()) {
+    task.value.title = titleModel.value.trim()
+  }
+  isEditingTitle.value = false
+}
+
+const isEditingDesc = ref(false)
+const descModel = ref('')
+function editDesc() {
+  if (!task.value) return
+  descModel.value = task.value.description || task.value.note || ''
+  isEditingDesc.value = true
+  nextTick(() => descInputRef.value?.focus())
+}
+function saveDesc() {
+  if (task.value) {
+    task.value.description = descModel.value.trim()
+  }
+  isEditingDesc.value = false
+}
+
+const isEditingSubtask = ref<string | null>(null)
+const subtaskModel = ref('')
+function editSubtask(subtaskId: string, currentTitle: string) {
+  subtaskModel.value = currentTitle
+  isEditingSubtask.value = subtaskId
+  nextTick(() => subtaskInputRefs.value[subtaskId]?.focus())
+}
+function saveSubtask(subtaskId: string) {
+  if (task.value && task.value.subtasks) {
+    const st = task.value.subtasks.find(s => s.id === subtaskId)
+    if (st && subtaskModel.value.trim()) {
+      st.title = subtaskModel.value.trim()
+    }
+  }
+  isEditingSubtask.value = null
+}
+
+const isAddingSubtask = ref(false)
+const newSubtaskTitle = ref('')
+const newSubtaskInputRef = ref<HTMLInputElement | null>(null)
+
+function startAddingSubtask() {
+  isAddingSubtask.value = true
+  nextTick(() => newSubtaskInputRef.value?.focus())
+}
+
+function cancelAddingSubtask() {
+  isAddingSubtask.value = false
+  newSubtaskTitle.value = ''
+}
+
+function addSubtask() {
+  if (!task.value || !newSubtaskTitle.value.trim()) {
+    isAddingSubtask.value = false
+    return
+  }
+  if (!task.value.subtasks) task.value.subtasks = []
+  task.value.subtasks.push({
+    id: `st-${Date.now()}`,
+    title: newSubtaskTitle.value.trim(),
+    completed: false,
+    assignee: { name: 'Costa Neves', avatar: 'https://i.pravatar.cc/80?img=47' }
+  })
+  newSubtaskTitle.value = ''
+  nextTick(() => newSubtaskInputRef.value?.focus())
+}
+
+function removeSubtask(subtaskId: string) {
+  if (task.value && task.value.subtasks) {
+    task.value.subtasks = task.value.subtasks.filter(s => s.id !== subtaskId)
+  }
+}
+
+// Move subtasks
+function moveSubtaskUp(index: number) {
+  if (!task.value || !task.value.subtasks || index === 0) return
+  const st = task.value.subtasks
+  const temp = st[index - 1]
+  st[index - 1] = st[index]
+  st[index] = temp
+}
+function moveSubtaskDown(index: number) {
+  if (!task.value || !task.value.subtasks || index === task.value.subtasks.length - 1) return
+  const st = task.value.subtasks
+  const temp = st[index + 1]
+  st[index + 1] = st[index]
+  st[index] = temp
+}
+
+const newComment = ref('')
+function addComment() {
+  if (!task.value || !newComment.value.trim()) return
+  if (!task.value.auditLog) task.value.auditLog = []
+  
+  task.value.auditLog.unshift({
+    id: `c-${Date.now()}`,
+    icon: 'i-heroicons-chat-bubble-left',
+    message: newComment.value.trim(),
+    user: 'Costa Neves',
+    timestamp: new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(',', ' às'),
+  })
+  newComment.value = ''
+}
+
+// Cycle options
+const statuses = ['a-fazer', 'em-andamento', 'em-revisao', 'concluido', 'atrasado', 'pausado', 'cancelado']
+function cycleStatus() {
+  if (!task.value) return
+  const currentIdx = statuses.indexOf(task.value.status)
+  const nextIdx = (currentIdx + 1) % statuses.length
+  task.value.status = statuses[nextIdx] as any
+}
+
+const priorities = ['baixa', 'media', 'alta', 'critica']
+function cyclePriority() {
+  if (!task.value) return
+  const currentIdx = priorities.indexOf(task.value.priority as any)
+  const nextIdx = currentIdx === -1 ? 0 : (currentIdx + 1) % priorities.length
+  task.value.priority = priorities[nextIdx] as any
+}
+
+const isEditingDueDate = ref(false)
+const dueDateModel = ref('')
+const dueDateInputRef = ref<HTMLInputElement | null>(null)
+function editDueDate() {
+  if (!task.value) return
+  dueDateModel.value = task.value.dueDate || ''
+  isEditingDueDate.value = true
+  nextTick(() => dueDateInputRef.value?.focus())
+}
+function saveDueDate() {
+  if (task.value) {
+    task.value.dueDate = dueDateModel.value.trim()
+  }
+  isEditingDueDate.value = false
+}
+
 const showAllAudit = ref(false)
 const displayedAuditLog = computed(() => {
   if (!task.value?.auditLog) return []
@@ -82,276 +224,275 @@ const displayedAuditLog = computed(() => {
 </script>
 
 <template>
-  <div class="mx-auto max-w-6xl p-4 sm:p-6">
-    <div v-if="!task" class="flex flex-col items-center justify-center py-20 text-center">
-      <UIcon name="i-heroicons-exclamation-circle" class="size-12 text-slate-400 mb-4" />
+  <div class="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 lg:p-10">
+    <!-- Backdrop -->
+    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" @click="goBack"></div>
+
+    <div v-if="!task" class="relative z-10 w-full max-w-lg bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 p-8 text-center">
+      <UIcon name="i-heroicons-exclamation-circle" class="size-12 text-slate-400 mb-4 mx-auto" />
       <h2 class="text-xl font-bold text-slate-700 dark:text-slate-200 mb-2">Tarefa não encontrada</h2>
       <p class="text-slate-500 mb-6">A tarefa que você está tentando acessar não existe ou foi removida.</p>
       <UButton color="white" icon="i-heroicons-arrow-left" @click="goBack">Voltar</UButton>
     </div>
 
-    <div v-else>
-      <div class="mb-6">
-        <UButton variant="ghost" color="gray" icon="i-heroicons-arrow-left" @click="goBack">
-          Voltar
-        </UButton>
+    <div v-else class="relative z-10 w-full h-full max-w-[1600px] bg-white dark:bg-slate-900 rounded-xl sm:rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden animate-[fade-in_0.15s_ease-out]">
+      <!-- Cabeçalho -->
+      <div class="flex flex-wrap items-center justify-between border-b border-slate-100 dark:border-slate-800 px-4 sm:px-6 py-2.5 text-xs text-slate-500 gap-2">
+        <div class="flex items-center gap-2">
+          <UIcon name="i-heroicons-briefcase" class="size-3.5" />
+          <span class="hover:underline cursor-pointer">{{ task.project || 'Sem projeto' }}</span>
+          <span v-if="task.team">/</span>
+          <span v-if="task.team" class="hover:underline cursor-pointer flex items-center gap-1">
+            <UIcon name="i-heroicons-users" class="size-3.5" /> {{ task.team }}
+          </span>
+        </div>
+        <div class="flex items-center gap-1 sm:gap-3">
+          <span class="hidden sm:inline">Criada em {{ task.auditLog?.[task.auditLog?.length - 1]?.timestamp || '15 ago' }}</span>
+          <UButton variant="ghost" color="gray" icon="i-heroicons-share" label="Compartilhar" size="xs" class="hidden sm:flex" />
+          <UButton variant="ghost" color="gray" icon="i-heroicons-cloud-arrow-up" label="Exportar" size="xs" @click="exportTask" />
+          <UButton variant="ghost" color="gray" icon="i-heroicons-x-mark" size="sm" @click="goBack" title="Fechar" />
+        </div>
       </div>
 
-      <div class="flex flex-col lg:flex-row gap-6">
-        <!-- Left Column -->
-        <div class="flex-1 flex flex-col gap-6 lg:w-[65%]">
-          <!-- Header Card -->
-          <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 flex flex-col sm:flex-row justify-between relative overflow-hidden">
-            <div class="relative z-10">
-              <div class="flex items-center gap-2 mb-4">
-                <UiStatusBadge :status="task.status" />
-                <UiPriorityBadge :priority="task.priority" />
+      <!-- Corpo -->
+      <div class="flex flex-col lg:flex-row flex-1 overflow-hidden">
+        <!-- Esquerdo -->
+        <div class="flex-1 p-6 sm:p-8 lg:border-r border-slate-100 dark:border-slate-800 overflow-y-auto scroll-thin">
+          <div class="flex items-center gap-2 mb-3 text-xs text-slate-400 font-medium uppercase tracking-wider">
+            <UIcon name="i-heroicons-check-circle" class="size-4" /> Tarefa • #{{ task.id }}
+          </div>
+          
+          <div v-if="!isEditingTitle" class="mb-8 cursor-text group" @click="editTitle">
+            <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white inline-block">
+              {{ task.title }}
+            </h1>
+            <UIcon name="i-heroicons-pencil" class="size-5 ml-2 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+          </div>
+          <div v-else class="mb-8 flex gap-2">
+            <input 
+              ref="titleInputRef"
+              v-model="titleModel" 
+              class="flex-1 text-2xl sm:text-3xl font-bold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1 focus:outline-none focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white"
+              @blur="saveTitle"
+              @keyup.enter="saveTitle"
+            />
+          </div>
+
+          <!-- Campos (Simplificado) -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-y-5 gap-x-8 mb-10">
+            <div class="flex items-center gap-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 p-1 -m-1 rounded-lg transition-colors" @click="cycleStatus">
+              <span class="text-sm text-slate-500 w-28 flex items-center gap-2"><UIcon name="i-heroicons-play-circle" class="size-4" /> Status</span>
+              <UiStatusBadge :status="task.status" />
+            </div>
+            
+            <div class="flex items-center gap-4">
+              <span class="text-sm text-slate-500 w-28 flex items-center gap-2"><UIcon name="i-heroicons-users" class="size-4" /> Responsável</span>
+              <div class="flex items-center gap-1.5">
+                <UAvatar src="https://i.pravatar.cc/80?img=47" alt="Costa Neves" size="xs" />
+                <span class="text-sm font-medium text-slate-700 dark:text-slate-300 ml-1">Costa Neves</span>
               </div>
-              <h1 class="text-3xl sm:text-4xl font-display font-bold text-slate-900 dark:text-white mb-3">
-                {{ task.title }}
-              </h1>
-              <p v-if="task.project" class="text-violet-600 dark:text-violet-400 font-medium flex items-center gap-2">
-                <UIcon name="i-heroicons-briefcase" class="size-5" /> {{ task.project }}
-              </p>
             </div>
             
-            <!-- Exportação da tarefa -->
-            <div class="relative z-10 mt-6 flex items-center justify-center sm:mt-0 sm:pr-4">
-              <div class="absolute w-32 h-32 bg-violet-100 dark:bg-violet-900/30 rounded-full blur-2xl"></div>
-              <button
-                type="button"
-                class="relative flex size-20 items-center justify-center rounded-full border border-violet-200 bg-violet-100 text-violet-600 shadow-sm transition-all duration-200 hover:bg-[#bd52c9] hover:text-white hover:shadow-lg hover:shadow-fuchsia-500/25 focus-visible:bg-[#bd52c9] focus-visible:text-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-fuchsia-300 dark:border-violet-800 dark:bg-violet-900/50 dark:text-violet-400 dark:hover:bg-[#bd52c9] dark:hover:text-white"
-                aria-label="Exportar tarefa em CSV"
-                title="Exportar tarefa"
-                @click="exportTask"
-              >
-                <UIcon name="i-heroicons-cloud-arrow-up" class="size-9" />
-              </button>
+            <div class="flex items-center gap-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 p-1 -m-1 rounded-lg transition-colors" @click="cyclePriority">
+              <span class="text-sm text-slate-500 w-28 flex items-center gap-2"><UIcon name="i-heroicons-flag" class="size-4" /> Prioridade</span>
+              <UiPriorityBadge :priority="task.priority || 'baixa'" />
+            </div>
+            
+            <div class="flex items-center gap-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 p-1 -m-1 rounded-lg transition-colors" @click="editDueDate">
+              <span class="text-sm text-slate-500 w-28 flex items-center gap-2"><UIcon name="i-heroicons-calendar-days" class="size-4" /> Prazo</span>
+              <div v-if="!isEditingDueDate" class="text-sm font-medium flex items-center gap-1 group" :class="task.status === 'atrasado' ? 'text-red-600' : 'text-slate-700 dark:text-slate-300'">
+                {{ task.dueDate || 'Vazio' }}
+                <UIcon v-if="task.status === 'atrasado'" name="i-heroicons-exclamation-triangle" class="size-4" />
+                <UIcon name="i-heroicons-pencil" class="size-3.5 ml-1 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+              <input
+                v-else
+                ref="dueDateInputRef"
+                v-model="dueDateModel"
+                type="date"
+                class="w-32 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                @blur="saveDueDate"
+                @keyup.enter="saveDueDate"
+              />
             </div>
           </div>
 
-          <!-- Description Card -->
-          <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6">
-            <h2 class="text-lg font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2 mb-4">
-              <UIcon name="i-heroicons-document-text" class="size-5 text-violet-500" /> Descrição
-            </h2>
-            <div class="text-slate-600 dark:text-slate-300 whitespace-pre-wrap">
-              {{ task.description || task.note || 'Nenhuma descrição fornecida.' }}
+          <UDivider class="my-8" />
+
+          <!-- Descrição -->
+          <div class="mb-10">
+            <h3 class="text-sm font-semibold text-slate-800 dark:text-slate-200 mb-3 flex items-center gap-2">
+              Descrição
+            </h3>
+            <div v-if="!isEditingDesc" class="cursor-text group rounded-lg p-2 -mx-2 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors min-h-[60px]" @click="editDesc">
+              <div v-if="task.description || task.note" class="text-slate-600 dark:text-slate-300 text-sm whitespace-pre-wrap leading-relaxed">
+                {{ task.description || task.note }}
+              </div>
+              <div v-else class="text-slate-400 text-sm italic group-hover:text-slate-500">
+                Adicione uma descrição...
+              </div>
+            </div>
+            <div v-else>
+              <textarea 
+                ref="descInputRef"
+                v-model="descModel"
+                rows="4"
+                class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white"
+                @blur="saveDesc"
+                @keydown.ctrl.enter="saveDesc"
+                @keydown.meta.enter="saveDesc"
+              ></textarea>
+              <div class="flex justify-end gap-2 mt-2">
+                <UButton size="xs" color="gray" variant="ghost" @click="isEditingDesc = false">Cancelar</UButton>
+                <UButton size="xs" color="primary" @click="saveDesc">Salvar</UButton>
+              </div>
             </div>
           </div>
 
-          <!-- Subtasks Card -->
-          <div v-if="task.subtasks && task.subtasks.length > 0" class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6">
-            <div class="flex items-center justify-between mb-4">
-              <h2 class="text-lg font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                <UIcon name="i-heroicons-share" class="size-5 text-violet-500" /> Subtarefas
-              </h2>
-              <span class="text-sm font-semibold text-slate-500">
-                {{ task.subtasks.filter(s => s.completed).length }}/{{ task.subtasks.length }} concluídas
-              </span>
+          <!-- Subtarefas -->
+          <div>
+            <div class="flex items-center gap-2 mb-4">
+              <UIcon name="i-heroicons-share" class="size-4 text-slate-500" />
+              <h3 class="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                Subtarefas <span class="text-slate-400 font-normal ml-1">{{ task.subtasks?.length || 0 }} disponíveis</span>
+              </h3>
             </div>
             
-            <UiProgressBar :value="progress" color="bg-violet-500" class="mb-6" />
-            
-            <div class="flex flex-col gap-3">
+            <UiProgressBar v-if="task.subtasks?.length" :value="progress" color="bg-emerald-500" class="mb-4 h-1.5" />
+
+            <div class="space-y-1">
+              <div v-if="task.subtasks?.length" class="grid grid-cols-12 text-xs font-medium text-slate-400 px-3 py-2 border-b border-slate-100 dark:border-slate-800">
+                <div class="col-span-7">Nome</div>
+                <div class="col-span-3">Responsável</div>
+                <div class="col-span-2 text-right" v-if="task.personal">Ações</div>
+              </div>
+              
               <div 
-                v-for="subtask in task.subtasks" 
+                v-for="(subtask, index) in task.subtasks" 
                 :key="subtask.id"
-                class="flex items-center justify-between p-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                class="grid grid-cols-12 items-center px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-lg group transition-colors"
               >
-                <div class="flex items-center gap-3">
+                <div class="col-span-7 flex items-center gap-3">
                   <UCheckbox 
                     :model-value="subtask.completed"
-                    color="success"
+                    color="primary"
                     :ui="{ base: 'rounded-full' }"
                     @update:model-value="onToggleSubtask(subtask.id)"
                   />
+                  <div v-if="isEditingSubtask === subtask.id && task.personal" class="flex-1">
+                    <input 
+                      :ref="el => { if (el) subtaskInputRefs[subtask.id] = el as HTMLInputElement }"
+                      v-model="subtaskModel" 
+                      class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                      @blur="saveSubtask(subtask.id)"
+                      @keyup.enter="saveSubtask(subtask.id)"
+                    />
+                  </div>
                   <span 
-                    class="font-medium"
-                    :class="subtask.completed ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-700 dark:text-slate-200'"
+                    v-else 
+                    class="text-sm flex-1 truncate" 
+                    :class="[
+                      subtask.completed ? 'text-slate-400 line-through' : 'text-slate-700 dark:text-slate-300',
+                      task.personal ? 'cursor-text hover:text-primary-500' : ''
+                    ]"
+                    @click="task.personal ? editSubtask(subtask.id, subtask.title) : null"
                   >
                     {{ subtask.title }}
                   </span>
                 </div>
-                <div class="flex items-center gap-3">
-                  <span v-if="subtask.dueDate" class="text-xs text-slate-500 font-medium">
-                    {{ subtask.dueDate }}
-                  </span>
-                  <UAvatar 
-                    v-if="subtask.assignee?.avatar" 
-                    :src="subtask.assignee.avatar" 
-                    :alt="subtask.assignee.name"
-                    size="sm"
-                  />
+                <div class="col-span-3 flex items-center gap-2">
+                  <UAvatar src="https://i.pravatar.cc/80?img=47" alt="Costa Neves" size="2xs" />
+                  <span class="text-xs text-slate-500 truncate">Costa Neves</span>
                 </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Audit History Card -->
-          <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6">
-            <h2 class="text-lg font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2 mb-6">
-              <UIcon name="i-heroicons-clock" class="size-5 text-violet-500" /> Histórico de Auditoria
-            </h2>
-            
-            <div v-if="!task.auditLog || task.auditLog.length === 0" class="text-center py-4">
-              <p class="text-sm text-slate-500 dark:text-slate-400">Nenhuma atividade registrada.</p>
-            </div>
-            
-            <div v-else>
-              <div class="space-y-6 relative before:absolute before:inset-y-0 before:left-[11px] before:w-[2px] before:bg-slate-100 dark:before:bg-slate-800">
-                <div v-for="entry in displayedAuditLog" :key="entry.id" class="flex gap-4 relative">
-                  <div class="size-6 rounded-full bg-violet-500 flex items-center justify-center shrink-0 z-10 text-white ring-4 ring-white dark:ring-slate-900">
-                    <UIcon :name="entry.icon || 'i-heroicons-check'" class="size-3.5" />
-                  </div>
-                  <div class="min-w-0 flex-1 pb-1">
-                    <p class="font-semibold text-sm text-slate-800 dark:text-slate-200 leading-snug">{{ entry.message }}</p>
-                    <p class="text-xs text-slate-500 mt-1">{{ entry.user }} • {{ entry.timestamp }}</p>
-                  </div>
+                <div v-if="task.personal" class="col-span-2 flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <UButton size="2xs" variant="ghost" color="gray" icon="i-heroicons-arrow-up" :disabled="index === 0" @click="moveSubtaskUp(index)" />
+                  <UButton size="2xs" variant="ghost" color="gray" icon="i-heroicons-arrow-down" :disabled="index === task.subtasks.length - 1" @click="moveSubtaskDown(index)" />
+                  <UButton size="2xs" variant="ghost" color="red" icon="i-heroicons-trash" @click="removeSubtask(subtask.id)" />
                 </div>
               </div>
               
-              <div v-if="task.auditLog.length > 3" class="mt-6 text-center border-t border-slate-100 dark:border-slate-800/50 pt-4">
+              <div v-if="task.personal" class="mt-4">
                 <button 
-                  class="text-sm font-semibold text-violet-600 hover:text-violet-700 dark:text-violet-400 flex items-center justify-center gap-1 mx-auto transition-colors"
-                  @click="showAllAudit = !showAllAudit"
+                  v-if="!isAddingSubtask"
+                  class="flex items-center gap-2 text-sm text-slate-500 hover:text-primary-500 px-3 py-2 w-full text-left transition-colors"
+                  @click="startAddingSubtask"
                 >
-                  {{ showAllAudit ? 'Ver menos' : 'Ver mais atividades' }}
-                  <UIcon :name="showAllAudit ? 'i-heroicons-chevron-up' : 'i-heroicons-chevron-down'" class="size-4" />
+                  <UIcon name="i-heroicons-plus" class="size-4" /> Adicionar subtarefa...
                 </button>
+                <div v-else class="flex flex-col gap-2 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
+                  <input 
+                    ref="newSubtaskInputRef"
+                    v-model="newSubtaskTitle" 
+                    placeholder="O que precisa ser feito?" 
+                    class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    @keyup.enter="addSubtask"
+                    @keyup.esc="cancelAddingSubtask"
+                  />
+                  <div class="flex justify-end gap-2">
+                    <UButton size="xs" color="gray" variant="ghost" @click="cancelAddingSubtask">Cancelar</UButton>
+                    <UButton size="xs" color="primary" @click="addSubtask">Salvar</UButton>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Right Column -->
-        <div class="lg:w-[35%] flex flex-col gap-6">
-          <!-- Details Card -->
-          <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6">
-            <h2 class="text-lg font-bold text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
-              <UIcon name="i-heroicons-list-bullet" class="size-5 text-violet-500" /> Detalhes
-            </h2>
+        <!-- Direito (Atividade) -->
+        <div v-if="!task.personal" class="w-full lg:w-[320px] xl:w-[380px] bg-slate-50/50 dark:bg-slate-900/30 flex flex-col border-t lg:border-t-0 border-slate-100 dark:border-slate-800">
+          <div class="p-4 sm:p-6 flex-1 overflow-y-auto scroll-thin">
+            <h3 class="text-sm font-semibold text-slate-800 dark:text-slate-200 mb-6 flex items-center gap-2">
+              <UIcon name="i-heroicons-chat-bubble-left-right" class="size-4 text-slate-400" /> Atividade
+            </h3>
             
-            <ul class="flex flex-col">
-              <!-- Responsável -->
-              <li class="flex items-center justify-between py-3 border-b border-slate-100 dark:border-slate-800/50 last:border-0">
-                <div class="flex items-center gap-3">
-                  <UIcon name="i-heroicons-user" class="size-5 text-slate-400" />
-                  <span class="text-slate-500 dark:text-slate-400">Responsável</span>
+            <div v-if="!task.auditLog || task.auditLog.length === 0" class="text-center py-8">
+              <p class="text-sm text-slate-500">Nenhuma atividade registrada.</p>
+            </div>
+            
+            <div v-else class="space-y-6 relative before:absolute before:inset-y-0 before:left-[11px] before:w-px before:bg-slate-200 dark:before:bg-slate-700">
+              <div v-for="entry in displayedAuditLog" :key="entry.id" class="flex gap-4 relative">
+                <div class="size-6 rounded-full flex items-center justify-center shrink-0 z-10 ring-4 ring-slate-50 dark:ring-slate-900" :class="entry.icon === 'i-heroicons-chat-bubble-left' ? 'bg-primary-100 text-primary-600 dark:bg-primary-900/50 dark:text-primary-400' : 'bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-300'">
+                  <UIcon :name="entry.icon || 'i-heroicons-check'" class="size-3" />
                 </div>
-                <div class="flex -space-x-2">
-                  <UAvatar 
-                    v-for="user in task.assignees" 
-                    :key="user.id" 
-                    :src="user.avatar" 
-                    :alt="user.name"
-                    size="sm"
-                    class="ring-2 ring-white dark:ring-slate-900"
-                  />
+                <div class="min-w-0 flex-1 pt-0.5">
+                  <p v-if="entry.icon === 'i-heroicons-chat-bubble-left'" class="text-sm text-slate-900 dark:text-white font-medium mb-1">
+                    {{ entry.user }}
+                  </p>
+                  <p class="text-sm text-slate-700 dark:text-slate-300 break-words bg-white dark:bg-slate-800 p-2 rounded border border-slate-200 dark:border-slate-700 shadow-sm" v-if="entry.icon === 'i-heroicons-chat-bubble-left'">
+                    {{ entry.message }}
+                  </p>
+                  <p v-else class="text-sm text-slate-700 dark:text-slate-300">
+                    <span class="font-medium text-slate-900 dark:text-white">{{ entry.user }}</span>
+                    {{ entry.message.replace(entry.user, '') }}
+                  </p>
+                  <p class="text-xs text-slate-400 mt-1">{{ entry.timestamp }}</p>
                 </div>
-              </li>
-              
-              <!-- Início -->
-              <li v-if="task.startDate" class="flex items-center justify-between py-3 border-b border-slate-100 dark:border-slate-800/50 last:border-0">
-                <div class="flex items-center gap-3">
-                  <UIcon name="i-heroicons-calendar" class="size-5 text-slate-400" />
-                  <span class="text-slate-500 dark:text-slate-400">Início</span>
-                </div>
-                <span class="text-slate-800 dark:text-slate-200 font-medium">{{ task.startDate }}</span>
-              </li>
-              
-              <!-- Prazo -->
-              <li v-if="task.dueDate" class="flex items-center justify-between py-3 border-b border-slate-100 dark:border-slate-800/50 last:border-0">
-                <div class="flex items-center gap-3">
-                  <UIcon name="i-heroicons-calendar-days" class="size-5 text-slate-400" />
-                  <span class="text-slate-500 dark:text-slate-400">Prazo</span>
-                </div>
-                <span 
-                  class="font-medium flex items-center gap-1"
-                  :class="task.status === 'atrasado' ? 'text-red-600 dark:text-red-400' : 'text-slate-800 dark:text-slate-200'"
-                >
-                  {{ task.dueDate }}
-                  <UIcon v-if="task.status === 'atrasado'" name="i-heroicons-exclamation-triangle" class="size-4" />
-                </span>
-              </li>
-              
-              <!-- Tipo -->
-              <li v-if="task.type" class="flex items-center justify-between py-3 border-b border-slate-100 dark:border-slate-800/50 last:border-0">
-                <div class="flex items-center gap-3">
-                  <UIcon name="i-heroicons-tag" class="size-5 text-slate-400" />
-                  <span class="text-slate-500 dark:text-slate-400">Tipo</span>
-                </div>
-                <span class="text-slate-800 dark:text-slate-200 font-medium">{{ task.type }}</span>
-              </li>
-              
-              <!-- Complexidade -->
-              <li v-if="task.complexity" class="flex items-center justify-between py-3 border-b border-slate-100 dark:border-slate-800/50 last:border-0">
-                <div class="flex items-center gap-3">
-                  <UIcon name="i-heroicons-chart-bar" class="size-5 text-slate-400" />
-                  <span class="text-slate-500 dark:text-slate-400">Complexidade</span>
-                </div>
-                <span class="text-slate-800 dark:text-slate-200 font-medium">{{ task.complexity }}</span>
-              </li>
-              
-              <!-- Categoria -->
-              <li v-if="task.category" class="flex items-center justify-between py-3 border-b border-slate-100 dark:border-slate-800/50 last:border-0">
-                <div class="flex items-center gap-3">
-                  <UIcon name="i-heroicons-folder" class="size-5 text-slate-400" />
-                  <span class="text-slate-500 dark:text-slate-400">Categoria</span>
-                </div>
-                <span class="text-slate-800 dark:text-slate-200 font-medium">{{ task.category }}</span>
-              </li>
-              
-              <!-- Programa -->
-              <li v-if="task.program" class="flex items-center justify-between py-3 border-b border-slate-100 dark:border-slate-800/50 last:border-0">
-                <div class="flex items-center gap-3">
-                  <UIcon name="i-heroicons-square-3-stack-3d" class="size-5 text-slate-400" />
-                  <span class="text-slate-500 dark:text-slate-400">Programa</span>
-                </div>
-                <span class="text-slate-800 dark:text-slate-200 font-medium">{{ task.program }}</span>
-              </li>
-            </ul>
+              </div>
+            </div>
+            
+            <div v-if="task.auditLog && task.auditLog.length > 3" class="mt-6 text-center border-t border-slate-200 dark:border-slate-700/50 pt-4">
+              <button 
+                class="text-xs font-medium text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
+                @click="showAllAudit = !showAllAudit"
+              >
+                {{ showAllAudit ? 'Ver menos' : 'Ver mais atividades' }}
+              </button>
+            </div>
           </div>
-
-          <!-- Informações rápidas Card -->
-          <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6">
-            <h2 class="text-lg font-bold text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
-              <UIcon name="i-heroicons-bolt" class="size-5 text-violet-500" /> Informações rápidas
-            </h2>
-            
-            <ul class="flex flex-col">
-              <li class="flex items-center justify-between py-3 border-b border-slate-100 dark:border-slate-800/50 last:border-0">
-                <div class="flex items-center gap-3">
-                  <UIcon name="i-heroicons-hashtag" class="size-5 text-slate-400" />
-                  <span class="text-slate-500 dark:text-slate-400">ID da tarefa</span>
-                </div>
-                <span class="text-slate-800 dark:text-slate-200 font-medium">#{{ task.id }}</span>
-              </li>
-              
-              <li class="flex items-center justify-between py-3 border-b border-slate-100 dark:border-slate-800/50 last:border-0">
-                <div class="flex items-center gap-3">
-                  <UIcon name="i-heroicons-clock" class="size-5 text-slate-400" />
-                  <span class="text-slate-500 dark:text-slate-400">Criada em</span>
-                </div>
-                <span class="text-slate-800 dark:text-slate-200 font-medium">{{ task.auditLog?.[task.auditLog?.length - 1]?.timestamp || '01/01/2026' }}</span>
-              </li>
-              
-              <li class="flex items-center justify-between py-3 border-b border-slate-100 dark:border-slate-800/50 last:border-0">
-                <div class="flex items-center gap-3">
-                  <UIcon name="i-heroicons-arrow-path" class="size-5 text-slate-400" />
-                  <span class="text-slate-500 dark:text-slate-400">Última atualização</span>
-                </div>
-                <span class="text-slate-800 dark:text-slate-200 font-medium">{{ task.auditLog?.[0]?.timestamp || 'Hoje' }}</span>
-              </li>
-              
-              <li class="flex items-center justify-between py-3 border-b border-slate-100 dark:border-slate-800/50 last:border-0">
-                <div class="flex items-center gap-3">
-                  <UIcon name="i-heroicons-information-circle" class="size-5 text-slate-400" />
-                  <span class="text-slate-500 dark:text-slate-400">Status</span>
-                </div>
-                <span class="text-slate-800 dark:text-slate-200 font-medium capitalize">{{ task.status }}</span>
-              </li>
-            </ul>
+          
+          <div class="p-4 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 mt-auto">
+            <div class="relative flex gap-2">
+              <input 
+                v-model="newComment"
+                type="text" 
+                placeholder="Escreva um comentário..." 
+                class="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg pl-3 pr-10 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                @keyup.enter="addComment"
+              >
+              <button class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary-500 transition-colors" @click="addComment">
+                <UIcon name="i-heroicons-paper-airplane" class="size-4" />
+              </button>
+            </div>
           </div>
         </div>
       </div>

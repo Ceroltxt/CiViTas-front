@@ -1,4 +1,4 @@
-import { y as publicAssetsURL } from '../_/nitro.mjs';
+import { B as publicAssetsURL } from '../_/nitro.mjs';
 
 const _imports_0 = publicAssetsURL("/civitas-logo-transparent.png");
 

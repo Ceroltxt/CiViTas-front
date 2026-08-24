@@ -17,16 +17,39 @@ watch(() => route.fullPath, () => {
   mobileOpen.value = false
   main.value?.scrollTo({ top: 0 })
 })
+
+const showSecondary = ref(false)
+
+watch(sidebarCollapsed, (isCollapsed) => {
+  if (isCollapsed) {
+    showSecondary.value = false
+  }
+})
 </script>
 
 <template>
   <div class="flex h-screen overflow-hidden bg-app">
     <!-- Sidebar fixa (desktop) -->
     <aside
-      class="hidden shrink-0 border-r border-slate-200 transition-all duration-300 dark:border-slate-800 lg:block"
-      :class="sidebarCollapsed ? 'w-0 overflow-hidden border-r-0' : 'w-64'"
+      class="hidden shrink-0 flex-row border-slate-200 transition-all duration-300 dark:border-slate-800 lg:flex"
     >
-      <AppSidebar :widget="widget" />
+      <!-- Sidebar de ícones (ou completa se expandida) -->
+      <div 
+        class="flex h-full flex-col border-r border-slate-200 dark:border-slate-800 overflow-hidden transition-all duration-300"
+        :class="sidebarCollapsed ? 'w-[72px]' : 'w-64'"
+      >
+        <AppSidebar :widget="widget" :collapsed="sidebarCollapsed" @toggle-projects="showSecondary = !showSecondary" />
+      </div>
+
+      <!-- Sidebar secundária (Projetos) -->
+      <div 
+        v-if="sidebarCollapsed && widget === 'project' && showSecondary"
+        class="h-full w-64 border-r border-slate-200 bg-slate-50 px-3 py-4 dark:border-slate-800 dark:bg-slate-900/50 flex flex-col"
+      >
+        <div class="flex-1 overflow-y-auto">
+          <AppProjectCard is-secondary />
+        </div>
+      </div>
     </aside>
 
     <!-- Sidebar (mobile) -->
@@ -37,7 +60,7 @@ watch(() => route.fullPath, () => {
     </USlideover>
 
     <!-- Conteúdo -->
-    <div class="flex min-w-0 flex-1 flex-col">
+    <div class="flex min-w-0 flex-1 flex-col transition-all duration-300">
       <AppHeader @open-menu="mobileOpen = true" />
       <main ref="main" class="scroll-thin flex-1 overflow-y-auto">
         <slot />
@@ -48,8 +71,8 @@ watch(() => route.fullPath, () => {
     <button
       type="button"
       class="fixed top-1/2 z-50 hidden size-6 -translate-y-1/2 place-items-center rounded-full border border-slate-200 bg-white shadow-sm transition-all hover:bg-slate-50 hover:text-orange-600 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800 lg:grid"
-      :style="{ left: sidebarCollapsed ? '-1px' : 'calc(16rem - 12px)' }"
-      :title="sidebarCollapsed ? 'Mostrar sidebar' : 'Esconder sidebar'"
+      :style="{ left: sidebarCollapsed ? (widget === 'project' && showSecondary ? 'calc(72px + 16rem - 12px)' : 'calc(72px - 12px)') : 'calc(16rem - 12px)' }"
+      :title="sidebarCollapsed ? 'Expandir sidebar principal' : 'Esconder sidebar principal'"
       @click="toggleSidebar"
     >
       <UIcon

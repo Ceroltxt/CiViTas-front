@@ -227,12 +227,30 @@ export const mockCurrentUserRank: RankingEntry = {
 }
 
 export const mockProjects: ProjectProgress[] = [
-  { id: 'p1', name: 'Nova Praça Central', progress: 45, color: 'bg-blue-500' },
-  { id: 'p2', name: 'Manutenção da Frota', progress: 77, color: 'bg-violet-500' },
-  { id: 'p3', name: 'Revisão de Licitações da Saúde', progress: 45, color: 'bg-amber-400' },
-  { id: 'p4', name: 'Portal do Cidadão', progress: 45, color: 'bg-pink-500' },
-  { id: 'p5', name: 'Sistema de Alvarás', progress: 62, color: 'bg-cyan-500' },
-  { id: 'p6', name: 'Iluminação Pública', progress: 30, color: 'bg-indigo-500' },
+  { id: 'p1', name: 'Nova Praça Central', progress: 45, color: 'bg-blue-500', teams: [
+    { id: 'pt1', name: 'Obras e Infraestrutura', initial: 'OB', color: 'bg-violet-600', role: 'Membro', memberCount: 7, projectId: 'p1', description: 'Esta equipe cuida de toda a parte de obras, infraestrutura e acompanhamento técnico da construção da Nova Praça Central.', leader: 'Macena Souza', area: 'Infraestrutura', priority: 'Alta', createdAt: '15/03/2024' },
+    { id: 'pt2', name: 'Planejamento e Orçamento', initial: 'PL', color: 'bg-emerald-500', role: 'Membro', memberCount: 5, projectId: 'p1', description: 'Responsável pelo planejamento financeiro e orçamentário do projeto.', leader: 'Costa Neves', area: 'Financeiro', priority: 'Média', createdAt: '20/03/2024' },
+    { id: 'pt3', name: 'Fiscalização', initial: 'FI', color: 'bg-orange-500', role: 'Membro', memberCount: 4, projectId: 'p1', description: 'Equipe responsável pela fiscalização e conformidade das entregas.', leader: 'Ana Carol', area: 'Qualidade', priority: 'Alta', createdAt: '01/04/2024' },
+  ] },
+  { id: 'p2', name: 'Manutenção da Frota', progress: 77, color: 'bg-violet-500', teams: [
+    { id: 'pt4', name: 'Logística', initial: 'LG', color: 'bg-blue-500', role: 'Membro', memberCount: 6, projectId: 'p2', description: 'Gerenciamento logístico da frota municipal.', leader: 'Rafael Lima', area: 'Logística', priority: 'Alta', createdAt: '10/02/2024' },
+    { id: 'pt5', name: 'Manutenção Preventiva', initial: 'MP', color: 'bg-amber-500', role: 'Membro', memberCount: 3, projectId: 'p2', description: 'Planejamento e execução de manutenções preventivas.', leader: 'João Pedro', area: 'Manutenção', priority: 'Média', createdAt: '15/02/2024' },
+  ] },
+  { id: 'p3', name: 'Revisão de Licitações da Saúde', progress: 45, color: 'bg-amber-400', teams: [
+    { id: 'pt6', name: 'Análise Documental', initial: 'AD', color: 'bg-pink-500', role: 'Membro', memberCount: 4, projectId: 'p3', description: 'Análise e revisão de documentos de licitação.', leader: 'Beatriz Ribeiro', area: 'Jurídico', priority: 'Crítica', createdAt: '05/01/2024' },
+  ] },
+  { id: 'p4', name: 'Portal do Cidadão', progress: 45, color: 'bg-pink-500', teams: [
+    { id: 'pt7', name: 'Desenvolvimento', initial: 'DV', color: 'bg-cyan-500', role: 'Membro', memberCount: 5, projectId: 'p4', description: 'Desenvolvimento e evolução do portal digital.', leader: 'Lucas Martins', area: 'Tecnologia', priority: 'Alta', createdAt: '12/01/2024' },
+    { id: 'pt8', name: 'Design e UX', initial: 'UX', color: 'bg-violet-600', role: 'Membro', memberCount: 3, projectId: 'p4', description: 'Design de interfaces e experiência do usuário.', leader: 'Ana Clara', area: 'Design', priority: 'Média', createdAt: '15/01/2024' },
+  ] },
+  { id: 'p5', name: 'Sistema de Alvarás', progress: 62, color: 'bg-cyan-500', teams: [
+    { id: 'pt9', name: 'Regulação', initial: 'RG', color: 'bg-emerald-500', role: 'Membro', memberCount: 4, projectId: 'p5', description: 'Equipe de regulação e normas técnicas.', leader: 'Fernanda Alves', area: 'Regulação', priority: 'Média', createdAt: '20/02/2024' },
+    { id: 'pt10', name: 'Suporte Técnico', initial: 'ST', color: 'bg-blue-500', role: 'Membro', memberCount: 2, projectId: 'p5', description: 'Suporte técnico ao sistema de alvarás.', leader: 'Carlos Mendes', area: 'Suporte', priority: 'Baixa', createdAt: '25/02/2024' },
+    { id: 'pt11', name: 'Atendimento', initial: 'AT', color: 'bg-orange-500', role: 'Membro', memberCount: 5, projectId: 'p5', description: 'Atendimento ao público sobre alvarás.', leader: 'Marina Costa', area: 'Atendimento', priority: 'Alta', createdAt: '01/03/2024' },
+  ] },
+  { id: 'p6', name: 'Iluminação Pública', progress: 30, color: 'bg-indigo-500', teams: [
+    { id: 'pt12', name: 'Engenharia Elétrica', initial: 'EE', color: 'bg-amber-500', role: 'Membro', memberCount: 6, projectId: 'p6', description: 'Engenharia e projetos de iluminação pública.', leader: 'Roberto Santos', area: 'Engenharia', priority: 'Alta', createdAt: '10/03/2024' },
+  ] },
 ]
 
 const teamMembers: UserSummary[] = [

@@ -1,9 +1,27 @@
 <script setup lang="ts">
+const props = defineProps<{
+  projectsFirst?: boolean
+  isSecondary?: boolean
+}>()
+const emit = defineEmits<{ togglePosition: [] }>()
+
 const projects = useUserProjects()
-const expandedProjectId = ref<string | null>(null)
+const expandedCookie = useCookie<string[]>('civitas_expanded_projects', { default: () => [] })
+
+// Create a reactive Set from the cookie for easy manipulation in memory
+const expandedProjectIds = ref<Set<string>>(new Set(expandedCookie.value))
+
+// Sync changes back to cookie
+watch(expandedProjectIds, (newSet) => {
+  expandedCookie.value = Array.from(newSet)
+}, { deep: true })
 
 function toggleProject(projectId: string) {
-  expandedProjectId.value = expandedProjectId.value === projectId ? null : projectId
+  if (expandedProjectIds.value.has(projectId)) {
+    expandedProjectIds.value.delete(projectId)
+  } else {
+    expandedProjectIds.value.add(projectId)
+  }
 }
 </script>
 
@@ -12,8 +30,19 @@ function toggleProject(projectId: string) {
     <div class="mb-2 flex items-center justify-between px-2">
       <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">Projetos</p>
       <div class="flex items-center gap-2 text-slate-300 dark:text-slate-600">
-        <UIcon name="i-heroicons-plus" class="size-3.5" />
-        <UIcon name="i-heroicons-chevron-down" class="size-3.5" />
+        <UIcon name="i-heroicons-plus" class="size-3.5 hover:text-orange-500 cursor-pointer transition-colors" />
+        <button
+          v-if="!isSecondary"
+          type="button"
+          class="grid size-5 place-items-center rounded transition-colors hover:text-orange-500"
+          :title="projectsFirst ? 'Mover projetos para baixo' : 'Mover projetos para cima'"
+          @click="emit('togglePosition')"
+        >
+          <UIcon
+            :name="projectsFirst ? 'i-heroicons-arrow-down' : 'i-heroicons-arrow-up'"
+            class="size-3.5"
+          />
+        </button>
       </div>
     </div>
 
@@ -31,22 +60,35 @@ function toggleProject(projectId: string) {
             type="button"
             class="grid size-6 shrink-0 place-items-center rounded-md text-slate-400 opacity-0 transition-all hover:bg-white hover:text-violet-600 group-hover:opacity-100 focus:opacity-100 dark:hover:bg-slate-700"
             :aria-label="`Ver equipes de ${project.name}`"
-            :aria-expanded="expandedProjectId === project.id"
-            @click="toggleProject(project.id)"
+            :aria-expanded="expandedProjectIds.has(project.id)"
+            @click.prevent="toggleProject(project.id)"
           >
             <UIcon
               name="i-heroicons-chevron-down"
               class="size-3.5 transition-transform"
-              :class="expandedProjectId === project.id ? 'rotate-180' : ''"
+              :class="expandedProjectIds.has(project.id) ? 'rotate-180' : ''"
             />
           </button>
         </NuxtLink>
 
         <div
-          v-if="expandedProjectId === project.id"
-          class="mb-1 ml-8 mr-2 rounded-md border border-dashed border-slate-200 px-2.5 py-2 text-xs text-slate-400 dark:border-slate-700 dark:text-slate-500"
+          v-if="expandedProjectIds.has(project.id)"
+          class="mb-1 ml-5 mr-2 space-y-0.5"
         >
-          Sem equipes
+          <template v-if="project.teams?.length">
+            <NuxtLink
+              v-for="team in project.teams"
+              :key="team.id"
+              :to="`/colaborador/projetos/${project.id}/equipe/${team.id}`"
+              class="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs text-slate-500 transition-colors hover:bg-orange-50/70 hover:text-slate-700 dark:hover:bg-slate-800"
+            >
+              <span class="grid size-5 shrink-0 place-items-center rounded text-[8px] font-bold text-white" :class="team.color">{{ team.initial }}</span>
+              <span class="truncate">{{ team.name }}</span>
+            </NuxtLink>
+          </template>
+          <div v-else class="rounded-md border border-dashed border-slate-200 px-2.5 py-2 text-xs text-slate-400 dark:border-slate-700 dark:text-slate-500">
+            Sem equipes
+          </div>
         </div>
       </div>
     </div>
