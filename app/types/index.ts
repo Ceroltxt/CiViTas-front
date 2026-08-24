@@ -163,11 +163,27 @@ export interface RankingEntry {
   stats?: UserStats
 }
 
+export interface ProjectTeam {
+  id: string
+  name: string
+  initial: string
+  color: string
+  role: 'Membro'
+  memberCount: number
+  projectId: string
+  description?: string
+  leader?: string
+  area?: string
+  priority?: string
+  createdAt?: string
+}
+
 export interface ProjectProgress {
   id: string
   name: string
   progress: number
   color: string
+  teams?: ProjectTeam[]
 }
 
 export interface TeamSummary {

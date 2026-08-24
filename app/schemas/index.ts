@@ -20,6 +20,7 @@ import type {
   NotificationItem,
   ProjectDetail,
   ProjectProgress,
+  ProjectTeam,
   RankingEntry,
   Subtask,
   Task,
@@ -157,11 +158,27 @@ export const rankingEntrySchema = v.object({
   stats: v.optional(userStatsSchema)
 }) satisfies Schema<RankingEntry>
 
+export const projectTeamSchema = v.object({
+  id: v.string(),
+  name: v.string(),
+  initial: v.string(),
+  color: v.string(),
+  role: v.enum('Membro'),
+  memberCount: v.number(),
+  projectId: v.string(),
+  description: v.optional(v.string()),
+  leader: v.optional(v.string()),
+  area: v.optional(v.string()),
+  priority: v.optional(v.string()),
+  createdAt: v.optional(v.string()),
+}) satisfies Schema<ProjectTeam>
+
 export const projectProgressSchema = v.object({
   id: v.string(),
   name: v.string(),
   progress: v.number(),
   color: v.string(),
+  teams: v.optional(v.array(projectTeamSchema)),
 }) satisfies Schema<ProjectProgress>
 
 export const teamSummarySchema = v.object({

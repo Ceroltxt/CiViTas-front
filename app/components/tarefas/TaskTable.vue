@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { Task } from '~/types'
+import type { Task, ProjectTeam } from '~/types'
 
 const selectedIds = defineModel<string[]>('selectedIds', { default: () => [] })
-const props = defineProps<{ tasks: Task[], isPersonal?: boolean, isSelecting?: boolean, readonly?: boolean }>()
+const props = defineProps<{ tasks: Task[], isPersonal?: boolean, isSelecting?: boolean, readonly?: boolean, teamMode?: boolean, teams?: ProjectTeam[] }>()
 
 const allSelected = computed({
   get: () => props.tasks.length > 0 && selectedIds.value.length === props.tasks.length,
@@ -30,7 +30,7 @@ function toggleSelection(id: string) {
             <UCheckbox v-model="allSelected" />
           </th>
           <th class="px-4 py-3">Tarefa</th>
-          <th v-if="!isPersonal" class="px-4 py-3">Projeto</th>
+          <th v-if="!isPersonal" class="px-4 py-3">{{ teamMode ? 'Equipe' : 'Projeto' }}</th>
           <th class="px-4 py-3">Status</th>
           <th class="px-4 py-3">Prioridade</th>
           <th v-if="!isPersonal" class="px-4 py-3">Responsável</th>
@@ -50,6 +50,8 @@ function toggleSelection(id: string) {
           :is-selecting="isSelecting"
           :readonly="readonly"
           :selected="selectedIds.includes(task.id)"
+          :team-mode="teamMode"
+          :teams="teams"
           @toggle-select="toggleSelection(task.id)"
           @edit="$emit('edit', $event)"
           @delete="$emit('delete', $event)"
@@ -58,3 +60,4 @@ function toggleSelection(id: string) {
     </table>
   </div>
 </template>
+
