@@ -128,6 +128,8 @@ export interface CalendarEvent {
   /** quantos dias o evento ocupa */
   length: number
   color: 'pink' | 'blue' | 'amber' | 'violet' | 'green'
+  /** Define se o evento pode ser clicado/editado pelo usuário atual. */
+  editable?: boolean
 }
 
 export interface DateRange {

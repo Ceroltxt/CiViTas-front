@@ -1,88 +1,54 @@
 <script setup lang="ts">
-const userProjects = useUserProjects()
-const defaultDetail = useProjectDetail()
-const detailOpen = ref(false)
+const projects = useUserProjects()
+const expandedProjectId = ref<string | null>(null)
 
-const projects = computed(() => {
-  if (!userProjects || userProjects.length === 0) return []
-  return userProjects.map(p => ({
-    name: p.name,
-    deadline: 'Indefinido',
-    progress: p.progress,
-    detail: {
-      ...defaultDetail,
-      name: p.name,
-      progress: p.progress,
-    }
-  }))
-})
-
-const currentIndex = ref(0)
-const currentProj = computed(() => {
-  if (projects.value.length === 0) return null
-  return projects.value[currentIndex.value]
-})
-
-function nextProject() {
-  if (projects.value.length === 0) return
-  currentIndex.value = (currentIndex.value + 1) % projects.value.length
-}
-
-function prevProject() {
-  if (projects.value.length === 0) return
-  currentIndex.value = (currentIndex.value - 1 + projects.value.length) % projects.value.length
+function toggleProject(projectId: string) {
+  expandedProjectId.value = expandedProjectId.value === projectId ? null : projectId
 }
 </script>
 
 <template>
-  <div v-if="currentProj" class="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-    <div class="flex items-center justify-between">
-      <p class="text-xs text-slate-400">Projeto atual</p>
-      <div class="flex items-center gap-1">
-        <UButton
-          size="xs"
-          color="neutral"
-          variant="ghost"
-          class="size-6 p-0 flex items-center justify-center"
-          @click="prevProject"
-        >
-          <UIcon name="i-heroicons-chevron-left" class="size-4" />
-        </UButton>
-        <span class="text-[10px] text-slate-400 font-mono">{{ currentIndex + 1 }}/{{ projects.length }}</span>
-        <UButton
-          size="xs"
-          color="neutral"
-          variant="ghost"
-          class="size-6 p-0 flex items-center justify-center"
-          @click="nextProject"
-        >
-          <UIcon name="i-heroicons-chevron-right" class="size-4" />
-        </UButton>
+  <section v-if="projects.length" class="flex h-full min-h-0 flex-col">
+    <div class="mb-2 flex items-center justify-between px-2">
+      <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">Projetos</p>
+      <div class="flex items-center gap-2 text-slate-300 dark:text-slate-600">
+        <UIcon name="i-heroicons-plus" class="size-3.5" />
+        <UIcon name="i-heroicons-chevron-down" class="size-3.5" />
       </div>
     </div>
-    <p class="mt-0.5 font-semibold text-slate-800 dark:text-slate-100">
-      {{ currentProj.name }}
-    </p>
 
-    <p class="mt-4 text-xs text-slate-400">Prazo</p>
-    <p class="text-sm font-semibold text-slate-600 dark:text-slate-300">{{ currentProj.deadline }}</p>
+    <div class="scroll-thin min-h-0 flex-1 snap-y snap-mandatory space-y-0.5 overflow-y-auto pr-1">
+      <div v-for="project in projects" :key="project.id" class="group snap-start">
+        <NuxtLink
+          :to="`/colaborador/projetos/${project.id}`"
+          class="flex h-9 items-center gap-3 rounded-lg px-2.5 transition-colors hover:bg-orange-50/70 dark:hover:bg-slate-800 cursor-pointer"
+        >
+          <span class="size-2.5 shrink-0 rounded-full" :class="project.color" />
+          <span class="min-w-0 flex-1 truncate text-sm font-medium text-slate-600 dark:text-slate-300">
+            {{ project.name }}
+          </span>
+          <button
+            type="button"
+            class="grid size-6 shrink-0 place-items-center rounded-md text-slate-400 opacity-0 transition-all hover:bg-white hover:text-violet-600 group-hover:opacity-100 focus:opacity-100 dark:hover:bg-slate-700"
+            :aria-label="`Ver equipes de ${project.name}`"
+            :aria-expanded="expandedProjectId === project.id"
+            @click="toggleProject(project.id)"
+          >
+            <UIcon
+              name="i-heroicons-chevron-down"
+              class="size-3.5 transition-transform"
+              :class="expandedProjectId === project.id ? 'rotate-180' : ''"
+            />
+          </button>
+        </NuxtLink>
 
-    <div class="mt-4 flex items-center justify-between text-xs text-slate-400">
-      <span>Progresso geral</span>
-      <span class="font-semibold text-slate-600 dark:text-slate-300">{{ currentProj.progress }}%</span>
+        <div
+          v-if="expandedProjectId === project.id"
+          class="mb-1 ml-8 mr-2 rounded-md border border-dashed border-slate-200 px-2.5 py-2 text-xs text-slate-400 dark:border-slate-700 dark:text-slate-500"
+        >
+          Sem equipes
+        </div>
+      </div>
     </div>
-    <UiProgressBar :value="currentProj.progress" class="mt-1.5" gradient />
-
-    <UButton
-      block
-      color="neutral"
-      variant="outline"
-      size="sm"
-      class="mt-4"
-      label="Ver com mais detalhes"
-      @click="detailOpen = true"
-    />
-
-    <AppProjectDetailModal v-slot="{}" v-model:open="detailOpen" :project="currentProj.detail" />
-  </div>
+  </section>
 </template>

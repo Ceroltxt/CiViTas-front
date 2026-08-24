@@ -281,7 +281,7 @@ const globalFilter = ref("");
         >
           <UIcon
             name="i-heroicons-inbox-stack"
-            class="size-12 text-violet-300 bg-violet-600 rounded-full p-2 shadow-lg shadow-violet-800/50"
+            class="size-12 rounded-full bg-[#bd52c9] p-2 text-fuchsia-100 shadow-lg shadow-fuchsia-800/40"
           />
           <div class="flex flex-col sm:items-center md:items-start lg:items-start hover:translate-y-1 transition-transform duration-400">
             <p class="font-medium text-slate-700 dark:text-slate-300">

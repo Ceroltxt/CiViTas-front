@@ -35,7 +35,7 @@ function changePassword() {
       <UButton
         icon="i-heroicons-check"
         label="Salvar Alterações"
-        class="bg-violet-600 hover:bg-violet-700 text-white font-semibold flex items-center gap-1.5 px-4 py-2 rounded-lg"
+        class="bg-[#bd52c9] hover:bg-[#a942b4] text-white font-semibold flex items-center gap-1.5 px-4 py-2 rounded-lg"
         @click="saveChanges"
       />
     </div>
