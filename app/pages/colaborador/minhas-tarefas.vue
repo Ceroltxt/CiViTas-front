@@ -225,6 +225,13 @@ const filtered = computed(() => {
     const isPersonalTask = !!t.personal
     if ((activeMainTab.value === 'pessoais') !== isPersonalTask) return false
 
+    // If it's a work task, it MUST be assigned to the current user
+    if (!isPersonalTask && currentUser) {
+      if (!t.assignees || !t.assignees.some(a => a.id === currentUser.id || a.name === currentUser.name)) {
+        return false
+      }
+    }
+
     // Search
     if (term) {
       if (!`${t.title} ${t.project ?? ''} ${t.team ?? ''}`.toLowerCase().includes(term)) return false
@@ -267,6 +274,23 @@ const filtered = computed(() => {
 })
 
 const calendarLabel = computed(() => formatMonthLabel(calendarCurrent.value.year, calendarCurrent.value.month))
+// Estado da visualização de calendário
+const calendarViewMode = ref<'mes' | 'semana' | '4dias' | 'dia'>('mes')
+const calendarViewLabels = {
+  mes: 'Mês',
+  semana: 'Semana',
+  '4dias': '4 dias',
+  dia: 'Dia'
+}
+
+const timeGridBaseDate = computed(() => {
+  const now = new Date()
+  if (calendarCurrent.value.year === now.getFullYear() && calendarCurrent.value.month === now.getMonth()) {
+    return now
+  }
+  return new Date(calendarCurrent.value.year, calendarCurrent.value.month, 1)
+})
+
 const calendarEvents = computed<CalendarEvent[]>(() => filtered.value.flatMap((task) => {
   if (!task.dueDate) return []
   const [dayText, monthText] = task.dueDate.split(' ')
@@ -277,7 +301,8 @@ const calendarEvents = computed<CalendarEvent[]>(() => filtered.value.flatMap((t
   const colorByPriority: Record<PriorityKey, CalendarEvent['color']> = {
     critica: 'pink', alta: 'violet', media: 'blue', baixa: 'green',
   }
-  return [{ id: task.id, title: task.title, startDay, length: 1, color: colorByPriority[task.priority] }]
+  const isEditable = task.personal || (task.assignees && task.assignees.some(a => a.id === currentUser.id || a.name === currentUser.name))
+  return [{ id: task.id, title: task.title, startDay, length: 1, color: colorByPriority[task.priority], editable: isEditable }]
 }))
 
 function shiftCalendarMonth(delta: number) {
@@ -520,7 +545,7 @@ function clearFilter(key: 'project' | 'status' | 'priority') {
                   <button type="button" class="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left text-sm transition-colors hover:bg-violet-50 dark:hover:bg-violet-950/30" :class="selectedProjects.includes(project) && 'bg-violet-50 dark:bg-violet-950/30'" @click="toggleProjectFilter(project)">
                     <span class="size-2.5 shrink-0 rounded-full" :class="useProjectDotColor(project)" />
                     <span class="min-w-0 flex-1 truncate text-slate-700 dark:text-slate-200">{{ project }}</span>
-                    <span class="flex size-4 shrink-0 items-center justify-center rounded border" :class="selectedProjects.includes(project) ? 'border-violet-600 bg-violet-600 text-white' : 'border-slate-300 dark:border-slate-600'"><UIcon v-if="selectedProjects.includes(project)" name="i-heroicons-check" class="size-3" /></span>
+                    <span class="flex size-4 shrink-0 items-center justify-center rounded border" :class="selectedProjects.includes(project) ? 'border-[#b64fc2] bg-[#bd52c9] text-white' : 'border-slate-300 dark:border-slate-600'"><UIcon v-if="selectedProjects.includes(project)" name="i-heroicons-check" class="size-3" /></span>
                   </button>
                 </li>
               </ul>
@@ -546,7 +571,7 @@ function clearFilter(key: 'project' | 'status' | 'priority') {
               <li v-for="status in availableStatuses" :key="status.value">
                 <button type="button" class="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left text-sm transition-colors hover:bg-violet-50 dark:hover:bg-violet-950/30" :class="selectedStatuses.includes(status.value) && 'bg-violet-50 dark:bg-violet-950/30'" @click="toggleStatusFilter(status.value)">
                   <span class="min-w-0 flex-1 text-slate-700 dark:text-slate-200">{{ status.label }}</span>
-                  <span class="flex size-4 shrink-0 items-center justify-center rounded border" :class="selectedStatuses.includes(status.value) ? 'border-violet-600 bg-violet-600 text-white' : 'border-slate-300 dark:border-slate-600'"><UIcon v-if="selectedStatuses.includes(status.value)" name="i-heroicons-check" class="size-3" /></span>
+                  <span class="flex size-4 shrink-0 items-center justify-center rounded border" :class="selectedStatuses.includes(status.value) ? 'border-[#b64fc2] bg-[#bd52c9] text-white' : 'border-slate-300 dark:border-slate-600'"><UIcon v-if="selectedStatuses.includes(status.value)" name="i-heroicons-check" class="size-3" /></span>
                 </button>
               </li>
             </ul>
@@ -573,7 +598,7 @@ function clearFilter(key: 'project' | 'status' | 'priority') {
                 <button type="button" class="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left text-sm transition-colors hover:bg-violet-50 dark:hover:bg-violet-950/30" :class="selectedPriorities.includes(priority.value) && 'bg-violet-50 dark:bg-violet-950/30'" @click="togglePriorityFilter(priority.value)">
                   <UIcon name="i-heroicons-flag-20-solid" class="size-4 shrink-0" :class="priorityFlagColor[priority.value]" />
                   <span class="min-w-0 flex-1 font-medium text-slate-700 dark:text-slate-200">{{ priority.label }}</span>
-                  <span class="flex size-4 shrink-0 items-center justify-center rounded border" :class="selectedPriorities.includes(priority.value) ? 'border-violet-600 bg-violet-600 text-white' : 'border-slate-300 dark:border-slate-600'"><UIcon v-if="selectedPriorities.includes(priority.value)" name="i-heroicons-check" class="size-3" /></span>
+                  <span class="flex size-4 shrink-0 items-center justify-center rounded border" :class="selectedPriorities.includes(priority.value) ? 'border-[#b64fc2] bg-[#bd52c9] text-white' : 'border-slate-300 dark:border-slate-600'"><UIcon v-if="selectedPriorities.includes(priority.value)" name="i-heroicons-check" class="size-3" /></span>
                 </button>
               </li>
             </ul>
@@ -696,21 +721,90 @@ function clearFilter(key: 'project' | 'status' | 'priority') {
       @delete="handleDeleteTask"
     />
 
-    <QuadrosGanttChart v-else-if="activeView === 'gantt'" :tasks="filtered" />
+    <QuadrosGanttChart 
+      v-else-if="activeView === 'gantt'" 
+      :tasks="filtered" 
+      :is-selecting="isSelecting"
+      v-model:selected-ids="selectedTasks"
+      @edit="openEditTaskModal"
+      @add-task="activeMainTab = 'pessoais'; newTaskOpen = true"
+      @selection-started="isSelecting = true"
+    />
 
     <div v-else class="space-y-4">
-      <div class="flex items-center justify-between">
-        <h2 class="font-display text-lg font-semibold text-slate-700 dark:text-slate-200">{{ calendarLabel }}</h2>
-        <div class="flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-0.5 dark:border-slate-800 dark:bg-slate-900">
-          <UButton color="neutral" variant="ghost" size="sm" icon="i-heroicons-chevron-left" aria-label="Mês anterior" @click="shiftCalendarMonth(-1)" />
-          <UButton variant="ghost" size="sm" label="Hoje" class="font-semibold text-violet-600" @click="goToCurrentMonth" />
-          <UButton color="neutral" variant="ghost" size="sm" icon="i-heroicons-chevron-right" aria-label="Próximo mês" @click="shiftCalendarMonth(1)" />
+      <div class="flex items-center gap-4">
+        <!-- Controles do lado esquerdo -->
+        <div class="flex items-center gap-2">
+          <!-- Botão Hoje -->
+          <UButton color="white" variant="solid" size="sm" label="Hoje" class="font-medium text-slate-600 dark:text-slate-300 shadow-sm border border-slate-200 dark:border-slate-700" @click="goToCurrentMonth" />
+          
+          <!-- Dropdown Mês/Semana/Dia -->
+          <UPopover mode="click">
+            <UButton color="white" variant="solid" size="sm" :label="calendarViewLabels[calendarViewMode]" trailing-icon="i-heroicons-chevron-down" class="font-medium text-slate-600 dark:text-slate-300 shadow-sm border border-slate-200 dark:border-slate-700" />
+            <template #content>
+              <div class="p-2 w-48 shadow-sm">
+                <span class="text-[11px] font-semibold text-slate-400 block px-2 mb-1">Período de tempo</span>
+                <button 
+                  class="flex items-center justify-between w-full px-2 py-1.5 rounded transition-colors text-sm"
+                  :class="calendarViewMode === 'dia' ? 'bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-medium' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'"
+                  @click="calendarViewMode = 'dia'"
+                >
+                  <span>Dia</span>
+                  <UKbd>D</UKbd>
+                </button>
+                <button 
+                  class="flex items-center justify-between w-full px-2 py-1.5 rounded transition-colors text-sm"
+                  :class="calendarViewMode === '4dias' ? 'bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-medium' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'"
+                  @click="calendarViewMode = '4dias'"
+                >
+                  <span>4 dias</span>
+                  <UKbd>4</UKbd>
+                </button>
+                <button 
+                  class="flex items-center justify-between w-full px-2 py-1.5 rounded transition-colors text-sm"
+                  :class="calendarViewMode === 'semana' ? 'bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-medium' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'"
+                  @click="calendarViewMode = 'semana'"
+                >
+                  <span>Semana</span>
+                  <UKbd>SEM</UKbd>
+                </button>
+                <button 
+                  class="flex items-center justify-between w-full px-2 py-1.5 rounded transition-colors text-sm"
+                  :class="calendarViewMode === 'mes' ? 'bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-medium' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'"
+                  @click="calendarViewMode = 'mes'"
+                >
+                  <span>Mês</span>
+                  <UKbd>MIN</UKbd>
+                </button>
+              </div>
+            </template>
+          </UPopover>
         </div>
+
+        <!-- Navegação de Setas -->
+        <div class="flex items-center gap-1">
+          <UButton color="neutral" variant="ghost" size="sm" icon="i-heroicons-chevron-left" class="text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Mês anterior" @click="shiftCalendarMonth(-1)" />
+          <UButton color="neutral" variant="ghost" size="sm" icon="i-heroicons-chevron-right" class="text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Próximo mês" @click="shiftCalendarMonth(1)" />
+        </div>
+
+        <!-- Rótulo do Mês -->
+        <h2 class="font-display text-lg font-semibold text-slate-700 dark:text-slate-200 ml-2 capitalize">{{ calendarLabel.toLowerCase() }}</h2>
       </div>
+      <CalendarioCalendarTimeGrid
+        v-if="calendarViewMode !== 'mes'"
+        :date="timeGridBaseDate"
+        :days-count="calendarViewMode === 'dia' ? 1 : calendarViewMode === '4dias' ? 4 : 7"
+        :events="calendarEvents"
+        @add-task="newTaskOpen = true"
+        @edit-task="openEditTaskModal(tasks.find(t => t.id === $event.id)!)"
+      />
       <CalendarioCalendarMonth
+        v-else
         :year="calendarCurrent.year"
         :month="calendarCurrent.month"
         :events="calendarEvents"
+        @add-task="newTaskOpen = true"
+        @edit-task="openEditTaskModal(tasks.find(t => t.id === $event.id)!)"
       />
     </div>
 

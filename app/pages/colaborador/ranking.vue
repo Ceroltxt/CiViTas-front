@@ -7,224 +7,283 @@ definePageMeta({ sidebarWidget: 'none' })
 
 const leaderboard = getLeaderboard()
 const currentUser = useCurrentUser()
-
 const top3 = computed(() => leaderboard.slice(0, 3))
 const showAllRank = ref(false)
-const remainingRank = computed(() => showAllRank.value ? leaderboard : leaderboard.slice(0, 5)) 
-
+const tableRank = computed(() => showAllRank.value ? leaderboard : leaderboard.slice(0, 5))
 const myRank = computed(() => leaderboard.find(r => r.user.id === currentUser.id))
-const showMyRankAtBottom = computed(() => {
-  if (!myRank.value) return false
-  return !showAllRank.value && myRank.value.position > 5
-})
-
-function getInitials(name: string) {
-  const parts = name.split(' ')
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[1][0]).toUpperCase()
-  }
-  return name.substring(0, 2).toUpperCase()
-}
+const showMyRankAtBottom = computed(() => !showAllRank.value && myRank.value && myRank.value.position > 5)
 
 const filters = ['Semanal', 'Mensal', 'Trimestral', 'Por Projeto', 'Por Equipe']
 const activeFilter = ref('Mensal')
+const achievementsOpen = ref(false)
 
-function getMedalColor(position: number) {
-  if (position === 1) return 'text-amber-500' // Ouro
-  if (position === 2) return 'text-slate-400' // Prata
-  if (position === 3) return 'text-orange-600' // Bronze
-  return 'text-slate-300'
+// Mock evolution data
+const evolution: Record<string, { value: number; direction: 'up' | 'down' | 'same' }> = {
+  0: { value: 2, direction: 'up' }, 1: { value: 1, direction: 'up' }, 2: { value: 1, direction: 'down' },
+  3: { value: 0, direction: 'same' }, 4: { value: 3, direction: 'up' }, 5: { value: 1, direction: 'down' },
+  6: { value: 2, direction: 'up' }, 7: { value: 0, direction: 'same' }, 8: { value: 1, direction: 'up' },
+  9: { value: 2, direction: 'down' },
 }
+function getEvolution(pos: number) { return evolution[pos] ?? { value: 0, direction: 'same' as const } }
 
-function getRankBarColor(position: number) {
-  if (position === 1) return 'bg-gradient-to-r from-orange-400 to-rose-500'
-  if (position === 2) return 'bg-gradient-to-r from-orange-400 to-rose-500'
-  if (position === 3) return 'bg-gradient-to-r from-orange-400 to-rose-500'
-  return 'bg-gradient-to-r from-orange-400 to-rose-500'
+interface Achievement { id: string; icon: string; name: string; rule: string; howTo: string; count: number; requirement: number; color: string }
+const achievements: Achievement[] = [
+  { id: 'a1', icon: 'i-heroicons-bolt', name: 'Entrega', rule: 'A cada 3 tarefas concluídas antes do prazo.', howTo: 'Conclua tarefas antes da data de vencimento.', count: 2, requirement: 3, color: 'text-amber-500 bg-amber-50 dark:bg-amber-500/10' },
+  { id: 'a2', icon: 'i-heroicons-clock', name: 'Prazo', rule: 'A cada 5 tarefas entregues dentro do prazo.', howTo: 'Entregue tarefas sem ultrapassar a data limite.', count: 5, requirement: 5, color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10' },
+  { id: 'a3', icon: 'i-heroicons-fire', name: 'Sequência', rule: 'A cada 10 tarefas seguidas sem atraso.', howTo: 'Mantenha uma sequência de entregas pontuais.', count: 4, requirement: 10, color: 'text-orange-500 bg-orange-50 dark:bg-orange-500/10' },
+  { id: 'a4', icon: 'i-heroicons-star', name: 'Destaque', rule: 'A cada vez que ficar no Top 1 mensal.', howTo: 'Termine o mês na 1ª posição do ranking.', count: 0, requirement: 1, color: 'text-violet-500 bg-violet-50 dark:bg-violet-500/10' },
+]
+
+function getRankBarWidth(entry: typeof leaderboard[0]) {
+  return `${(entry.stars / top3.value[0].stars) * 100}%`
 }
 </script>
 
 <template>
-  <div class="mx-auto max-w-7xl space-y-6 p-4 sm:p-6">
-    <div class="flex items-center justify-between">
-      <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-        <UIcon name="i-heroicons-trophy" class="size-7 text-orange-500" />
-        Ranking de Desempenho
-      </h1>
+  <div class="mx-auto max-w-7xl space-y-5 p-4 sm:p-6">
+    <div class="flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+          🏆 Ranking de Responsáveis
+        </h1>
+        <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">Reconhecendo quem faz a diferença todos os dias!</p>
+      </div>
     </div>
 
-    <!-- Filtros -->
-    <div class="flex flex-wrap gap-2">
-      <button
-        v-for="f in filters"
-        :key="f"
-        class="px-4 py-1.5 text-sm font-semibold rounded-full border transition-colors"
-        :class="activeFilter === f 
-          ? 'bg-rose-500 text-white border-rose-500' 
-          : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-300'"
-        @click="activeFilter = f"
-      >
-        {{ f }}
-      </button>
-    </div>
-
-    <!-- Top 3 Pódio -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
-      <!-- 2º Lugar -->
-      <div v-if="top3[1]" class="order-2 md:order-1 flex flex-col items-center p-8 bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 relative overflow-hidden h-full">
-        <UIcon name="i-heroicons-trophy" class="absolute -right-8 -top-8 size-48 text-slate-50 dark:text-slate-800/20 -rotate-12" />
-        <UAvatar :src="top3[1].user.avatar" :alt="top3[1].user.name" size="3xl" class="ring-4 ring-slate-100 dark:ring-slate-800 relative z-10" />
-        <div class="mt-5 text-center relative z-10 space-y-1">
-          <UIcon name="i-heroicons-trophy" class="size-6 mx-auto text-slate-400" />
-          <h2 class="text-[17px] font-bold text-slate-800 dark:text-slate-100">{{ top3[1].user.name }}</h2>
-          <p class="text-[11px] text-slate-400 font-medium">#2 · {{ activeFilter }}</p>
-          <div class="pt-3 flex items-center justify-center gap-1 text-orange-500 font-black text-3xl tracking-tight">
-            <UIcon name="i-heroicons-star-solid" class="size-6" />
-            <span>{{ top3[1].stars }}</span>
-          </div>
+    <!-- Pódio -->
+    <div class="rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 overflow-hidden">
+      <!-- Filtro de período -->
+      <div class="flex items-center gap-3 border-b border-slate-100 px-5 py-3 dark:border-slate-800">
+        <span class="text-xs font-medium text-slate-500">Período</span>
+        <div class="flex gap-1.5 overflow-x-auto">
+          <button
+            v-for="f in filters" :key="f" type="button"
+            class="shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors"
+            :class="activeFilter === f ? 'bg-orange-50 text-orange-600 dark:bg-orange-500/10 dark:text-orange-300' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200'"
+            @click="activeFilter = f"
+          >{{ f }}</button>
         </div>
       </div>
 
-      <!-- 1º Lugar -->
-      <div v-if="top3[0]" class="order-1 md:order-2 flex flex-col items-center p-8 bg-white dark:bg-slate-900 rounded-3xl shadow-lg border-2 border-rose-200 dark:border-rose-900 relative overflow-hidden transform md:-translate-y-4 h-full">
-        <div class="absolute inset-0 bg-gradient-to-b from-orange-50 to-transparent dark:from-orange-900"></div>
-        <UAvatar :src="top3[0].user.avatar" :alt="top3[0].user.name" size="3xl" class="ring-4 ring-rose-200 dark:ring-rose-800 relative z-10" />
-        <div class="mt-5 text-center relative z-10 space-y-1">
-          <svg class="w-7 h-7 mx-auto text-orange-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"></path>
-          </svg>
-          <h2 class="text-xl font-bold text-slate-800 dark:text-slate-100">{{ top3[0].user.name }}</h2>
-          <p class="text-xs text-slate-400 font-medium">#1 · {{ activeFilter }}</p>
-          <div class="pt-3 flex items-center justify-center gap-1 text-orange-500 font-black text-4xl tracking-tight">
-            <UIcon name="i-heroicons-star-solid" class="size-7" />
-            <span>{{ top3[0].stars }}</span>
+      <!-- Top 3 com pedestais -->
+      <div class="flex items-end justify-center gap-4 px-5 pb-0 pt-8 sm:gap-8">
+        <!-- 2º -->
+        <div v-if="top3[1]" class="flex w-28 flex-col items-center sm:w-32">
+          <div class="relative">
+            <UAvatar :src="top3[1].user.avatar" :alt="top3[1].user.name" size="xl" class="ring-3 ring-slate-300" />
+            <span class="absolute -right-1 -top-1 grid size-6 place-items-center rounded-full bg-slate-400 text-xs font-black text-white shadow">2</span>
+          </div>
+          <p class="mt-2 truncate text-center text-sm font-bold text-slate-700 dark:text-slate-200 w-full">{{ top3[1].user.name }}</p>
+          <p class="flex items-center gap-1 text-sm font-bold text-orange-500"><UIcon name="i-heroicons-star-solid" class="size-3.5" />{{ top3[1].stars }} pontos</p>
+          <div class="mt-3 flex h-20 w-full items-end justify-center rounded-t-2xl bg-slate-200/60 dark:bg-slate-700/40">
+            <span class="mb-3 text-3xl">🥈</span>
           </div>
         </div>
-      </div>
 
-      <!-- 3º Lugar -->
-      <div v-if="top3[2]" class="order-3 md:order-3 flex flex-col items-center p-8 bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 relative overflow-hidden h-full">
-        <UIcon name="i-heroicons-check-badge" class="absolute -right-8 -top-8 size-48 text-slate-50 dark:text-slate-800/20 -rotate-12" />
-        <UAvatar :src="top3[2].user.avatar" :alt="top3[2].user.name" size="3xl" class="ring-4 ring-slate-100 dark:ring-slate-800 relative z-10" />
-        <div class="mt-5 text-center relative z-10 space-y-1">
-          <UIcon name="i-heroicons-check-badge" class="size-6 mx-auto text-slate-400" />
-          <h2 class="text-[17px] font-bold text-slate-800 dark:text-slate-100">{{ top3[2].user.name }}</h2>
-          <p class="text-[11px] text-slate-400 font-medium">#3 · {{ activeFilter }}</p>
-          <div class="pt-3 flex items-center justify-center gap-1 text-orange-500 font-black text-3xl tracking-tight">
-            <UIcon name="i-heroicons-star-solid" class="size-6" />
-            <span>{{ top3[2].stars }}</span>
+        <!-- 1º -->
+        <div v-if="top3[0]" class="flex w-28 flex-col items-center sm:w-36">
+          <div class="relative">
+            <UAvatar :src="top3[0].user.avatar" :alt="top3[0].user.name" size="3xl" class="ring-4 ring-orange-300 dark:ring-orange-700" />
+            <span class="absolute -right-1 -top-1 grid size-7 place-items-center rounded-full bg-orange-500 text-xs font-black text-white shadow">1</span>
+          </div>
+          <p class="mt-2 truncate text-center text-base font-bold text-slate-800 dark:text-slate-100 w-full">{{ top3[0].user.name }}</p>
+          <p class="flex items-center gap-1 text-sm font-bold text-orange-500"><UIcon name="i-heroicons-star-solid" class="size-3.5" />{{ top3[0].stars }} pontos</p>
+          <div class="mt-3 flex h-28 w-full items-end justify-center rounded-t-2xl bg-orange-100/70 dark:bg-orange-900/20">
+            <span class="mb-3 text-4xl">🥇</span>
+          </div>
+        </div>
+
+        <!-- 3º -->
+        <div v-if="top3[2]" class="flex w-28 flex-col items-center sm:w-32">
+          <div class="relative">
+            <UAvatar :src="top3[2].user.avatar" :alt="top3[2].user.name" size="xl" class="ring-3 ring-orange-300/60" />
+            <span class="absolute -right-1 -top-1 grid size-6 place-items-center rounded-full bg-orange-700 text-xs font-black text-white shadow">3</span>
+          </div>
+          <p class="mt-2 truncate text-center text-sm font-bold text-slate-700 dark:text-slate-200 w-full">{{ top3[2].user.name }}</p>
+          <p class="flex items-center gap-1 text-sm font-bold text-orange-500"><UIcon name="i-heroicons-star-solid" class="size-3.5" />{{ top3[2].stars }} pontos</p>
+          <div class="mt-3 flex h-16 w-full items-end justify-center rounded-t-2xl bg-orange-100/40 dark:bg-orange-900/10">
+            <span class="mb-3 text-3xl">🥉</span>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Container Inferior: Ranking Completo e Regras -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-4">
-      
-      <!-- Ranking Restante -->
-      <div class="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 flex flex-col">
-        <h3 class="text-lg font-bold text-slate-800 dark:text-slate-100 mb-6">Ranking completo</h3>
-        <div class="space-y-4 flex-1">
-          
-          <div v-for="entry in remainingRank" :key="entry.user.id" class="flex items-center gap-4 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm transition-all hover:border-slate-200">
-            <span class="w-8 text-center text-sm font-bold text-slate-500">#{{ entry.position }}</span>
-            <UAvatar :src="entry.user.avatar" :alt="entry.user.name" size="md" />
-            <div class="flex-1 min-w-0 pr-4">
-              <h4 class="text-[15px] font-bold text-slate-700 dark:text-slate-200 truncate">{{ entry.user.name }}</h4>
-              <div class="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full mt-2.5 overflow-hidden">
-                <div class="h-full rounded-full" :class="getRankBarColor(entry.position)" :style="{ width: `${(entry.stars / top3[0].stars) * 100}%` }"></div>
-              </div>
-            </div>
-            <div class="flex items-center gap-1 text-slate-700 dark:text-slate-200 font-black text-lg w-20 justify-end">
-              <UIcon name="i-heroicons-star-solid" class="size-5 text-orange-400" />
-              <span>{{ entry.stars }}</span>
-            </div>
-          </div>
+    <div class="grid grid-cols-1 gap-5 lg:grid-cols-3">
+      <!-- Tabela de Ranking -->
+      <div class="lg:col-span-2 rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 overflow-hidden">
+        <!-- Header da tabela -->
+        <div class="flex items-center border-b border-slate-100 px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:border-slate-800">
+          <span class="w-14">Posição</span>
+          <span class="flex-1">Responsável</span>
+          <span class="w-28 text-center hidden sm:block">Pontuação</span>
+          <span class="w-20 text-center">Evolução</span>
+        </div>
 
-          <!-- Posição do Usuário caso não esteja no Top 5 -->
-          <div v-if="showMyRankAtBottom && myRank" class="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800">
-            <div class="flex items-center gap-4 bg-rose-50 dark:bg-slate-800 p-4 rounded-2xl border border-rose-200 dark:border-slate-700 shadow-sm">
-              <span class="w-8 text-center text-[15px] font-black text-rose-500">#{{ myRank.position }}</span>
-              <UAvatar :src="myRank.user.avatar" :alt="myRank.user.name" size="md" />
-              <div class="flex-1 min-w-0 pr-4">
-                <h4 class="text-[15px] font-bold text-slate-800 dark:text-slate-100 truncate flex items-center gap-2">
-                  {{ myRank.user.name }} 
-                  <span class="bg-rose-200 text-rose-700 dark:bg-rose-900 dark:text-rose-300 text-[10px] px-2 py-0.5 rounded-lg uppercase tracking-wider font-bold">Você</span>
-                </h4>
-                <div class="h-2 w-full bg-slate-200 dark:bg-slate-700 rounded-full mt-2.5 overflow-hidden">
-                  <div class="h-full rounded-full bg-gradient-to-r from-orange-400 to-rose-500" :style="{ width: `${(myRank.stars / top3[0].stars) * 100}%` }"></div>
+        <!-- Linhas -->
+        <div>
+          <div
+            v-for="entry in tableRank" :key="entry.user.id"
+            class="flex items-center border-b border-slate-50 px-5 py-3 transition-colors last:border-b-0 dark:border-slate-800/50"
+            :class="entry.user.id === currentUser.id ? 'bg-orange-50/40 dark:bg-orange-500/5' : 'hover:bg-slate-50/50 dark:hover:bg-slate-800/30'"
+          >
+            <!-- Posição -->
+            <span class="w-14 text-base font-black" :class="entry.position <= 3 ? 'text-orange-500' : 'text-slate-400'">{{ entry.position }}</span>
+
+            <!-- Avatar + Nome + Barra -->
+            <div class="flex flex-1 items-center gap-3 min-w-0 pr-4">
+              <UAvatar :src="entry.user.avatar" :alt="entry.user.name" size="sm" />
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2">
+                  <span class="truncate text-sm font-bold text-slate-700 dark:text-slate-200">{{ entry.user.name }}</span>
+                  <span v-if="entry.user.id === currentUser.id" class="shrink-0 rounded bg-orange-100 px-1.5 py-0.5 text-[10px] font-bold text-orange-600 dark:bg-orange-500/10 dark:text-orange-300">Você</span>
+                </div>
+                <div class="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                  <div class="h-full rounded-full bg-orange-400 transition-all" :style="{ width: getRankBarWidth(entry) }" />
                 </div>
               </div>
-              <div class="flex items-center gap-1 text-slate-800 dark:text-slate-100 font-black text-lg w-20 justify-end">
-                <UIcon name="i-heroicons-star-solid" class="size-5 text-orange-400" />
-                <span>{{ myRank.stars }}</span>
+            </div>
+
+            <!-- Pontuação -->
+            <div class="w-28 text-center hidden sm:block">
+              <span class="text-lg font-black text-slate-700 dark:text-slate-200">{{ entry.stars }}</span>
+              <p class="text-[10px] text-slate-400">pontos</p>
+            </div>
+
+            <!-- Evolução -->
+            <div class="w-20 flex justify-center">
+              <span
+                v-if="getEvolution(entry.position - 1).direction === 'up'"
+                class="flex items-center gap-0.5 rounded-lg bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400"
+              >
+                <UIcon name="i-heroicons-arrow-up" class="size-3" />{{ getEvolution(entry.position - 1).value }}
+              </span>
+              <span
+                v-else-if="getEvolution(entry.position - 1).direction === 'down'"
+                class="flex items-center gap-0.5 rounded-lg bg-rose-50 px-2 py-1 text-xs font-bold text-rose-500 dark:bg-rose-500/10 dark:text-rose-400"
+              >
+                <UIcon name="i-heroicons-arrow-down" class="size-3" />{{ getEvolution(entry.position - 1).value }}
+              </span>
+              <span v-else class="text-sm text-slate-300">—</span>
+            </div>
+          </div>
+
+          <!-- Usuário fora do top -->
+          <div v-if="showMyRankAtBottom && myRank" class="border-t-2 border-dashed border-slate-200 dark:border-slate-700">
+            <div class="flex items-center bg-orange-50/40 px-5 py-3 dark:bg-orange-500/5">
+              <span class="w-14 text-base font-black text-orange-500">{{ myRank.position }}</span>
+              <div class="flex flex-1 items-center gap-3 min-w-0 pr-4">
+                <UAvatar :src="myRank.user.avatar" :alt="myRank.user.name" size="sm" />
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-2">
+                    <span class="truncate text-sm font-bold text-slate-800 dark:text-slate-100">{{ myRank.user.name }}</span>
+                    <span class="shrink-0 rounded bg-orange-100 px-1.5 py-0.5 text-[10px] font-bold text-orange-600 dark:bg-orange-500/10 dark:text-orange-300">Você</span>
+                  </div>
+                  <div class="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                    <div class="h-full rounded-full bg-orange-400" :style="{ width: getRankBarWidth(myRank) }" />
+                  </div>
+                </div>
+              </div>
+              <div class="w-28 text-center hidden sm:block">
+                <span class="text-lg font-black text-slate-800 dark:text-slate-100">{{ myRank.stars }}</span>
+                <p class="text-[10px] text-slate-400">pontos</p>
+              </div>
+              <div class="w-20 flex justify-center">
+                <span class="flex items-center gap-0.5 rounded-lg bg-rose-50 px-2 py-1 text-xs font-bold text-rose-500 dark:bg-rose-500/10 dark:text-rose-400">
+                  <UIcon name="i-heroicons-arrow-down" class="size-3" />2
+                </span>
               </div>
             </div>
           </div>
+        </div>
 
-          <div class="pt-4 flex justify-center">
-            <UButton 
-              v-if="!showAllRank"
-              variant="ghost" 
-              color="gray" 
-              class="font-semibold text-slate-500 hover:text-slate-800"
-              @click="showAllRank = true"
-            >
-              Ver mais posições
-            </UButton>
-            <UButton 
-              v-else
-              variant="ghost" 
-              color="gray" 
-              class="font-semibold text-slate-500 hover:text-slate-800"
-              @click="showAllRank = false"
-            >
-              Mostrar menos
-            </UButton>
-          </div>
-
+        <div class="flex justify-center border-t border-slate-100 py-3 dark:border-slate-800">
+          <button type="button" class="text-xs font-semibold text-slate-400 transition-colors hover:text-orange-600" @click="showAllRank = !showAllRank">
+            {{ showAllRank ? 'Mostrar menos' : 'Ver mais posições' }}
+          </button>
         </div>
       </div>
 
-      <!-- Regras de Pontuação -->
-      <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-6">
-        <h3 class="text-lg font-bold text-slate-800 dark:text-slate-100 mb-6">Regras de pontuação</h3>
-        <div class="space-y-3">
-          
-          <div class="flex items-center justify-between border border-slate-100 dark:border-slate-800 rounded-xl p-3 bg-slate-50/50 dark:bg-slate-800/30">
-            <span class="text-sm text-slate-600 dark:text-slate-300 font-medium">Concluída <strong class="text-slate-800 dark:text-slate-100">ANTES</strong> do prazo</span>
-            <div class="flex items-center gap-1 bg-rose-500 text-white px-2 py-0.5 rounded-lg text-xs font-bold shadow-sm">
-              +3 <UIcon name="i-heroicons-star-solid" class="size-3" />
+      <!-- Sidebar -->
+      <div class="space-y-5">
+        <!-- Regras -->
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+          <h3 class="font-semibold text-slate-800 dark:text-slate-100 mb-3">Regras de pontuação</h3>
+          <div class="space-y-2">
+            <div v-for="rule in [
+              { label: 'Concluída <strong>ANTES</strong> do prazo', value: '+3', bg: 'bg-orange-500 text-white' },
+              { label: 'Concluída <strong>NO</strong> prazo', value: '+1', bg: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
+              { label: 'Concluída <strong>APÓS</strong> o prazo', value: '0', bg: 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400' },
+              { label: 'Reaberta após conclusão', value: '-2', bg: 'bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400' },
+            ]" :key="rule.label" class="flex items-center justify-between rounded-lg p-2.5">
+              <span class="text-xs font-medium text-slate-600 dark:text-slate-300" v-html="rule.label" />
+              <span class="flex items-center gap-0.5 rounded-md px-2 py-0.5 text-[11px] font-bold" :class="rule.bg">{{ rule.value }} <UIcon name="i-heroicons-star-solid" class="size-2.5" /></span>
             </div>
           </div>
-          
-          <div class="flex items-center justify-between border border-slate-100 dark:border-slate-800 rounded-xl p-3 bg-slate-50/50 dark:bg-slate-800/30">
-            <span class="text-sm text-slate-600 dark:text-slate-300 font-medium">Concluída <strong class="text-slate-800 dark:text-slate-100">NO</strong> prazo</span>
-            <div class="flex items-center gap-1 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-2 py-0.5 rounded-lg text-xs font-bold">
-              +1 <UIcon name="i-heroicons-star-solid" class="size-3" />
-            </div>
-          </div>
-          
-          <div class="flex items-center justify-between border border-slate-100 dark:border-slate-800 rounded-xl p-3 bg-slate-50/50 dark:bg-slate-800/30">
-            <span class="text-sm text-slate-600 dark:text-slate-300 font-medium">Concluída <strong class="text-slate-800 dark:text-slate-100">APÓS</strong> o prazo</span>
-            <div class="flex items-center gap-1 bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 px-2 py-0.5 rounded-lg text-xs font-bold">
-              0 <UIcon name="i-heroicons-star-solid" class="size-3" />
-            </div>
-          </div>
-
-          <div class="flex items-center justify-between border border-slate-100 dark:border-slate-800 rounded-xl p-3 bg-slate-50/50 dark:bg-slate-800/30">
-            <span class="text-sm text-slate-600 dark:text-slate-300 font-medium">Reaberta após conclusão</span>
-            <div class="flex items-center gap-1 bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400 px-2 py-0.5 rounded-lg text-xs font-bold">
-              -2 <UIcon name="i-heroicons-star-solid" class="size-3" />
-            </div>
-          </div>
-
+          <p class="mt-3 text-[11px] leading-relaxed text-slate-400">O sistema audita a cadeia de responsáveis para evitar injustiças.</p>
         </div>
-        <p class="mt-6 text-xs text-slate-400 dark:text-slate-500 leading-relaxed">
-          A pontuação considera a cadeia de responsáveis: o sistema audita em qual momento houve o atraso para evitar injustiças após transferências.
-        </p>
-      </div>
 
+        <!-- Conquistas -->
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+          <div class="mb-4">
+            <h3 class="font-semibold text-slate-800 dark:text-slate-100">Conquistas</h3>
+            <p class="text-[11px] text-slate-400 mt-0.5">{{ achievements.reduce((s, a) => s + Math.floor(a.count / a.requirement), 0) }} conquistas obtidas</p>
+          </div>
+          <div class="grid grid-cols-4 gap-2">
+            <button
+              v-for="a in achievements" :key="a.id" type="button"
+              class="flex flex-col items-center gap-1.5 rounded-xl border p-3 transition-all hover:border-orange-200 relative"
+              :class="a.count >= a.requirement ? `border-transparent ${a.color}` : 'border-slate-100 bg-slate-50 dark:border-slate-800 dark:bg-slate-800/30'"
+              @click="achievementsOpen = true"
+            >
+              <UIcon :name="a.icon" class="size-5" :class="a.count >= a.requirement ? '' : 'text-slate-300 dark:text-slate-600'" />
+              <span class="text-[9px] font-semibold leading-tight text-center" :class="a.count >= a.requirement ? 'text-slate-600 dark:text-slate-300' : 'text-slate-300 dark:text-slate-600'">{{ a.name }}</span>
+              <span v-if="Math.floor(a.count / a.requirement) > 0" class="absolute -right-1 -top-1 grid size-4 place-items-center rounded-full bg-orange-500 text-[8px] font-bold text-white">{{ Math.floor(a.count / a.requirement) }}</span>
+            </button>
+          </div>
+          <button type="button" class="mt-4 flex items-center gap-1.5 text-sm font-semibold text-orange-600 transition-colors hover:text-orange-700 dark:text-orange-300" @click="achievementsOpen = true">
+            Ver minhas conquistas <UIcon name="i-heroicons-arrow-right" class="size-4" />
+          </button>
+        </div>
+      </div>
     </div>
+
+    <!-- Modal Conquistas -->
+    <UModal v-model:open="achievementsOpen">
+      <template #content>
+        <div class="max-h-[80vh] overflow-y-auto p-6">
+          <div class="mb-5 flex items-center justify-between">
+            <div>
+              <h2 class="text-lg font-bold text-slate-800 dark:text-slate-100">Minhas Conquistas</h2>
+              <p class="mt-0.5 text-xs text-slate-400">{{ achievements.reduce((s, a) => s + Math.floor(a.count / a.requirement), 0) }} conquistas obtidas no total</p>
+            </div>
+            <button type="button" class="grid size-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" @click="achievementsOpen = false">
+              <UIcon name="i-heroicons-x-mark" class="size-5" />
+            </button>
+          </div>
+          <div class="space-y-3">
+            <div v-for="a in achievements" :key="a.id" class="flex gap-4 rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+              <div class="grid size-10 shrink-0 place-items-center rounded-xl" :class="a.count >= a.requirement ? a.color : 'bg-slate-100 text-slate-300 dark:bg-slate-800 dark:text-slate-600'">
+                <UIcon :name="a.icon" class="size-5" />
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2">
+                  <h4 class="text-sm font-bold text-slate-800 dark:text-slate-100">{{ a.name }}</h4>
+                  <span v-if="Math.floor(a.count / a.requirement) > 0" class="rounded-md bg-orange-50 px-1.5 py-0.5 text-[10px] font-bold text-orange-600 dark:bg-orange-500/10 dark:text-orange-300">×{{ Math.floor(a.count / a.requirement) }}</span>
+                </div>
+                <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{{ a.rule }}</p>
+                <!-- Barra de progresso para a próxima -->
+                <div class="mt-2 flex items-center gap-2">
+                  <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                    <div class="h-full rounded-full bg-orange-400 transition-all" :style="{ width: `${Math.min((a.count % a.requirement) / a.requirement * 100, 100)}%` }" />
+                  </div>
+                  <span class="text-[10px] font-semibold text-slate-400">{{ a.count % a.requirement }}/{{ a.requirement }}</span>
+                </div>
+                <p class="mt-1.5 flex items-center gap-1 text-[11px] text-slate-400"><UIcon name="i-heroicons-light-bulb" class="size-3" />{{ a.howTo }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+    </UModal>
   </div>
 </template>

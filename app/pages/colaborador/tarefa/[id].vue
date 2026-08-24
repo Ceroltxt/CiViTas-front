@@ -120,7 +120,7 @@ const displayedAuditLog = computed(() => {
               <div class="absolute w-32 h-32 bg-violet-100 dark:bg-violet-900/30 rounded-full blur-2xl"></div>
               <button
                 type="button"
-                class="relative flex size-20 items-center justify-center rounded-full border border-violet-200 bg-violet-100 text-violet-600 shadow-sm transition-all duration-200 hover:bg-violet-600 hover:text-white hover:shadow-lg hover:shadow-violet-500/25 focus-visible:bg-violet-600 focus-visible:text-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-300 dark:border-violet-800 dark:bg-violet-900/50 dark:text-violet-400 dark:hover:bg-violet-500 dark:hover:text-white"
+                class="relative flex size-20 items-center justify-center rounded-full border border-violet-200 bg-violet-100 text-violet-600 shadow-sm transition-all duration-200 hover:bg-[#bd52c9] hover:text-white hover:shadow-lg hover:shadow-fuchsia-500/25 focus-visible:bg-[#bd52c9] focus-visible:text-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-fuchsia-300 dark:border-violet-800 dark:bg-violet-900/50 dark:text-violet-400 dark:hover:bg-[#bd52c9] dark:hover:text-white"
                 aria-label="Exportar tarefa em CSV"
                 title="Exportar tarefa"
                 @click="exportTask"
