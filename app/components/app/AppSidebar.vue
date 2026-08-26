@@ -32,9 +32,9 @@ function isNavActive(to: string) {
     </div>
 
     <!-- Seções com ordem dinâmica -->
-    <div class="flex min-h-0 flex-1 flex-col" :class="projectsFirst && !collapsed ? 'flex-col-reverse' : ''">
+    <div class="flex min-h-0 flex-1 flex-col">
       <!-- Navegação (Workspace) -->
-      <nav :class="[!workspaceHidden || collapsed ? 'flex-1' : '', 'px-3 py-3 flex flex-col']" aria-label="Navegação principal">
+      <nav class="shrink-0 px-3 py-3 flex flex-col" aria-label="Navegação principal">
         <div class="mb-1 flex items-center justify-between" :class="collapsed ? 'justify-center' : 'px-2.5'">
           <p v-if="!collapsed" class="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">Workspace</p>
           <button
@@ -64,7 +64,7 @@ function isNavActive(to: string) {
         </template>
         
         <!-- Toggle Projetos (4 bolinhas coloridas) -->
-        <div class="mt-auto pt-4 flex justify-center" v-if="collapsed && widget === 'project'">
+        <div class="mt-4 flex justify-center" v-if="collapsed && widget === 'project'">
           <button
             type="button"
             class="grid size-9 place-items-center rounded-lg transition-colors hover:bg-slate-50 dark:hover:bg-slate-800"
@@ -82,8 +82,8 @@ function isNavActive(to: string) {
       </nav>
 
       <!-- Rodapé contextual (Projetos) -->
-      <div v-if="!collapsed && widget && widget !== 'none'" :class="[projectsFirst || workspaceHidden ? 'flex-1' : '', 'min-h-0 border-t border-slate-100 px-3 py-4 dark:border-slate-800 flex flex-col']">
-        <AppProjectCard v-if="widget === 'project'" :projects-first="projectsFirst" @toggle-position="projectsFirst = !projectsFirst" />
+      <div v-if="!collapsed && widget && widget !== 'none'" class="flex-1 min-h-0 border-t border-slate-100 px-3 py-4 dark:border-slate-800 flex flex-col">
+        <AppProjectCard v-if="widget === 'project'" />
         <AppGoalCard v-else-if="widget === 'goal'" />
       </div>
     </div>

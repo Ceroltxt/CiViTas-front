@@ -7,6 +7,12 @@ const emit = defineEmits<{ togglePosition: [] }>()
 
 const projects = useUserProjects()
 const expandedCookie = useCookie<string[]>('civitas_expanded_projects', { default: () => [] })
+const route = useRoute()
+const basePath = computed(() => {
+  if (route.path.startsWith('/gestor')) return '/gestor'
+  if (route.path.startsWith('/admin')) return '/admin'
+  return '/colaborador'
+})
 
 // Create a reactive Set from the cookie for easy manipulation in memory
 const expandedProjectIds = ref<Set<string>>(new Set(expandedCookie.value))
@@ -31,25 +37,13 @@ function toggleProject(projectId: string) {
       <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">Projetos</p>
       <div class="flex items-center gap-2 text-slate-300 dark:text-slate-600">
         <UIcon name="i-heroicons-plus" class="size-3.5 hover:text-orange-500 cursor-pointer transition-colors" />
-        <button
-          v-if="!isSecondary"
-          type="button"
-          class="grid size-5 place-items-center rounded transition-colors hover:text-orange-500"
-          :title="projectsFirst ? 'Mover projetos para baixo' : 'Mover projetos para cima'"
-          @click="emit('togglePosition')"
-        >
-          <UIcon
-            :name="projectsFirst ? 'i-heroicons-arrow-down' : 'i-heroicons-arrow-up'"
-            class="size-3.5"
-          />
-        </button>
       </div>
     </div>
 
     <div class="scroll-thin min-h-0 flex-1 snap-y snap-mandatory space-y-0.5 overflow-y-auto pr-1">
       <div v-for="project in projects" :key="project.id" class="group snap-start">
         <NuxtLink
-          :to="`/colaborador/projetos/${project.id}`"
+          :to="`${basePath}/projetos/${project.id}`"
           class="flex h-9 items-center gap-3 rounded-lg px-2.5 transition-colors hover:bg-orange-50/70 dark:hover:bg-slate-800 cursor-pointer"
         >
           <span class="size-2.5 shrink-0 rounded-full" :class="project.color" />
@@ -79,7 +73,7 @@ function toggleProject(projectId: string) {
             <NuxtLink
               v-for="team in project.teams"
               :key="team.id"
-              :to="`/colaborador/projetos/${project.id}/equipe/${team.id}`"
+              :to="`${basePath}/projetos/${project.id}/equipe/${team.id}`"
               class="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs text-slate-500 transition-colors hover:bg-orange-50/70 hover:text-slate-700 dark:hover:bg-slate-800"
             >
               <span class="grid size-5 shrink-0 place-items-center rounded text-[8px] font-bold text-white" :class="team.color">{{ team.initial }}</span>

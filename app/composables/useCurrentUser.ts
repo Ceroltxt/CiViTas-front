@@ -20,16 +20,18 @@ export function useCurrentUser(): UserSummary {
       const path = route.path
       if (path.startsWith('/admin')) {
         currentUser.id = 'u-admin'
-        currentUser.name = 'Costa Neves'
+        currentUser.name = 'Roberto Admin'
         currentUser.role = 'Administrador'
       } else if (path.startsWith('/gestor')) {
         currentUser.id = 'u-gestor'
-        currentUser.name = 'Costa Neves'
+        currentUser.name = 'Milani Ribeiro'
         currentUser.role = 'Gestor'
+        currentUser.avatar = 'https://i.pravatar.cc/80?img=44'
       } else {
         currentUser.id = 'u-costa'
         currentUser.name = 'Costa Neves'
         currentUser.role = 'Colaborador'
+        currentUser.avatar = 'https://i.pravatar.cc/80?img=47'
       }
     })
   } catch (e) {
