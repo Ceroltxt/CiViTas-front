@@ -7,7 +7,7 @@ const { collapsed: sidebarCollapsed, toggle: toggleSidebar } = useSidebarState()
 const widget = computed(() => {
   // O projeto atual é contextual para toda a experiência do colaborador,
   // não somente para a sua página inicial.
-  if (route.path.startsWith('/colaborador')) return 'project'
+  if (route.path.startsWith('/colaborador') || route.path.startsWith('/gestor')) return 'project'
   return (route.meta.sidebarWidget as 'project' | 'goal' | 'none') ?? 'none'
 })
 
