@@ -2,9 +2,14 @@
 definePageMeta({ layout: 'blank' })
 
 const colorMode = useColorMode()
+const auth = useAuth()
+const currentUser = useCurrentUser()
 
 function toggleTheme() {
   colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'
+}
+function handleLogout() {
+  auth.logout()
 }
 const projects = [
   {
@@ -119,7 +124,7 @@ const lastAccess = [
     <header class="relative z-10 w-full max-w-5xl flex items-center justify-between px-6 py-4">
       <div class="flex gap-1 w-20">
         <UButton variant="ghost" color="neutral" icon="i-lucide-sun-moon" square size="sm" @click="toggleTheme"/>
-        <UButton variant="ghost" color="neutral" icon="i-lucide-log-out" square size="sm" @click="navigateTo('/login')" />
+        <UButton variant="ghost" color="neutral" icon="i-lucide-log-out" square size="sm" @click="handleLogout" />
       </div>
       <img
           src="/civitas-logo-transparent.png"
@@ -132,7 +137,7 @@ const lastAccess = [
     <!-- Boas-vindas -->
     <section class="relative z-10 text-center px-6 pt-2 pb-8 max-w-2xl">
       <h1 class="text-3xl font-extrabold text-slate-800 dark:text-slate-100 mb-2">
-        Bem vindo(a), usuário! 👋
+        Bem-vindo(a), {{ currentUser.name }}! 👋
       </h1>
       <p class="text-base text-slate-500 dark:text-slate-400 leading-relaxed">
         Você tem acesso a diferentes trabalhos. Escolha o projeto e o seu papel para continuar.
@@ -250,7 +255,7 @@ const lastAccess = [
         variant="ghost"
         color="error"
         icon="i-lucide-log-out"
-        @click="navigateTo('/login')"
+        @click="handleLogout"
       >
         Sair da conta
       </UButton>

@@ -1,10 +1,18 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'blank' })
+
 const email = ref('')
 const password = ref('')
 
+const auth = useAuth()
+const { login, isLoading, errorMessage } = auth
+
 async function handleLogin() {
-  console.log('Login com:', email.value, password.value)
+  if (!email.value || !password.value) return
+  const result = await login(email.value, password.value)
+  if (result.success && result.targetRoute) {
+    await navigateTo(result.targetRoute)
+  }
 }
 </script>
 
@@ -37,6 +45,17 @@ async function handleLogin() {
         />
 
         <form @submit.prevent="handleLogin" class="space-y-4">
+          <!-- Alerta de Erro -->
+          <UAlert
+            v-if="errorMessage"
+            title="Falha no Acesso"
+            :description="errorMessage"
+            color="error"
+            variant="soft"
+            icon="i-lucide-alert-circle"
+            class="text-xs"
+          />
+
           <UFormField label="E-mail" name="email">
             <UInput
               v-model="email"
@@ -44,6 +63,7 @@ async function handleLogin() {
               required
               placeholder="seuemail@email.com"
               class="w-full"
+              :disabled="isLoading"
             />
           </UFormField>
 
@@ -62,10 +82,17 @@ async function handleLogin() {
               required
               placeholder="Digite sua senha"
               class="w-full"
+              :disabled="isLoading"
             />
           </UFormField>
 
-          <UButton type="submit" color="primary" block class="mt-2" @click="navigateTo('/ponte')" >
+          <UButton
+            type="submit"
+            color="primary"
+            block
+            class="mt-2"
+            :loading="isLoading"
+          >
             Entrar
           </UButton>
         </form>

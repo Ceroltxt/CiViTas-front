@@ -40,8 +40,8 @@ export default defineNuxtConfig({
   runtimeConfig: {
     jwtCookieName: process.env.NUXT_JWT_COOKIE_NAME,
     public: {
-      appName: process.env.NUXT_PUBLIC_APP_NAME,
-      apiBase: process.env.NUXT_PUBLIC_API_BASE,
+      appName: process.env.NUXT_PUBLIC_APP_NAME || 'CiViTas',
+      apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:8080/api',
     },
   },
 

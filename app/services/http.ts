@@ -19,9 +19,21 @@ export interface RequestOptions {
 export function useApi() {
   const config = useRuntimeConfig()
   const baseURL = (config.public.apiBase as string | undefined) || ''
+  const authToken = useCookie<string | null>('auth_token')
 
   /** Indica se já existe um backend configurado. */
   const hasBackend = baseURL.length > 0
+
+  function getHeaders(customHeaders?: Record<string, string>): Record<string, string> {
+    const headers: Record<string, string> = {
+      Accept: 'application/json',
+      ...customHeaders,
+    }
+    if (authToken.value) {
+      headers.Authorization = `Bearer ${authToken.value}`
+    }
+    return headers
+  }
 
   /**
    * Busca um recurso e valida com `schema`. Sem backend configurado, resolve
@@ -37,9 +49,45 @@ export function useApi() {
       return schema.parse(fallback(), path)
     }
 
-    const raw = await $fetch(path, { baseURL, query: options.query })
+    const raw = await $fetch(path, {
+      baseURL,
+      query: options.query,
+      headers: getHeaders(options.headers),
+    })
     return schema.parse(raw, path)
   }
 
-  return { get, hasBackend, baseURL }
+  /**
+   * Envia dados via POST para a API.
+   */
+  async function post<T>(
+    path: string,
+    body: Record<string, unknown>,
+    schema?: Schema<T>,
+    fallback?: () => T,
+    options: RequestOptions = {},
+  ): Promise<T> {
+    if (!hasBackend) {
+      if (fallback && schema) {
+        return schema.parse(fallback(), path)
+      }
+      return (fallback ? fallback() : {}) as T
+    }
+
+    const raw = await $fetch(path, {
+      method: 'POST',
+      baseURL,
+      body,
+      query: options.query,
+      headers: getHeaders(options.headers),
+    })
+
+    if (schema) {
+      return schema.parse(raw, path)
+    }
+
+    return raw as T
+  }
+
+  return { get, post, hasBackend, baseURL }
 }

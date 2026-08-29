@@ -6,6 +6,9 @@
  * pessoa de backend só precisa implementar estas rotas e apontar a base.
  */
 export const ENDPOINTS = {
+  login: '/auth/login',
+  logout: '/auth/logout',
+  meAuth: '/auth/me',
   currentUser: '/me',
   currentProject: '/me/current-project',
   navigation: '/navigation',

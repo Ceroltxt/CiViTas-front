@@ -16,7 +16,19 @@ const currentUser = reactive<UserSummary>({
 export function useCurrentUser(): UserSummary {
   try {
     const route = useRoute()
+    const auth = useAuth()
+
     watchEffect(() => {
+      const activeUser = auth.user.value
+      if (activeUser) {
+        currentUser.id = String(activeUser.matricula || 'u-active')
+        currentUser.name = activeUser.sobrenome
+          ? `${activeUser.nome} ${activeUser.sobrenome}`
+          : activeUser.nome || activeUser.email
+        currentUser.role = activeUser.role_label || (activeUser.app_role ? activeUser.app_role.toUpperCase() : 'Colaborador')
+        return
+      }
+
       const path = route.path
       if (path.startsWith('/admin')) {
         currentUser.id = 'u-admin'
@@ -48,4 +60,3 @@ export function useCurrentProject(): CurrentProject {
 export function useProjectDetail(): ProjectDetail {
   return projectDetail
 }
-
