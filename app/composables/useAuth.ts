@@ -76,10 +76,7 @@ export function useAuth() {
       throw new Error('Resposta inválida do servidor de autenticação.')
     } catch (err: any) {
       isLoading.value = false
-      const rawMessage = err?.data?.message || err?.response?._data?.message || err?.message
-      const message = rawMessage && typeof rawMessage === 'string' && !rawMessage.includes('FetchError')
-        ? rawMessage
-        : 'E-mail ou senha incorretos. Verifique suas credenciais.'
+      const message = 'Usuário não existente ou e-mail/senha incorretos.'
       errorMessage.value = message
       return { success: false, error: message }
     }
