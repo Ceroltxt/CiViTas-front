@@ -4,13 +4,24 @@ definePageMeta({ layout: 'blank' })
 const nome = ref('')
 const email = ref('')
 const senha = ref('')
+const confirmarSenha = ref('')
 const departamento = ref('')
 const telefone = ref('')
 const aceitaTermos = ref(false)
 
+const requisitosSenha = computed(() => ({
+  maiusculaENumero: /[A-Z]/.test(senha.value) && /\d/.test(senha.value),
+  caractereEspecial: /[^A-Za-z0-9]/.test(senha.value),
+  minimoOitoCaracteres: senha.value.length >= 8,
+  senhasCorrespondem: senha.value.length > 0 && senha.value === confirmarSenha.value
+}))
+
+const senhaValida = computed(() => Object.values(requisitosSenha.value).every(Boolean))
+
 async function handleRegister() {
-  if (!aceitaTermos.value) return
+  if (!aceitaTermos.value || !senhaValida.value) return
   console.log('Cadastro:', { nome: nome.value, email: email.value, senha: senha.value, departamento: departamento.value, telefone: telefone.value })
+  await navigateTo('/ponte')
 }
 </script>
 
@@ -74,6 +85,49 @@ async function handleRegister() {
             />
           </UFormField>
 
+          <div class="-mt-2 space-y-1 text-xs" aria-live="polite">
+            <p
+              class="flex items-center gap-1.5"
+              :class="requisitosSenha.maiusculaENumero ? 'text-emerald-600' : 'text-slate-500 dark:text-slate-400'"
+            >
+              <span aria-hidden="true">{{ requisitosSenha.maiusculaENumero ? '✓' : '○' }}</span>
+              Ter no mínimo 1 maiúscula e 1 número
+            </p>
+            <p
+              class="flex items-center gap-1.5"
+              :class="requisitosSenha.caractereEspecial ? 'text-emerald-600' : 'text-slate-500 dark:text-slate-400'"
+            >
+              <span aria-hidden="true">{{ requisitosSenha.caractereEspecial ? '✓' : '○' }}</span>
+              Ter 1 caractere especial
+            </p>
+            <p
+              class="flex items-center gap-1.5"
+              :class="requisitosSenha.minimoOitoCaracteres ? 'text-emerald-600' : 'text-slate-500 dark:text-slate-400'"
+            >
+              <span aria-hidden="true">{{ requisitosSenha.minimoOitoCaracteres ? '✓' : '○' }}</span>
+              Ter no mínimo 8 caracteres
+            </p>
+          </div>
+
+          <UFormField label="Confirmar senha" name="confirmarSenha">
+            <UInput
+              v-model="confirmarSenha"
+              type="password"
+              required
+              placeholder="Digite a senha novamente"
+              class="w-full"
+            />
+          </UFormField>
+
+          <p
+            class="-mt-2 flex items-center gap-1.5 text-xs"
+            :class="requisitosSenha.senhasCorrespondem ? 'text-emerald-600' : 'text-slate-500 dark:text-slate-400'"
+            aria-live="polite"
+          >
+            <span aria-hidden="true">{{ requisitosSenha.senhasCorrespondem ? '✓' : '○' }}</span>
+            Senhas correspondentes nos dois campos
+          </p>
+
           <UFormField label="Departamento" name="departamento">
             <UInput
               v-model="departamento"
@@ -114,8 +168,7 @@ async function handleRegister() {
             color="primary"
             block
             class="mt-2"
-            :disabled="!aceitaTermos"
-            @click="navigateTo('/ponte')" 
+            :disabled="!aceitaTermos || !senhaValida"
           >
             Criar conta
           </UButton>
