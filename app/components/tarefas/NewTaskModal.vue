@@ -8,7 +8,8 @@ const open = defineModel<boolean>('open', { default: false })
 const emit = defineEmits<{ created: [] }>()
 
 const auth = useAuth()
-const api = useApi()
+const config = useRuntimeConfig()
+const authToken = useCookie<string | null>('auth_token')
 
 const isGestorOrAdmin = computed(() => {
   const role = (auth.user.value?.app_role || '').toLowerCase()
@@ -66,10 +67,21 @@ const priorityPills: { value: PriorityKey; label: string; dot: string }[] = [
   { value: 'baixa', label: 'Baixa', dot: 'bg-emerald-500' },
 ]
 
+function getHeaders() {
+  const headers: Record<string, string> = { Accept: 'application/json' }
+  if (authToken.value) {
+    headers.Authorization = `Bearer ${authToken.value}`
+  }
+  return headers
+}
+
 async function loadSupabaseData() {
   try {
+    const baseURL = (config.public.apiBase as string) || 'http://localhost:8080/api'
+    const headers = getHeaders()
+
     // Busca equipes e membros reais do Supabase
-    const teamsData = await api.get<any[]>(ENDPOINTS.teams)
+    const teamsData = await $fetch<any[]>(ENDPOINTS.teams, { baseURL, headers })
     const membersMap = new Map<string, AssigneeOption>()
 
     if (Array.isArray(teamsData)) {
@@ -95,7 +107,7 @@ async function loadSupabaseData() {
     }
 
     // Busca projetos reais do Supabase
-    const projectsData = await api.get<any[]>(ENDPOINTS.dashboard.projects)
+    const projectsData = await $fetch<any[]>(ENDPOINTS.dashboard.projects, { baseURL, headers })
     if (Array.isArray(projectsData) && projectsData.length > 0) {
       availableProjects.value = projectsData.map((p: any) => ({
         id: String(p.id),
@@ -192,17 +204,24 @@ async function createTask() {
   isSubmitting.value = true
 
   try {
+    const baseURL = (config.public.apiBase as string) || 'http://localhost:8080/api'
+    const headers = getHeaders()
     const assigneeList = selectedAssignee.value ? [Number(selectedAssignee.value)] : []
 
     // Chamada à API real do Laravel / Supabase
-    await api.post(ENDPOINTS.tasks, {
-      nome: title.value.trim(),
-      descricao: description.value.trim(),
-      prioridade: priority.value,
-      data_prazo: deadline.value,
-      ID_projeto: selectedProject.value ? Number(selectedProject.value) : 1,
-      matricula_colaborador: isGestorOrAdmin.value ? assigneeList : [],
-      subtarefas: subtasks.value,
+    await $fetch(ENDPOINTS.tasks, {
+      method: 'POST',
+      baseURL,
+      headers,
+      body: {
+        nome: title.value.trim(),
+        descricao: description.value.trim(),
+        prioridade: priority.value,
+        data_prazo: deadline.value,
+        ID_projeto: selectedProject.value ? Number(selectedProject.value) : 1,
+        matricula_colaborador: isGestorOrAdmin.value ? assigneeList : [],
+        subtarefas: subtasks.value,
+      },
     })
 
     // Adiciona reativamente no estado local da tela
