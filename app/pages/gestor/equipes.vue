@@ -1,836 +1,169 @@
 <script setup lang="ts">
-import { id } from '@nuxt/ui/runtime/locale/index.js';
-import type { truncate } from 'node:fs';
-import { title } from 'node:process';
+import { computed, ref } from 'vue'
+import type { ProjectProgress } from '~/types'
+import { mockProjects } from '~/mocks'
 
-definePageMeta({ sidebarWidget: 'none' })
+definePageMeta({ sidebarWidget: 'project' })
 
-//oh chatice: aqui consta as equipes que o gestor criou e seus atributos
-const teams = [
-  {
-    id: 'frontend',
-    name: 'Front-End',
-    members: '5',
-    leader: 'Biah Milani',
-    projects: 3,
-    createdAt: '12/03/2025',
-    tasks: [
-      {
-        name: 'Página Administrador',
-        category: 'Front-End',
-        priority: 'Urgente',
-        members: ['Carolzinha Ramiro', 'Costa Neves', 'Dimi Jow'],
-        status: 'Em andamento',
-        deadline: '25/06/2026'
-      },
-      {
-        name: 'Dashboard Gestor',
-        category: 'Front-End',
-        priority: 'Média',
-        members: ['Bea Ribeiro', 'Dimi Jow', 'Danizin Macena', 'Carolzinha Ramiro'],
-        status: 'Concluída',
-        deadline: '18/06/2026'
-      },
-      {
-        name: 'Tela de Login',
-        category: 'Front-End',
-        priority: 'Baixa',
-        members: ['Bea Ribeiro', 'Costa Neves', 'Danizin Macena'],
-        status: 'Em andamento',
-        deadline: '30/06/2026'
-      }
-    ],
-    integrantes: [
-      {name: 'Costa Neves', role: 'Desenvolvedor'},
-      {name: 'Danizin Macena', role: 'Design'},
-      {name: 'Carolzinha Ramiro', role: 'Desenvolvedor'},
-      {name: 'Dimi Jow', role: 'Design'},
-      {name: 'Bea Ribeiro', role: 'Desenvolvedor'},
-    ]
-  },
+const currentUser = useCurrentUser()
 
-  {
-    id: 'backend',
-    name: 'Back-End',
-    members: '4',
-    leader: 'Ana Carol',
-    projects: 2,
-    createdAt: '12/03/2025',
-    tasks: [
-      {
-        name: 'API de Usuários',
-        category: 'Back-End',
-        priority: 'Urgente',
-        members: ['Bea Ribeiro', 'Costa Neves'],
-        status: 'Em andamento',
-        deadline: '22/06/2026'
-      },
-      {
-        name: 'Sistema de Login',
-        category: 'Back-End',
-        priority: 'Média',
-        members: ['Dimi Jow', 'Carolzinha Ramiro'],
-        status: 'Concluída',
-        deadline: '15/06/2026'
-      }
-    ],
-    integrantes: [
-      {name: 'Costa Neves', role: 'Desenvolvedor'},
-      {name: 'Carolzinha Ramiro', role: 'Desenvolvedor'},
-      {name: 'Dimi Jow', role: 'Desenvolvedor'},
-      {name: 'Bea Ribeiro', role: 'Desenvolvedor'},
-    ]
-  },
-
-  {
-    id: 'nuvem',
-    name: 'Nuvem',
-    members: '3',
-    leader: 'Ceci Hub Pai',
-    projects: 1,
-    createdAt: '12/03/2025',
-    tasks: [
-      {
-        name: 'Configuração AWS',
-        category: 'Cloud',
-        priority: 'Urgente',
-        members: ['Bea Ribeiro', 'Costa Neves', 'Carolzinha Ramiro'],
-        status: 'Em andamento',
-        deadline: '20/06/2026'
-      },
-      {
-        name: 'Deploy Produção',
-        category: 'Cloud',
-        priority: 'Média',
-        members: ['Bea Ribeiro', 'Costa Neves', 'Carolzinha Ramiro'],
-        status: 'Atrasada',
-        deadline: '10/06/2026'
-      }
-    ],
-    integrantes: [
-      {name: 'Costa Neves', role: 'Desenvolvedor'},
-      {name: 'Carolzinha Ramiro', role: 'Desenvolvedor'},
-      {name: 'Bea Ribeiro', role: 'Desenvolvedor'},
-    ]
-  },
-]
-
-const selectedTeamId = ref('frontend')
-
-const activeTab = ref('colaboradores')
-
-const selectedMember = ref('Costa Neves')
-
-const selectedTask = ref('Página Administrador')
-
-const selectedTeam = computed(() =>
-  teams.find(team=> team.id === selectedTeamId.value)
+// Esta tela é exclusiva da liderança: cada projeto conserva somente até duas
+// equipes cujo líder é o usuário logado.
+const leadershipProjects = computed<ProjectProgress[]>(() => mockProjects
+  .map(project => ({
+    ...project,
+    teams: project.teams?.filter(team => team.leader === currentUser.name).slice(0, 2),
+  }))
+  .filter(project => project.teams?.length)
 )
 
-const memberTasks = computed(() => {
-  if(!selectedTeam.value) return []
+// Controle de abrir/fechar as equipes de cada projeto
+const collapsed = ref<Record<string, boolean>>({})
 
-  return selectedTeam.value.tasks.filter(
-    task => task.members.includes(selectedMember.value)
-  )
-})
-
-const taskMembers = computed(() => {
-  if (!selectedTeam.value) return[]
-
-  const task = selectedTeam.value.tasks.find(
-    task => task.name === selectedTask.value
-  )
-
-  if (!task) return []
-
-  return selectedTeam.value.integrantes.filter(
-    member => task.members.includes(member.name)
-  )
-})
-
-watch(selectedTeam, (team) => {
-  if (!team) return
-
-  selectedMember.value = team.integrantes[0]?.name ?? ''
-  selectedTask.value = team.tasks[0]?.name ?? ''
-}, {immediate: true})
-
-//CRIANDO EQUIPE
-const isCreateTeamModalOpen = ref(false)
-
-const newTeam = reactive({
-  name: '',
-  leader: '',
-  members: [] as string[]
-})
-
-const colaboradores =[
-  'Costa Neves',
-  'Bea Ribeiro',
-  'Carolzinha Ramiro',
-  'Dimi Jow',
-  'Danizin Macena',
-  'Ana Carol',
-  'Ceci Hub Pai'
-]
-
-
-//DELETANDO AS EQUIPES
-const isDeleteTeamModalOpen = ref(false)
-const deleteConfirmation = ref('')
-
-//EDITANDO AS EQUIPES
-const isEditTeamModalOpen = ref(false)
-
-const editTeam = reactive({
-  name: '',
-  leader: '',
-  members: [] as string[]
-})
-
-function openEditTeamModal(){
-  if (!selectedTeam.value) return
-
-  editTeam.name = selectedTeam.value.name
-  editTeam.leader = selectedTeam.value.leader
-  editTeam.members = selectedTeam.value.integrantes.map(member => member.name)
-
-  isEditTeamModalOpen.value = true
+function toggleProject(id: string) {
+  collapsed.value[id] = !collapsed.value[id]
 }
 
-//EDITAR NOME DA EQUIPE
-const isRenameTeamModalOpen = ref(false)
-const teamName = ref('')
+function projectTone(color: string) {
+  const tones: Record<string, string> = {
+    'bg-blue-500': 'bg-blue-500',
+    'bg-violet-500': 'bg-violet-500',
+    'bg-amber-400': 'bg-amber-400',
+    'bg-pink-500': 'bg-pink-500',
+    'bg-cyan-500': 'bg-cyan-500',
+    'bg-indigo-500': 'bg-indigo-500',
+    'bg-violet-600': 'bg-violet-600',
+    'bg-emerald-500': 'bg-emerald-500',
+    'bg-orange-500': 'bg-orange-500',
+  }
+  return tones[color] ?? 'bg-slate-500'
+}
 
-function openRenameTeamModal(){
-  if (!selectedTeam.value) return
+function projectSurface(color: string) {
+  const surfaces: Record<string, string> = {
+    'bg-blue-500': 'from-blue-50 via-white to-sky-50/70 dark:from-blue-950/30 dark:via-slate-900 dark:to-sky-950/20',
+    'bg-pink-500': 'from-pink-50 via-white to-fuchsia-50/70 dark:from-pink-950/30 dark:via-slate-900 dark:to-fuchsia-950/20',
+    'bg-cyan-500': 'from-cyan-50 via-white to-teal-50/70 dark:from-cyan-950/30 dark:via-slate-900 dark:to-teal-950/20',
+  }
+  return surfaces[color] ?? 'from-slate-50 via-white to-violet-50/70 dark:from-slate-900 dark:via-slate-900 dark:to-violet-950/20'
+}
 
-  teamName.value = selectedTeam.value.name
-  isRenameTeamModalOpen.value = true
+function getTeamStatus(teamId: string) {
+  // Gerando um status mockado e estável baseado no final do ID da equipe
+  // para exibir as opções pedidas ("ativa", "concluida", "atrasados")
+  const val = teamId.charCodeAt(teamId.length - 1)
+  if (val % 3 === 0) return { label: 'Concluída', class: 'text-emerald-700 bg-emerald-50 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/30' }
+  if (val % 3 === 1) return { label: 'Atrasada', class: 'text-rose-700 bg-rose-50 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/30' }
+  return { label: 'Ativa', class: 'text-violet-700 bg-violet-50 ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-500/30' }
 }
 
 </script>
 
 <template>
-  <div class="mx-auto max-w-7xl space-y-5 p-4 sm:p-6">
-
+  <div class="mx-auto max-w-7xl space-y-8 p-4 sm:p-6">
     <div>
       <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">
-        Equipes
+        Minhas Equipes
       </h1>
-
-      <p class="text-sm text-slate-400">
-        Gestão de equipes
+      <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+        Acompanhe as equipes em que você atua como líder.
       </p>
     </div>
 
-    <!--CARD ESQUERDO-->
-    <!--Aqui you selecionará a equipe na qual deseja visualizar as informações (aquele array gigantesco do script)-->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
-      
-      <UCard class="h-full lg:col-span-4">
-        <template #header>
-          <h2 class="text-lg font-semibold">
-            Minhas Equipes
-          </h2>
-        </template>
-
-        <!--Conteúdo do card esquerdo-->
-        <div class="mb-4 flex gap-2">
-          <UInput
-            icon="i-lucide-search"
-            placeholder="Buscar equipe..."
-            class="flex-1"
-            :ui="{base: 'h-9'}"
-          />
-
-          <UButton
-            icon="i-heroicons-plus"
-            color="secondary"
-            class="h-9"
-            @click="isCreateTeamModalOpen = true"
-          >
-            Equipe
-          </UButton>
-        </div>
-
-        <div class="space-y-3">
-          <div v-for="team in teams"
-            :key="team.id"
-            class="cursor-pointer rounded-lg p-3 transition"
-            :class="
-              selectedTeamId === team.id
-              ? 'bg-[#ECEAFF]'
-              :'hover:bg-slate-100 dark:hover:bg-slate-800'
-            "
-
-            @click="selectedTeamId = team.id"
-          >
-          
-          <div class="flex items-center justify-between">
-            <h3 class="font-medium">
-              {{ team.name }}
-            </h3>
-
-            <p class="text-sm text-slate-500">
-              {{ team.members }} membros
-            </p>
-          </div>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          class="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-violet-500 p-3 text-sm font-medium text-violet-600 transition hover:bg-violet-50 dark:hover:bg-violet-950/20"
-          @click="isCreateTeamModalOpen = true"
+    <!-- Lista de Projetos -->
+    <div class="space-y-6">
+      <section 
+        v-for="project in leadershipProjects" 
+        :key="project.id" 
+        class="relative overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br p-5 shadow-sm transition-all hover:shadow-md dark:border-slate-800"
+        :class="projectSurface(project.color)"
+      >
+        <div class="pointer-events-none absolute -right-10 -top-10 size-32 rounded-full opacity-10 blur-2xl" :class="projectTone(project.color)" />
+        <!-- Cabeçalho do projeto (Clicável para esconder/mostrar equipes) -->
+        <div 
+          class="relative flex cursor-pointer select-none items-center justify-between pb-2"
+          :class="!collapsed[project.id] ? 'mb-4 border-b border-slate-100 dark:border-slate-800 pb-4' : ''"
+          @click="toggleProject(project.id)"
         >
-          <UIcon 
-            name="i-heroicons-plus"
-            class="sie-4"
-          />
-          Adicionar equipe
-        </button>
-
-      </UCard>
-
-
-      <!--CARD DIREITO-->
-      <!--E é aqui que visualizamos as informações de cada equipe-->
-      <UCard class="h-full lg:col-span-8">
-        <template #header>
-          <div class="flex items-center justify-between">
-            <h2 class="flex items-center gap-2 text-lg font-semibold">
-              {{ selectedTeam?.name }}
-              
-              <UIcon
-                name="i-heroicons-pencil-square"
-                class="size-5 text-violet-500"
-                @click="openRenameTeamModal"
-              />
-            </h2>
+          <div class="flex items-center gap-3">
+            <button 
+              type="button" 
+              class="grid size-7 place-items-center rounded-md text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300"
+            >
+              <UIcon :name="collapsed[project.id] ? 'i-heroicons-chevron-right' : 'i-heroicons-chevron-down'" class="size-5" />
+            </button>
+            <span class="size-3 rounded-full" :class="projectTone(project.color)" />
+            <h2 class="font-bold text-lg text-slate-800 dark:text-slate-100">{{ project.name }}</h2>
             
-
-          <div class="flex gap-2">
-            <button
-              type="button"
-              class="flex items-center gap-2 rounded-lg border border-dashed border-[#1D1D1D] px-3 py-2 text-sm font-medium text-[1D1D1D] transition hover:bg-slate-50"
-              @click="openEditTeamModal"
-            >
-              <UIcon
-                name="i-heroicons-pencil-square"
-                class="size-4"
-              />
-              Editar Equipe
-            </button>
-
-            <button
-              type="button"
-              class="flex items-center gap-2 rounded-lg border border-dashed border-red-500 px-3 py-2 text-sm font-medium text-red-500 transition hover:bg-red-50"
-              @click="isDeleteTeamModalOpen = true"
-            >
-              <UIcon
-                name="i-heroicons-trash"
-                class="size-4"
-              />
-              Excluir Equipe
-            </button>
-          </div>
-          </div>
-
-        </template>
-
-        <div class="-mt-3.6 flex gap-6 border-b border-slate-200 dark:border-slate-800">
-              <button
-                type="button"
-                class="-mb-px flex items-center gap-1.5 border-b-2 pb-3 text-sm font-medium transition-colors"
-                :class="
-                  activeTab === 'colaboradores'
-                    ? 'border-violet-500 text-violet-600'
-                    : 'border-transparent text-slate-400 hover:text-slate-600'
-                "
-                @click="activeTab = 'colaboradores'"
-              >
-                <UIcon
-                  name="i-heroicons-users"
-                  class="size-4"
-                />
-                Colaboradores
-              </button>
-
-              <button
-                type="button"
-                class="-mb-px flex items-center gap-1.5 border-b-2 pb-3 text-sm font-medium transition-colors"
-                :class="
-                  activeTab === 'tarefas'
-                    ? 'border-violet-500 text-violet-600'
-                    : 'border-transparent text-slate-400 hover:text-slate-600'
-                "
-                @click="activeTab = 'tarefas'"
-              >
-                <UIcon
-                  name="i-heroicons-clipboard-document-list"
-                  class="size-4"
-                />
-                Tarefas
-              </button>
+            <!-- Informações extras do projeto -->
+            <div class="ml-2 hidden items-center gap-2 sm:flex">
+              <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                <UIcon name="i-heroicons-chart-pie" class="mr-1.5 size-3.5 opacity-70" />
+                {{ project.progress }}% concluído
+              </span>
+              <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                <UIcon name="i-heroicons-user-group" class="mr-1.5 size-3.5 opacity-70" />
+                {{ project.teams?.length || 0 }} equipes
+              </span>
             </div>
-
-        <!-- Conteúdo do card direito -->
-        <div class="mt-6 grid grid-cols-12 gap-6">
-
-          <!-- Esquerda (5/12) -->
-          <div class="col-span-5 border-r border-slate-200 pr-6 dark:border-slate-700">
-
-            <h3 class="mb-4 font-semibold">
-              {{ activeTab === 'colaboradores' ? 'Colaboradores' : 'Tarefas' }}
-            </h3>
-
-            <div class="space-y-2">
-
-              <!--Lista de colaboradores-->
-              <template v-if="activeTab === 'colaboradores'">
-
-                <div
-                  v-for="member in selectedTeam?.integrantes"
-                  :key="member.name"
-                  class="cursor-pointer rounded-lg p-3 transition"
-                  :class="selectedMember === member.name ? 'bg-[#ECEAFF]' : ''"
-                  @click="selectedMember = member.name"
-                >
-                <div class="flex items-center gap-3">
-
-                  <UAvatar
-                    :src="member.photo"
-                    :alt="member.name"
-                    size="md"
-                  />
-
-                  <div>
-                    <p class="font-medium">
-                      {{ member.name }}
-                    </p>
-
-                    <p class="text-sm  text-slate-500">
-                      {{ member.role }}
-                    </p>
-                  </div>
-
-                </div>
-                </div>
-
-              </template>
-
-              <!--Lista de Tarefas-->
-              <template v-else>
-                <div
-                  v-for="task in selectedTeam?.tasks"
-                  :key="task.name"
-                  class="cursor-pointer rounded-lg p-3 transition"
-                  :class="selectedTask === task.name ? 'bg-[#ECEAFF]' : ''"
-                  @click="selectedTask = task.name"
-                >
-
-                <p class="font-medium">
-                  {{ task.name }}
-                </p>
-
-                <p class="text-sm text-slate-500">
-                  {{ task.members.slice(0,2).join(', ') }}
-                  <span v-if="task.members.length > 2">
-                    +{{ task.members.length - 2 }}
-                  </span>
-                </p>
-
-                </div>
-              </template>
-
-            </div>
-
           </div>
-
-          <!-- Direita (7/12) -->
-          <div class="col-span-7">
-
-            <!--Quando estiver em Colaboradores-->
-            <template v-if="activeTab === 'colaboradores'">
-
-              <h3 class="mb-4 font-semibold">
-                Tarefas de {{ selectedMember }}
-              </h3>
-
-              <div class="space-y-3">
-
-                <div
-                  v-for="task in memberTasks"
-                  :key="task.name"
-                  class="flex items-center gap-6 overflow-hidden rounded-lg border border-slate-200 p-4 dark:border-slate-700"
-                >
-
-                <!--Foto + título-->
-                <div class="flex min-w-0 flex-1 items-center gap-3">
-                  <UAvatar size="md" />
-
-                  <div class="min-w-0">
-                    <p class="truncate font-medium">
-                      {{ task.name }}
-                    </p>
-
-                    <p class="text-xs text-slate-500">
-                      Prioridade: {{ task.priority }}
-                    </p>
-                  </div>
-                </div>
-
-                <!--Status-->
-                <UBadge
-                  class="shrink-0"
-                  :color="
-                    task.status === 'Concluída'
-                    ? 'success'
-                    : task.status === 'Atrasada'
-                      ? 'error'
-                      : 'primary'
-                  "
-                  variant="soft"
-                >
-                  {{ task.status }}
-                </UBadge>
-
-                <!--Prazo-->
-                <div class="w-24 shrink-0 text-sm text-slate-500">
-                  {{ task.deadline }}
-                </div>
-
-                </div>
-
-              </div>
-            </template>
-
-            <!--Quando estiver em tarefas-->
-            <template v-else>
-
-              <h3 class="mb-4 font-semibold">
-                Colaboradores da tarefa
-              </h3>
-
-              <div class="space-y-3">
-                <div
-                  v-for="member in taskMembers"
-                  :key="member.name"
-                  class="rounded-lg border border-slate-200 p-4 dark:border-slate-700"
-                >
-
-                  <p class="font-medium">
-                    {{ member.name }}
-                  </p>
-                  
-                  <p class="text-sm text-slate-500">
-                    {{ member.role }}
-                  </p>
-
-                </div>
-              </div>
-            </template>
-
-          </div>
-
         </div>
-      </UCard>
 
+        <!-- Equipes horizontais (Escondidas se collapsed for true) -->
+        <div v-show="!collapsed[project.id]" class="relative grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-3">
+          <NuxtLink
+            v-for="team in project.teams"
+            :key="team.id"
+            :to="`/gestor/projetos/${project.id}/equipe/${team.id}`"
+            class="group flex items-center gap-4 rounded-xl border border-slate-200 bg-slate-50/50 p-3 transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-sm dark:border-slate-700 dark:bg-slate-800/30 dark:hover:border-slate-600"
+          >
+            <!-- Letras maiúsculas da equipe -->
+            <span class="grid size-11 shrink-0 place-items-center rounded-xl text-sm font-bold text-white shadow-sm" :class="projectTone(team.color)">
+              {{ team.initial }}
+            </span>
+
+            <div class="min-w-0 flex-1">
+              <div class="flex flex-wrap items-center gap-2">
+                <h3 class="truncate text-sm font-bold text-slate-700 dark:text-slate-200" :title="team.name">
+                  {{ team.name }}
+                </h3>
+                <!-- Status da equipe -->
+                <span 
+                  class="shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1"
+                  :class="getTeamStatus(team.id).class"
+                >
+                  {{ getTeamStatus(team.id).label }}
+                </span>
+              </div>
+              
+              <div class="mt-1 flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+                <span class="truncate">
+                  Líder: <strong class="font-medium text-slate-700 dark:text-slate-300">{{ team.leader || 'Nenhum' }}</strong>
+                </span>
+                <span class="size-1 rounded-full bg-slate-300 dark:bg-slate-600"></span>
+                <span class="flex shrink-0 items-center gap-1 font-medium">
+                  <UIcon name="i-heroicons-users" class="size-3.5 opacity-70" />
+                  {{ team.memberCount }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Seta indicativa -->
+            <UIcon name="i-heroicons-arrow-right" class="size-4 shrink-0 text-slate-400 opacity-0 transition-opacity group-hover:opacity-100" />
+          </NuxtLink>
+
+          <!-- Se não houver equipes no projeto -->
+          <div v-if="!project.teams?.length" class="col-span-full rounded-xl border border-dashed border-slate-300 py-4 text-center text-sm text-slate-500 dark:border-slate-700">
+            Nenhuma equipe vinculada a este projeto.
+          </div>
+        </div>
+      </section>
+
+      <!-- Se não houver nenhum projeto associado -->
+      <div v-if="!leadershipProjects.length" class="rounded-2xl border border-dashed border-slate-300 py-16 text-center dark:border-slate-700">
+        <UIcon name="i-heroicons-folder-open" class="mx-auto size-8 text-slate-300" />
+        <p class="mt-3 text-sm font-medium text-slate-500">Você ainda não lidera nenhuma equipe.</p>
+      </div>
     </div>
-
   </div>
-
-  <!--Modal que vou mudar posteriormente para component = EQUIPES -->
-  <UModal
-    v-model:open="isCreateTeamModalOpen"
-    title="Nova Equipe"
-    description="Preencha as informações da equipe."
-  >
-    <template #body>
-      <div class="space-y-5">
-
-        <UFormField
-          label="Nome da equipe"
-          required
-        >
-          <UInput
-            v-model="newTeam.name"
-            placeholder="Ex.: Front-End"
-          />
-        </UFormField>
-
-        <UFormField
-          label="Líder"
-          required
-        >
-          <USelectMenu
-            v-model="newTeam.leader"
-            :items="colaboradores"
-            placeholder="Selecione um líder"
-          />
-        </UFormField>
-
-        <UFormField label="Membros">
-          <USelectMenu
-            v-model="newTeam.members"
-            :items="colaboradores"
-            multiple
-            searchable
-            placeholder="Selecione os membros"
-          />
-        </UFormField>
-
-      </div>
-    </template>
-
-    <template #footer>
-      <div class="flex justify-end gap-3">
-
-        <UButton
-          color="error"
-          variant="outline"
-          class="border-dashed"
-          @click="isCreateTeamModalOpen = false"
-        >
-          Cancelar
-        </UButton>
-        <UButton
-          color="secondary"
-        >
-          Criar Equipe
-        </UButton>
-
-      </div>
-    </template>
-
-  </UModal>
-
-  <!--Modal que vou mudar posteriormente para component = DELETAR EQUIPE -->
-  <UModal
-    v-model:open="isDeleteTeamModalOpen"
-    title="Excluir Equipe"
-  >
-  <template #body>
-
-    <UAlert
-      color="error"
-      vaariant="soft"
-      icon="i-heroicons-exclamation-triangle"
-      title="Esta ação é permanente."
-      description="Depois que a equipe for excluída, não será possível recuperá-la"
-    />
-    <div class="mt-6 space-y-4">
-
-      <div>
-        <p class="text-sm text-slate-500">
-          Equipe
-        </p>
-
-        <p class="font-semibold">
-          {{ selectedTeam?.name }} 
-        </p>
-      </div>
-
-      <div>
-        <p class="text-sm text-slate-500">
-          Líder
-        </p>
-
-        <p class="font-semibold">
-          {{ selectedTeam?.leader }}
-        </p>
-      </div>
-
-      <div>
-        <p class="text-sm text-slate-500">
-          Membros
-        </p>
-
-        <p class="font-semibold">
-          {{ selectedTeam?.members }} membros
-        </p>
-      </div>
-
-      <div>
-        <p class="text-sm text-slate-500">
-          Tarefas
-        </p>
-
-        <p class="font-semibold">
-          {{ selectedTeam?.projects }} tarefas
-        </p>
-      </div>
-
-      <UDivider />
-
-      <UFormField
-        label='Digite "excluir" para confirmar'
-      >
-        <UInput
-          v-model="deleteConfirmation"
-          placeholder="excluir"
-        />
-      </UFormField>
-
-    </div>
-  </template>
-
-  <template #footer>
-    <div class="flex justify-end gap-3">
-
-      <UButton
-        color="error"
-        variant="outline"
-        class="border-dashed"
-        @click="isCreateTeamModalOpen = false"
-      >
-        Cancelar
-      </UButton>
-      <UButton
-        color="error"
-        :disabled="deleteConfirmation !== 'excluir'"
-      >
-        Excluir Equipe
-      </UButton>
-
-    </div>
-  </template>
-
-  </UModal>
-
-  <!--Modal que vou mudar posteriormente para component = EDITAR EQUIPE -->
-  <UModal
-    v-model:open="isEditTeamModalOpen"
-    title="Editar Equipe"
-    description="Atualize as informações da equipe."
-  >
-
-    <template #body>
-      <div class="mb-6 rounded-lg border border-slate-200 bg-slate-50 p-4">
-
-        <h3 class="font-semibold">
-          {{ selectedTeam?.name }}
-        </h3>
-
-        <p class="mt-1 text-sm text-slate-500">
-          {{ selectedTeam?.members }} colaboradores •
-          {{ selectedTeam?.projects }} projetos •
-          Criada em {{ selectedTeam?.createdAt }}
-        </p>
-
-      </div>
-
-      <div class="space-y-5">
-
-        <UFormField
-          label="Nome da equipe"
-          required
-        >
-          <UInput
-            v-model="editTeam.name"
-          />
-        </UFormField>
-
-        <UFormField
-          label="Líder"
-          required
-        >
-          <USelectMenu
-            v-model="editTeam.leader"
-            :items="colaboradores"
-          />
-        </UFormField>
-
-        <UFormField label="Membros">
-
-          <USelectMenu
-            v-model="editTeam.members"
-            :items="colaboradores"
-            multiple
-            searchable
-            placeholder="Selecione os membros"
-          />
-
-        </UFormField>
-
-      </div>
-    </template>
-
-    <template #footer>
-
-      <div class="flex justify-end gap-3">
-
-        <UButton
-          variant="ghost"
-          class="border border-dashed border-red-500 text-red-500 hover:bg-red-50"
-          @click="isEditTeamModalOpen = false"
-        >
-          Cancelar
-        </UButton>
-        <UButton
-          color="secondary"
-        >
-          <UIcon
-            name="i-heroicons-check"
-            class="size-4"
-          />
-
-          Salvar Alterações
-        </UButton>
-
-      </div>
-    </template>
-
-  </UModal>
-
-    <!--Modal que vou mudar posteriormente para component = EDITAR NOME DA EQUIPE -->
-  <UModal
-    v-model:open="isRenameTeamModalOpen"
-    title="Renomear Equipe"
-    description="Altere apenas o nome da equipe."
-  >
-    <template #body>
-      <div class="space-y-5">
-
-        <UFormField
-          label="Nome da equipe"
-          required
-        >
-          <UInput
-            v-model="teamName"
-            placeholder="Digite o novo nome"
-            autofocus
-          />
-        </UFormField>
-
-      </div>
-    </template>
-
-    <template #footer>
-      <div class="flex justify-end gap-3">
-
-        <UButton
-          variant="ghost"
-          class="border border-dashed border-red-500 text-red-500 hover:bg-red-50"
-          @click="isRenameTeamModalOpen = false"
-        >
-          Cancelar
-        </UButton>
-        <UButton
-          color="secondary"
-        >
-          <UIcon
-            name="i-heroicons-pencil-square"
-            class="size-4"
-          />
-          Renomear
-        </UButton>
-
-      </div>
-    </template>
-
-  </UModal>
-
 </template>

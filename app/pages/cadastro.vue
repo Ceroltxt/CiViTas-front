@@ -21,7 +21,7 @@ const senhaValida = computed(() => Object.values(requisitosSenha.value).every(Bo
 async function handleRegister() {
   if (!aceitaTermos.value || !senhaValida.value) return
   console.log('Cadastro:', { nome: nome.value, email: email.value, senha: senha.value, departamento: departamento.value, telefone: telefone.value })
-  await navigateTo('/ponte')
+  await navigateTo('/login')
 }
 </script>
 
