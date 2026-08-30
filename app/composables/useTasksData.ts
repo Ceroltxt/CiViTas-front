@@ -2,10 +2,12 @@ import type { PriorityKey, Task } from '~/types'
 import { tasksSchema } from '~/schemas'
 import { mockTasks } from '~/mocks'
 import { mockProjects } from '~/mocks'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 
 /** Snapshot local das tarefas pessoais enquanto os endpoints de escrita não existem. */
 const STORAGE_KEY = 'civitas-personal-tasks-v2'
+const WORK_TASKS_STORAGE_KEY = 'civitas-work-tasks-v2'
+const LEGACY_WORK_TASKS_STORAGE_KEY = 'civitas-created-work-tasks-v1'
 const LEGACY_STORAGE_KEY = 'civitas-personal-tasks'
 const PERSONAL_STATUSES = ['a-fazer', 'em-andamento', 'concluido'] as const
 export type PersonalTaskStatus = typeof PERSONAL_STATUSES[number]
@@ -59,6 +61,12 @@ function savePersonalTasks(): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(personal))
 }
 
+/** Mantém localmente as tarefas de equipe criadas enquanto a API não existe. */
+function saveWorkTasks(tasks: Task[]): void {
+  if (typeof window === 'undefined') return
+  localStorage.setItem(WORK_TASKS_STORAGE_KEY, JSON.stringify(tasks.filter(task => !task.personal)))
+}
+
 export function deletePersonalTask(taskId: string): void {
   const idx = tasksRef.value.findIndex(t => t.id === taskId)
   if (idx > -1 && tasksRef.value[idx].personal) {
@@ -108,6 +116,13 @@ export function updatePersonalTasksPriority(taskIds: string[], priority: Priorit
 const initialMockTasks = tasksSchema.parse(mockTasks, 'tasks')
 const savedPersonalTasks = readStoredPersonalTasks(STORAGE_KEY)
 const legacyPersonalTasks = readStoredPersonalTasks(LEGACY_STORAGE_KEY)
+const savedWorkTasks = readStoredPersonalTasks(WORK_TASKS_STORAGE_KEY)
+const legacyWorkTasks = readStoredPersonalTasks(LEGACY_WORK_TASKS_STORAGE_KEY) ?? []
+const defaultWorkTasks = initialMockTasks.filter((task) => !task.personal)
+const workTasks = savedWorkTasks ?? [
+  ...defaultWorkTasks,
+  ...legacyWorkTasks.filter(task => !defaultWorkTasks.some(defaultTask => defaultTask.id === task.id)),
+]
 const defaultPersonalTasks = initialMockTasks.filter((task) => task.personal).map(normalizePersonalTask)
 
 // A versão anterior armazenava apenas tarefas novas. Enquanto não existir um
@@ -117,9 +132,15 @@ const personalTasks = savedPersonalTasks !== null
   : [...defaultPersonalTasks, ...(legacyPersonalTasks ?? []).map(normalizePersonalTask)]
 
 const tasksRef = ref<Task[]>([
-  ...initialMockTasks.filter((task) => !task.personal),
+  ...workTasks,
   ...personalTasks,
 ])
+
+// As tarefas de equipe são o mesmo dado para gestor e colaborador. A gravação
+// profunda inclui comentários, atividades e subtarefas alteradas em qualquer tela.
+if (typeof window !== 'undefined') {
+  watch(tasksRef, (tasks) => saveWorkTasks(tasks), { deep: true })
+}
 
 /** Cor do "chip" de equipe/área. */
 export function useTeamTagClass(team?: string): string {
@@ -168,10 +189,10 @@ export function toggleSubtask(taskId: string, subtaskId: string): void {
   task.progress = Math.round((done / task.subtasks.length) * 100)
 
   // Se todas concluídas, a tarefa pessoal vai diretamente para concluída;
-  // as tarefas de trabalho mantêm o fluxo de revisão.
-  const terminalStatus = ['concluido', 'cancelado', 'pausado']
+  // as tarefas de trabalho mantêm o fluxo de validação (gestor).
+  const terminalStatus = ['concluido', 'cancelado', 'pausado', 'validar']
   if (done === task.subtasks.length && !terminalStatus.includes(task.status)) {
-    task.status = task.personal ? 'concluido' : 'em-revisao'
+    task.status = task.personal ? 'concluido' : 'validar'
     // Adiciona entrada no audit log
     if (!task.auditLog) task.auditLog = []
     task.auditLog.unshift({
@@ -179,14 +200,14 @@ export function toggleSubtask(taskId: string, subtaskId: string): void {
       icon: 'i-heroicons-arrow-path',
       message: task.personal
         ? 'Todas subtarefas concluídas — status alterado para "Concluído"'
-        : 'Todas subtarefas concluídas — status alterado para "Revisão"',
+        : 'Todas subtarefas concluídas — aguardando validação do gestor',
       user: 'Sistema',
       timestamp: new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(',', ' às'),
     })
   }
   // Se desmarcou subtarefa, a tarefa pessoal concluída (ou de trabalho em
-  // revisão) retorna para andamento.
-  else if (done < task.subtasks.length && (task.status === 'em-revisao' || (task.personal && task.status === 'concluido'))) {
+  // validação) retorna para andamento.
+  else if (done < task.subtasks.length && (task.status === 'validar' || (task.personal && task.status === 'concluido'))) {
     task.status = 'em-andamento'
     if (!task.auditLog) task.auditLog = []
     task.auditLog.unshift({
@@ -235,5 +256,6 @@ export function useProjectDotColor(projectName?: string): string {
 /** Adiciona uma nova tarefa ao array reativo global e persiste no localStorage. */
 export function addTask(task: Task): void {
   tasksRef.value.unshift(task.personal ? normalizePersonalTask(task) : task)
-  savePersonalTasks()
+  if (task.personal) savePersonalTasks()
+  else saveWorkTasks(tasksRef.value)
 }

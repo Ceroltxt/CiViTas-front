@@ -24,33 +24,60 @@ const tabs = [
 
 // Mock members for this team
 const teamMembers = computed<UserSummary[]>(() => {
+  if (team.value?.name === 'Planejamento e Orçamento') {
+    const map = new Map<string, UserSummary>()
+    map.set('u-costa', { id: 'u-costa', name: 'Costa Neves', role: 'Colaborador', avatar: 'https://i.pravatar.cc/80?img=47' })
+    map.set('u-gestor', { id: 'u-gestor', name: 'Milani Ribeiro', role: 'Líder de equipe', avatar: 'https://i.pravatar.cc/80?img=44' })
+
+    allTasks.value.forEach(t => {
+      if (!t.personal && t.project === project.value?.name && t.assignees) {
+        t.assignees.forEach(a => {
+          if (!map.has(a.id)) {
+            map.set(a.id, { ...a, role: 'Colaborador' })
+          }
+        })
+      }
+    })
+    return Array.from(map.values())
+  }
+
   const count = team.value?.memberCount ?? 3
   const names = ['João Pedro', 'Ana Clara', 'Rafael Lima', 'Beatriz Ribeiro', 'Costa Neves', 'Marina Costa', 'Carlos Mendes']
+  const knownUsers: Record<string, Pick<UserSummary, 'id' | 'avatar'>> = {
+    'Costa Neves': { id: 'u-costa', avatar: 'https://i.pravatar.cc/80?img=47' },
+  }
   return Array.from({ length: Math.min(count, names.length) }, (_, i) => ({
-    id: `tm${i}`,
+    id: knownUsers[names[i]]?.id ?? `tm${i}`,
     name: names[i],
     role: i === 0 ? 'Líder de equipe' : 'Colaborador',
-    avatar: `https://i.pravatar.cc/48?img=${30 + i}`,
+    avatar: knownUsers[names[i]]?.avatar ?? `https://i.pravatar.cc/48?img=${30 + i}`,
   }))
 })
 
 // Tasks: reuse project tasks but label them under team name
 const allTasks = useTasksRef()
-const teamTasks = computed<Task[]>(() =>
-  allTasks.value
-    .filter(t => !t.personal && t.project === project.value?.name)
-    .slice(0, team.value?.memberCount ? team.value.memberCount + 2 : 5)
-)
+const teamTasks = computed<Task[]>(() => {
+  const filtered = allTasks.value.filter(t => !t.personal && t.project === project.value?.name)
+  if (team.value?.name === 'Planejamento e Orçamento') return filtered
+  return filtered.slice(0, team.value?.memberCount ? team.value.memberCount + 2 : 5)
+})
+
+import { useTeamActivity } from '~/composables/useTeamActivity'
+const realActivities = useTeamActivity(project.value?.name || '')
 
 // Mock activities
-const activities = [
-  { id: 'a1', user: 'João Pedro', action: 'atualizou o status da tarefa', detail: 'Verificar instalações hidráulicas', time: '2h atrás' },
-  { id: 'a2', user: 'Ana Clara', action: 'enviou um novo arquivo', detail: 'Planta elétrica - revisão 02.pdf', time: '5h atrás' },
-  { id: 'a3', user: 'Rafael Lima', action: 'comentou na tarefa', detail: 'Fiscalizar obra da Nova Praça Central', time: '1 dia atrás' },
-  { id: 'a4', user: 'Macena Souza', action: 'criou a tarefa', detail: 'Revisar cronograma de execução', time: '2 dias atrás' },
-  { id: 'a5', user: 'Costa Neves', action: 'concluiu a tarefa', detail: 'Levantar materiais para fundação', time: '3 dias atrás' },
-  { id: 'a6', user: 'Ana Clara', action: 'adicionou um membro', detail: 'Carlos Mendes entrou na equipe', time: '4 dias atrás' },
-]
+const activities = computed(() => {
+  if (team.value?.name === 'Planejamento e Orçamento') return realActivities.value as any[]
+  
+  return [
+    { id: 'a1', user: 'João Pedro', action: 'atualizou o status da tarefa', detail: 'Verificar instalações hidráulicas', time: '2h atrás' },
+    { id: 'a2', user: 'Ana Clara', action: 'enviou um novo arquivo', detail: 'Planta elétrica - revisão 02.pdf', time: '5h atrás' },
+    { id: 'a3', user: 'Rafael Lima', action: 'comentou na tarefa', detail: 'Fiscalizar obra da Nova Praça Central', time: '1 dia atrás' },
+    { id: 'a4', user: 'Macena Souza', action: 'criou a tarefa', detail: 'Revisar cronograma de execução', time: '2 dias atrás' },
+    { id: 'a5', user: 'Costa Neves', action: 'concluiu a tarefa', detail: 'Levantar materiais para fundação', time: '3 dias atrás' },
+    { id: 'a6', user: 'Ana Clara', action: 'adicionou um membro', detail: 'Carlos Mendes entrou na equipe', time: '4 dias atrás' },
+  ]
+})
 
 // Progress stats
 const totalTasks = computed(() => teamTasks.value.length)
@@ -100,11 +127,51 @@ function createTeamTask() {
     dueDate: new Date(`${newTask.deadline}T12:00:00`).toLocaleDateString('pt-BR'),
     assignees: assignee ? [assignee] : [],
     subtasks: newSubtasks.value.map((title, index) => ({ id: `${id}-st-${index}`, title, completed: false })),
+    auditLog: [
+      {
+        id: `al-${Date.now()}`,
+        icon: 'i-heroicons-clipboard-document-list',
+        message: `Milani Ribeiro criou a tarefa e atribuiu a ${assignee?.name || 'Ninguém'}`,
+        user: 'Gestor',
+        timestamp: new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(',', ' às')
+      }
+    ]
   })
   Object.assign(newTask, { title: '', description: '', assigneeId: '', priority: 'media', deadline: '', subtask: '' })
   memberSearch.value = ''
   newSubtasks.value = []
   createTaskOpen.value = false
+}
+
+const memberModalOpen = ref(false)
+const selectedMember = ref<UserSummary | null>(null)
+
+function openMemberModal(member: UserSummary) {
+  selectedMember.value = member
+  memberModalOpen.value = true
+}
+
+const memberTasks = computed(() => {
+  if (!selectedMember.value) return []
+  return teamTasks.value.filter(t => t.assignees?.some(a => a.id === selectedMember.value!.id))
+})
+
+const memberStats = computed(() => {
+  const t = memberTasks.value
+  return {
+    total: t.length,
+    concluidas: t.filter(x => x.status === 'concluido').length,
+    andamento: t.filter(x => x.status === 'em-andamento').length,
+    atrasadas: t.filter(x => x.status === 'atrasado').length,
+    validar: t.filter(x => x.status === 'validar').length,
+  }
+})
+
+function assignTaskToSelectedMember() {
+  if (!selectedMember.value) return
+  newTask.assigneeId = selectedMember.value.id
+  createTaskOpen.value = true
+  memberModalOpen.value = false
 }
 </script>
 
@@ -191,14 +258,15 @@ function createTeamTask() {
      <div class="space-y-4">
       <div v-for="act in activities.slice(0, 4)" :key="act.id" class="flex items-start gap-3">
        <div class="grid size-8 shrink-0 place-items-center rounded-full bg-violet-100 text-xs font-bold text-violet-600 dark:bg-violet-500/20">
-        {{ act.user.split(' ').map(n => n[0]).join('') }}
+        {{ act.user.split(' ').map((n: string) => n[0]).join('').substring(0, 2) }}
        </div>
        <div class="min-w-0 flex-1">
-        <p class="text-sm text-slate-600 dark:text-slate-300"><strong class="text-slate-800 dark:text-slate-100">{{ act.user }}</strong> {{ act.action }}</p>
-        <p class="text-xs text-slate-400 truncate">"{{ act.detail }}"</p>
+        <p class="text-sm text-slate-600 dark:text-slate-300"><strong class="text-slate-800 dark:text-slate-100">{{ act.user }}</strong> {{ act.action || act.message }}</p>
+        <p class="text-xs text-slate-400 truncate">{{ act.detail || ('Tarefa: ' + act.taskTitle) }}</p>
        </div>
-       <span class="shrink-0 text-xs text-slate-400">{{ act.time }}</span>
+       <span class="shrink-0 text-xs text-slate-400">{{ act.time || act.timestamp }}</span>
       </div>
+      <div v-if="activities.length === 0" class="text-sm text-slate-400 text-center py-4">Nenhuma atividade recente.</div>
      </div>
      <button type="button" class="mt-4 flex items-center gap-1 text-sm font-medium text-orange-500 hover:text-orange-600" @click="activeTab = 'atividade'">
       Ver todas as atividades <UIcon name="i-heroicons-chevron-right" class="size-3.5" />
@@ -259,7 +327,10 @@ function createTeamTask() {
         <tr
          v-for="task in teamTasks"
          :key="task.id"
-         class="group cursor-pointer border-b border-slate-100 transition-colors odd:bg-white even:bg-slate-50/50 hover:bg-slate-50 dark:border-slate-800 dark:odd:bg-slate-900 dark:even:bg-slate-800/30 dark:hover:bg-slate-800/80"
+         :class="[
+           task.status === 'validar' ? 'bg-amber-50/50 border-amber-200 hover:bg-amber-50 dark:bg-amber-900/10 dark:border-amber-900/50 dark:hover:bg-amber-900/20' : 'odd:bg-white even:bg-slate-50/50 hover:bg-slate-50 dark:odd:bg-slate-900 dark:even:bg-slate-800/30 dark:hover:bg-slate-800/80',
+           'group cursor-pointer border-b border-slate-100 transition-colors dark:border-slate-800'
+         ]"
          @click="navigateTo(`/gestor/tarefa/${task.id}`)"
         >
          <td class="px-4 py-3 text-sm">
@@ -271,7 +342,12 @@ function createTeamTask() {
            <span>{{ team.name }}</span>
           </div>
          </td>
-         <td class="px-4 py-3 text-sm whitespace-nowrap"><UiStatusBadge :status="task.status" /></td>
+         <td class="px-4 py-3 text-sm whitespace-nowrap">
+          <UiStatusBadge :status="task.status" />
+          <span v-if="task.status === 'validar'" class="ml-2 inline-flex animate-pulse items-center rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-600 dark:bg-amber-500/20 dark:text-amber-400">
+            Validar
+          </span>
+         </td>
          <td class="px-4 py-3 text-sm whitespace-nowrap"><span class="font-medium" :class="usePriorityMeta(task.priority).text">{{ usePriorityMeta(task.priority).label }}</span></td>
          <td class="px-4 py-3 text-sm whitespace-nowrap">
           <div v-if="task.assignees?.length" class="flex items-center gap-2"><UAvatar :src="task.assignees[0]?.avatar" :alt="task.assignees[0]?.name" size="xs" /><span class="text-slate-600 dark:text-slate-400">{{ task.assignees[0]?.name }}</span></div>
@@ -318,7 +394,7 @@ function createTeamTask() {
    <template #header><div class="flex w-full items-center justify-between"><div class="flex items-center gap-3"><span class="grid size-10 place-items-center rounded-xl bg-gradient-to-br from-violet-500 to-orange-500 text-white shadow-sm"><UIcon name="i-heroicons-clipboard-document-list" class="size-5" /></span><div><h2 class="font-bold text-slate-900 dark:text-slate-100">Criar nova tarefa</h2><p class="text-xs text-slate-500">Defina a atividade, responsável e prazo da equipe.</p></div></div><UButton icon="i-heroicons-x-mark" color="neutral" variant="ghost" @click="createTaskOpen = false" /></div></template>
    <template #body>
     <div class="grid divide-y divide-slate-200 rounded-xl border border-slate-200 bg-white shadow-sm md:grid-cols-[1.55fr_0.85fr] md:divide-x md:divide-y-0 dark:divide-slate-700 dark:border-slate-700 dark:bg-slate-950/40">
-     <section class="space-y-6 p-5 sm:p-6"><div><label class="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-200">Título da tarefa <span class="text-rose-500">*</span></label><UInput v-model="newTask.title" size="lg" placeholder="Ex.: Revisar entrega do projeto" /></div><div><label class="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-200">Descrição</label><UTextarea v-model="newTask.description" :rows="4" placeholder="Descreva o objetivo, contexto e informações importantes..." /></div><div><div class="mb-3 flex items-center justify-between"><h3 class="text-sm font-semibold text-slate-700 dark:text-slate-200">Subtarefas</h3><UButton size="sm" variant="outline" icon="i-heroicons-plus" @click="addNewSubtask">Adicionar</UButton></div><div class="flex gap-2"><UInput v-model="newTask.subtask" class="flex-1" placeholder="Adicionar uma subtarefa" @keydown.enter.prevent="addNewSubtask" /><UButton variant="outline" icon="i-heroicons-plus" @click="addNewSubtask" /></div><div v-if="!newSubtasks.length" class="mt-3 rounded-lg border border-dashed border-slate-300 bg-slate-50/70 px-4 py-6 text-center text-sm text-slate-400 dark:border-slate-700 dark:bg-slate-800/30">Nenhuma subtarefa adicionada.</div><div v-for="(subtask, index) in newSubtasks" :key="`${subtask}-${index}`" class="mt-2 flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-sm dark:bg-slate-800"><span class="flex items-center gap-2"><UIcon name="i-heroicons-check" class="size-4 text-violet-400" />{{ subtask }}</span><UButton icon="i-heroicons-x-mark" color="neutral" variant="ghost" size="xs" @click="newSubtasks.splice(index, 1)" /></div></div></section>
+     <section class="space-y-6 p-5 sm:p-6"><div><label class="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-200">Título da tarefa <span class="text-rose-500">*</span></label><UInput v-model="newTask.title" size="lg" class="w-full" placeholder="Ex.: Revisar entrega do projeto" :ui="{ root: 'w-full', base: 'w-full placeholder:text-slate-400/65 dark:placeholder:text-slate-500/70' }" /></div><div><label class="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-200">Descrição</label><UTextarea v-model="newTask.description" :rows="4" class="w-full" placeholder="Descreva o objetivo, contexto e informações importantes..." :ui="{ root: 'w-full', base: 'w-full placeholder:text-slate-400/65 dark:placeholder:text-slate-500/70' }" /></div><div><div class="mb-3 flex items-center justify-between"><h3 class="text-sm font-semibold text-slate-700 dark:text-slate-200">Subtarefas</h3><UButton size="sm" variant="outline" icon="i-heroicons-plus" @click="addNewSubtask">Adicionar</UButton></div><div class="flex gap-2"><UInput v-model="newTask.subtask" class="min-w-0 flex-1" placeholder="Adicionar uma subtarefa" :ui="{ root: 'min-w-0 flex-1', base: 'w-full placeholder:text-slate-400/65 dark:placeholder:text-slate-500/70' }" @keydown.enter.prevent="addNewSubtask" /><UButton variant="outline" icon="i-heroicons-plus" @click="addNewSubtask" /></div><div v-if="!newSubtasks.length" class="mt-3 rounded-lg border border-dashed border-slate-300 bg-slate-50/70 px-4 py-6 text-center text-sm text-slate-400 dark:border-slate-700 dark:bg-slate-800/30">Nenhuma subtarefa adicionada.</div><div v-for="(subtask, index) in newSubtasks" :key="`${subtask}-${index}`" class="mt-2 flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-sm dark:bg-slate-800"><span class="flex items-center gap-2"><UIcon name="i-heroicons-check" class="size-4 text-violet-400" />{{ subtask }}</span><UButton icon="i-heroicons-x-mark" color="neutral" variant="ghost" size="xs" @click="newSubtasks.splice(index, 1)" /></div></div></section>
      <aside class="space-y-5 bg-slate-50/60 p-5 sm:p-6 dark:bg-slate-900/40"><div><label class="mb-2 block text-sm font-semibold">Equipe <span class="text-rose-500">*</span></label><div class="flex items-center gap-2 rounded-lg border border-violet-200 bg-violet-50/70 px-3 py-2.5 text-sm font-medium text-slate-700 dark:border-violet-500/30 dark:bg-violet-500/10 dark:text-slate-200"><span class="grid size-6 place-items-center rounded-md bg-violet-500 text-white"><UIcon name="i-heroicons-user-group" class="size-3.5" /></span>{{ team?.name }}</div></div><div><label class="mb-2 block text-sm font-semibold">Responsável <span class="text-rose-500">*</span></label><UInput v-model="memberSearch" icon="i-heroicons-magnifying-glass" placeholder="Buscar colaborador" class="mb-2" /><select v-model="newTask.assigneeId" class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-900"><option value="">Selecionar responsável</option><option v-for="member in availableAssignees" :key="member.id" :value="member.id">{{ member.name }}</option></select></div><div><label class="mb-2 block text-sm font-semibold">Prioridade <span class="text-rose-500">*</span></label><div class="grid grid-cols-3 gap-1.5"><button v-for="option in [{ value: 'baixa', label: 'Baixa' }, { value: 'media', label: 'Média' }, { value: 'alta', label: 'Alta' }]" :key="option.value" type="button" class="rounded-lg border px-2 py-2 text-xs font-semibold transition-colors" :class="newTask.priority === option.value ? 'border-orange-400 bg-orange-50 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300' : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300 dark:border-slate-700 dark:bg-slate-900'" @click="newTask.priority = option.value">{{ option.label }}</button></div></div><div><label class="mb-2 block text-sm font-semibold">Prazo <span class="text-rose-500">*</span></label><UInput v-model="newTask.deadline" type="date" icon="i-heroicons-calendar-days" /></div></aside>
     </div>
    </template>
@@ -333,7 +409,8 @@ function createTeamTask() {
      <div
       v-for="member in teamMembers"
       :key="member.id"
-      class="flex items-center gap-4 rounded-xl border border-slate-100 p-3 transition-colors hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800"
+      class="flex items-center gap-4 rounded-xl border border-slate-100 p-3 transition-colors cursor-pointer group hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800"
+      @click="openMemberModal(member)"
      >
       <UAvatar :src="member.avatar" :alt="member.name" size="md" />
       <div class="min-w-0 flex-1">
@@ -342,25 +419,106 @@ function createTeamTask() {
       </div>
       <span v-if="member.role === 'Líder de equipe'" class="rounded-full bg-violet-50 px-2.5 py-0.5 text-[10px] font-semibold text-violet-600 dark:bg-violet-500/20 dark:text-violet-400">Líder</span>
       <span v-else class="rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">Membro</span>
+      <UIcon name="i-heroicons-chevron-right" class="size-4 ml-auto text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
      </div>
     </div>
    </section>
+
+   <!-- Member Detail Modal -->
+   <UModal v-model:open="memberModalOpen" :ui="{ content: 'max-w-4xl overflow-hidden rounded-2xl bg-slate-50 dark:bg-slate-900 shadow-2xl' }">
+     <template #header>
+       <div class="flex items-center justify-between p-2">
+         <div class="flex items-center gap-4">
+           <UAvatar :src="selectedMember?.avatar" :alt="selectedMember?.name" size="lg" class="ring-2 ring-white dark:ring-slate-800" />
+           <div>
+             <h3 class="text-lg font-bold text-slate-900 dark:text-white">{{ selectedMember?.name }}</h3>
+             <p class="text-xs text-slate-500">{{ selectedMember?.role }} • Equipe {{ team?.name }}</p>
+           </div>
+         </div>
+         <div class="flex gap-3">
+           <UButton size="sm" color="violet" variant="soft" icon="i-heroicons-plus" @click="assignTaskToSelectedMember">Atribuir Tarefa</UButton>
+           <UButton size="sm" color="gray" variant="ghost" icon="i-heroicons-x-mark" @click="memberModalOpen = false" />
+         </div>
+       </div>
+     </template>
+     <template #body>
+       <div class="p-4 grid grid-cols-1 md:grid-cols-[250px_1fr] gap-6">
+         <!-- Stats -->
+         <div class="space-y-3">
+           <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Desempenho (Equipe)</h4>
+           
+           <div class="bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-700 flex items-center justify-between">
+             <div class="flex items-center gap-2"><div class="size-2 rounded-full bg-slate-400"></div><span class="text-sm font-medium text-slate-700 dark:text-slate-200">Total</span></div>
+             <span class="text-lg font-bold text-slate-900 dark:text-white">{{ memberStats.total }}</span>
+           </div>
+
+           <div class="bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-700 flex items-center justify-between">
+             <div class="flex items-center gap-2"><div class="size-2 rounded-full bg-emerald-500"></div><span class="text-sm font-medium text-slate-700 dark:text-slate-200">Concluídas</span></div>
+             <span class="text-lg font-bold text-slate-900 dark:text-white">{{ memberStats.concluidas }}</span>
+           </div>
+
+           <div class="bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-700 flex items-center justify-between">
+             <div class="flex items-center gap-2"><div class="size-2 rounded-full bg-amber-500"></div><span class="text-sm font-medium text-slate-700 dark:text-slate-200">A Validar</span></div>
+             <span class="text-lg font-bold text-amber-600">{{ memberStats.validar }}</span>
+           </div>
+
+           <div class="bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-700 flex items-center justify-between">
+             <div class="flex items-center gap-2"><div class="size-2 rounded-full bg-rose-500"></div><span class="text-sm font-medium text-slate-700 dark:text-slate-200">Atrasadas</span></div>
+             <span class="text-lg font-bold text-rose-600">{{ memberStats.atrasadas }}</span>
+           </div>
+         </div>
+
+         <!-- Member Tasks -->
+         <div>
+           <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Tarefas Atribuídas</h4>
+           <div v-if="memberTasks.length === 0" class="text-center py-10 bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700">
+             <UIcon name="i-heroicons-inbox" class="size-8 text-slate-300 mx-auto mb-2" />
+             <p class="text-sm text-slate-500">Nenhuma tarefa atribuída a este membro.</p>
+           </div>
+           <div v-else class="space-y-2 max-h-[400px] overflow-y-auto scroll-thin pr-2">
+             <div
+               v-for="task in memberTasks"
+               :key="task.id"
+               class="flex items-center justify-between p-3 rounded-xl border bg-white dark:bg-slate-800 transition-colors cursor-pointer group"
+               :class="task.status === 'validar' ? 'border-amber-200 shadow-sm bg-amber-50/30' : 'border-slate-100 dark:border-slate-700 hover:border-violet-300'"
+               @click="navigateTo(`/gestor/tarefa/${task.id}`)"
+             >
+               <div class="min-w-0 flex-1">
+                 <h5 class="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate group-hover:text-violet-600 dark:group-hover:text-violet-400">{{ task.title }}</h5>
+                 <div class="flex items-center gap-3 mt-1 text-xs text-slate-500">
+                   <UiStatusBadge :status="task.status" />
+                   <span v-if="task.dueDate" class="flex items-center gap-1"><UIcon name="i-heroicons-calendar" class="size-3" /> {{ task.dueDate }}</span>
+                 </div>
+               </div>
+               <UIcon name="i-heroicons-arrow-right" class="size-4 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity ml-2" />
+             </div>
+           </div>
+         </div>
+       </div>
+     </template>
+   </UModal>
   </template>
 
   <!-- ATIVIDADE -->
   <template v-if="activeTab === 'atividade'">
    <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
     <h2 class="font-semibold text-slate-800 dark:text-slate-100 mb-4">Atividade da equipe</h2>
-    <div class="space-y-4">
+    <div v-if="activities.length === 0" class="py-10 text-center text-slate-400 text-sm">
+      Nenhuma atividade registrada na equipe.
+    </div>
+    <div v-else class="space-y-4 max-h-[600px] overflow-y-auto scroll-thin pr-2">
      <div v-for="act in activities" :key="act.id" class="flex items-start gap-3 border-b border-slate-100 pb-4 last:border-0 dark:border-slate-800">
       <div class="grid size-9 shrink-0 place-items-center rounded-full bg-violet-100 text-xs font-bold text-violet-600 dark:bg-violet-500/20">
-       {{ act.user.split(' ').map(n => n[0]).join('') }}
+       {{ act.user.split(' ').map((n: string) => n[0]).join('').substring(0, 2) }}
       </div>
       <div class="min-w-0 flex-1">
-       <p class="text-sm text-slate-600 dark:text-slate-300"><strong class="text-slate-800 dark:text-slate-100">{{ act.user }}</strong> {{ act.action }}</p>
-       <p class="text-xs text-slate-400 mt-0.5">"{{ act.detail }}"</p>
+       <p class="text-sm text-slate-600 dark:text-slate-300"><strong class="text-slate-800 dark:text-slate-100">{{ act.user }}</strong> <template v-if="act.action">{{ act.action }}</template></p>
+       <p class="text-sm mt-0.5 text-slate-700 dark:text-slate-300">{{ act.detail || act.message }}</p>
+       <NuxtLink v-if="act.taskId" :to="`/gestor/tarefa/${act.taskId}`" class="text-xs font-medium text-violet-600 hover:underline mt-1 block">
+         Tarefa: {{ act.taskTitle }}
+       </NuxtLink>
       </div>
-      <span class="shrink-0 text-xs text-slate-400 pt-0.5">{{ act.time }}</span>
+      <span class="shrink-0 text-xs text-slate-400 pt-0.5">{{ act.time || act.timestamp }}</span>
      </div>
     </div>
    </section>

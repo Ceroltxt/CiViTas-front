@@ -10,6 +10,7 @@ const taskId = route.params.id as string
 
 const task = computed(() => getTaskById(taskId))
 const tasks = useTasksRef()
+const currentUser = useCurrentUser()
 
 function goBack() {
   router.back()
@@ -177,7 +178,7 @@ function addComment() {
     id: `c-${Date.now()}`,
     icon: 'i-heroicons-chat-bubble-left',
     message: newComment.value.trim(),
-    user: 'Costa Neves',
+    user: currentUser.name,
     timestamp: new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(',', ' às'),
   })
   newComment.value = ''
