@@ -15,12 +15,30 @@ const isGestorOrAdmin = computed(() => {
   return role === 'gestor' || role === 'admin'
 })
 
+interface AssigneeOption {
+  id: string
+  name: string
+  role: string
+}
+
+interface ProjectOption {
+  id: string
+  name: string
+}
+
 /* ── Form state ── */
 const title = ref('')
 const description = ref('')
 const priority = ref<PriorityKey | ''>('')
 const deadline = ref('')
-const selectedAssignee = ref<string>('1') // Padrão: Ana / Costa Neves
+const selectedAssignee = ref<string>('1')
+const selectedProject = ref<string>('1')
+const availableAssignees = ref<AssigneeOption[]>([
+  { id: '1', name: 'Costa Neves (Desenvolvedor)', role: 'Colaborador' },
+])
+const availableProjects = ref<ProjectOption[]>([
+  { id: '1', name: 'Nova Praça Central' },
+])
 const subtaskInput = ref('')
 const subtasks = ref<string[]>([])
 const notifyUpdates = ref(true)
@@ -48,11 +66,53 @@ const priorityPills: { value: PriorityKey; label: string; dot: string }[] = [
   { value: 'baixa', label: 'Baixa', dot: 'bg-emerald-500' },
 ]
 
-const availableAssignees = [
-  { id: '1', name: 'Costa Neves (Ana - Colaborador)', role: 'Colaborador' },
-  { id: '2', name: 'Milani Ribeiro (Gestor)', role: 'Gestor' },
-  { id: '3', name: 'jUrandiro Admin (Admin)', role: 'Admin' },
-]
+async function loadSupabaseData() {
+  try {
+    // Busca equipes e membros reais do Supabase
+    const teamsData = await api.get<any[]>(ENDPOINTS.teams)
+    const membersMap = new Map<string, AssigneeOption>()
+
+    if (Array.isArray(teamsData)) {
+      teamsData.forEach((team) => {
+        if (Array.isArray(team.members)) {
+          team.members.forEach((m: any) => {
+            membersMap.set(String(m.id), {
+              id: String(m.id),
+              name: `${m.name} (${m.role || 'Colaborador'})`,
+              role: m.role || 'Colaborador',
+            })
+          })
+        }
+      })
+    }
+
+    const fetchedAssignees = Array.from(membersMap.values())
+    if (fetchedAssignees.length > 0) {
+      availableAssignees.value = fetchedAssignees
+      if (!selectedAssignee.value || !membersMap.has(selectedAssignee.value)) {
+        selectedAssignee.value = fetchedAssignees[0].id
+      }
+    }
+
+    // Busca projetos reais do Supabase
+    const projectsData = await api.get<any[]>(ENDPOINTS.dashboard.projects)
+    if (Array.isArray(projectsData) && projectsData.length > 0) {
+      availableProjects.value = projectsData.map((p: any) => ({
+        id: String(p.id),
+        name: p.name,
+      }))
+      selectedProject.value = availableProjects.value[0].id
+    }
+  } catch (e) {
+    console.error('Erro ao buscar dados do Supabase:', e)
+  }
+}
+
+watch(open, (isOpen) => {
+  if (isOpen && isGestorOrAdmin.value) {
+    loadSupabaseData()
+  }
+}, { immediate: true })
 
 function addSubtask() {
   const v = subtaskInput.value.trim()
@@ -101,7 +161,6 @@ function resetForm() {
   description.value = ''
   priority.value = ''
   deadline.value = ''
-  selectedAssignee.value = '1'
   subtaskInput.value = ''
   subtasks.value = []
   notifyUpdates.value = true
@@ -141,6 +200,7 @@ async function createTask() {
       descricao: description.value.trim(),
       prioridade: priority.value,
       data_prazo: deadline.value,
+      ID_projeto: selectedProject.value ? Number(selectedProject.value) : 1,
       matricula_colaborador: isGestorOrAdmin.value ? assigneeList : [],
       subtarefas: subtasks.value,
     })
@@ -153,7 +213,7 @@ async function createTask() {
       completed: false,
     }))
 
-    const assignedUser = availableAssignees.find(a => a.id === selectedAssignee.value)
+    const assignedUser = availableAssignees.value.find(a => a.id === selectedAssignee.value)
 
     const newTask: Task = {
       id: taskId,
@@ -172,7 +232,7 @@ async function createTask() {
     emit('created')
     closeModal()
   } catch (err: any) {
-    errorMessage.value = err?.data?.message || err?.message || 'Erro ao atribuir tarefa. Verifique as permissões.'
+    errorMessage.value = err?.data?.message || err?.message || 'Erro ao atribuir tarefa no Supabase. Verifique as permissões.'
   } finally {
     isSubmitting.value = false
   }
@@ -213,7 +273,7 @@ async function createTask() {
           />
           <p class="text-sm text-slate-600 dark:text-slate-300">
             <template v-if="isGestorOrAdmin">
-              Você está criando uma tarefa corporativa e atribuindo ao <strong class="text-amber-600 dark:text-amber-400">colaborador selecionado</strong>.
+              Você está criando uma tarefa corporativa e atribuindo ao <strong class="text-amber-600 dark:text-amber-400">colaborador selecionado no Supabase</strong>.
             </template>
             <template v-else>
               Esta tarefa é pessoal e ficará visível <strong class="text-violet-600 dark:text-violet-400">apenas para você</strong>.
@@ -237,21 +297,40 @@ async function createTask() {
         <section class="space-y-4">
           <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100">Informações da Tarefa</h3>
 
-          <!-- Seleção de Colaborador Responsável (apenas para Gestor/Admin) -->
-          <div v-if="isGestorOrAdmin">
-            <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
-              Colaborador Responsável <span class="text-rose-500">*</span>
-            </label>
-            <div class="relative">
-              <select
-                v-model="selectedAssignee"
-                class="w-full h-[38px] appearance-none rounded-lg border border-slate-200 bg-white px-3 pr-8 text-sm text-slate-700 outline-none transition-colors focus:border-amber-500 focus:ring-1 focus:ring-amber-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
-              >
-                <option v-for="user in availableAssignees" :key="user.id" :value="user.id">
-                  {{ user.name }}
-                </option>
-              </select>
-              <UIcon name="i-heroicons-chevron-down" class="size-4 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <!-- Seleção de Projeto e Colaborador (apenas para Gestor/Admin) -->
+          <div v-if="isGestorOrAdmin" class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
+                Projeto <span class="text-rose-500">*</span>
+              </label>
+              <div class="relative">
+                <select
+                  v-model="selectedProject"
+                  class="w-full h-[38px] appearance-none rounded-lg border border-slate-200 bg-white px-3 pr-8 text-sm text-slate-700 outline-none transition-colors focus:border-amber-500 focus:ring-1 focus:ring-amber-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                >
+                  <option v-for="proj in availableProjects" :key="proj.id" :value="proj.id">
+                    {{ proj.name }}
+                  </option>
+                </select>
+                <UIcon name="i-heroicons-chevron-down" class="size-4 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+            </div>
+
+            <div>
+              <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
+                Colaborador Responsável <span class="text-rose-500">*</span>
+              </label>
+              <div class="relative">
+                <select
+                  v-model="selectedAssignee"
+                  class="w-full h-[38px] appearance-none rounded-lg border border-slate-200 bg-white px-3 pr-8 text-sm text-slate-700 outline-none transition-colors focus:border-amber-500 focus:ring-1 focus:ring-amber-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                >
+                  <option v-for="user in availableAssignees" :key="user.id" :value="user.id">
+                    {{ user.name }}
+                  </option>
+                </select>
+                <UIcon name="i-heroicons-chevron-down" class="size-4 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
             </div>
           </div>
 
