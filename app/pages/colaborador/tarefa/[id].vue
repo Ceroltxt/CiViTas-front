@@ -134,7 +134,7 @@ const displayedAuditLog = computed(() => {
 
     <div v-if="isLoading" class="relative z-10 w-full max-w-lg bg-white dark:bg-slate-900 rounded-xl shadow-2xl p-8 text-center">
       <UIcon name="i-heroicons-arrow-path" class="size-8 animate-spin text-orange-500 mx-auto mb-3" />
-      <p class="text-sm font-semibold text-slate-600 dark:text-slate-300">Carregando detalhes do Supabase...</p>
+      <p class="text-sm font-semibold text-slate-600 dark:text-slate-300">Carregando...</p>
     </div>
 
     <div v-else-if="!task" class="relative z-10 w-full max-w-lg bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 p-8 text-center">
