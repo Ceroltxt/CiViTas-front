@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { ProjectTeam, ProjectProgress, Task, UserSummary } from '~/types'
 import { addTask } from '~/composables/useTasksData'
+import { ENDPOINTS } from '~/services/endpoints'
 definePageMeta({ sidebarWidget: 'project' })
 
 const route = useRoute()
@@ -112,35 +113,67 @@ function addNewSubtask() {
   newTask.subtask = ''
 }
 
-function createTeamTask() {
+async function createTeamTask() {
   if (!newTask.title.trim() || !newTask.deadline || !team.value || !project.value) return
+
+  const config = useRuntimeConfig()
+  const authToken = useCookie<string | null>('auth_token')
+  const baseURL = (config.public.apiBase as string) || 'http://localhost:8080/api'
+  const headers: Record<string, string> = { Accept: 'application/json' }
+  if (authToken.value) {
+    headers.Authorization = `Bearer ${authToken.value}`
+  }
+
   const assignee = teamMembers.value.find(member => member.id === newTask.assigneeId)
-  const id = `gt-${Date.now()}`
-  addTask({
-    id,
-    title: newTask.title.trim(),
-    description: newTask.description.trim(),
-    priority: newTask.priority as Task['priority'],
-    status: 'a-fazer',
-    project: project.value.name,
-    team: team.value.name,
-    dueDate: new Date(`${newTask.deadline}T12:00:00`).toLocaleDateString('pt-BR'),
-    assignees: assignee ? [assignee] : [],
-    subtasks: newSubtasks.value.map((title, index) => ({ id: `${id}-st-${index}`, title, completed: false })),
-    auditLog: [
-      {
-        id: `al-${Date.now()}`,
-        icon: 'i-heroicons-clipboard-document-list',
-        message: `Milani Ribeiro criou a tarefa e atribuiu a ${assignee?.name || 'Ninguém'}`,
-        user: 'Gestor',
-        timestamp: new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(',', ' às')
-      }
-    ]
-  })
-  Object.assign(newTask, { title: '', description: '', assigneeId: '', priority: 'media', deadline: '', subtask: '' })
-  memberSearch.value = ''
-  newSubtasks.value = []
-  createTaskOpen.value = false
+  const assigneeIdNum = assignee?.id && !isNaN(Number(assignee.id)) ? Number(assignee.id) : 1
+
+  try {
+    const apiResponse = await $fetch<any>(ENDPOINTS.tasks, {
+      method: 'POST',
+      baseURL,
+      headers,
+      body: {
+        nome: newTask.title.trim(),
+        descricao: newTask.description.trim(),
+        prioridade: newTask.priority,
+        data_prazo: newTask.deadline,
+        ID_projeto: 1,
+        matricula_colaborador: [assigneeIdNum],
+        subtarefas: newSubtasks.value,
+      },
+    })
+
+    const id = apiResponse?.id ? String(apiResponse.id) : `gt-${Date.now()}`
+
+    addTask({
+      id,
+      title: newTask.title.trim(),
+      description: newTask.description.trim(),
+      priority: newTask.priority as Task['priority'],
+      status: 'a-fazer',
+      project: project.value.name,
+      team: team.value.name,
+      dueDate: new Date(`${newTask.deadline}T12:00:00`).toLocaleDateString('pt-BR'),
+      assignees: assignee ? [assignee] : [],
+      subtasks: newSubtasks.value.map((title, index) => ({ id: `${id}-st-${index}`, title, completed: false })),
+      auditLog: [
+        {
+          id: `al-${Date.now()}`,
+          icon: 'i-heroicons-clipboard-document-list',
+          message: `Milani Ribeiro criou a tarefa e atribuiu a ${assignee?.name || 'Ninguém'}`,
+          user: 'Gestor',
+          timestamp: new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(',', ' às')
+        }
+      ]
+    })
+  } catch (err: any) {
+    console.error('Erro ao enviar tarefa para o Supabase:', err)
+  } finally {
+    Object.assign(newTask, { title: '', description: '', assigneeId: '', priority: 'media', deadline: '', subtask: '' })
+    memberSearch.value = ''
+    newSubtasks.value = []
+    createTaskOpen.value = false
+  }
 }
 
 const memberModalOpen = ref(false)
