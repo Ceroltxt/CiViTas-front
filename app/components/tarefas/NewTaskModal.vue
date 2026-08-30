@@ -196,8 +196,21 @@ async function createTask() {
   submitted.value = true
   errorMessage.value = null
 
-  // Validate required fields
-  if (!title.value.trim() || !priority.value || !deadline.value || deadline.value < todayISO.value) {
+  // Validação dos campos obrigatórios
+  if (!title.value.trim()) {
+    errorMessage.value = 'O título da tarefa é obrigatório.'
+    return
+  }
+  if (!priority.value) {
+    errorMessage.value = 'Selecione a prioridade da tarefa.'
+    return
+  }
+  if (!deadline.value) {
+    errorMessage.value = 'Selecione o prazo final da tarefa.'
+    return
+  }
+  if (deadline.value < todayISO.value) {
+    errorMessage.value = 'O prazo final deve ser hoje ou uma data futura.'
     return
   }
 
@@ -209,7 +222,7 @@ async function createTask() {
     const assigneeList = selectedAssignee.value ? [Number(selectedAssignee.value)] : []
 
     // Chamada à API real do Laravel / Supabase
-    await $fetch(ENDPOINTS.tasks, {
+    const apiResponse = await $fetch<any>(ENDPOINTS.tasks, {
       method: 'POST',
       baseURL,
       headers,
@@ -224,18 +237,11 @@ async function createTask() {
       },
     })
 
-    // Adiciona reativamente no estado local da tela
-    const taskId = `tp-${Date.now()}`
-    const taskSubtasks: Subtask[] = subtasks.value.map((st, i) => ({
-      id: `${taskId}-st${i + 1}`,
-      title: st,
-      completed: false,
-    }))
-
+    // Adiciona a resposta da API no estado local da tela
     const assignedUser = availableAssignees.value.find(a => a.id === selectedAssignee.value)
 
     const newTask: Task = {
-      id: taskId,
+      id: apiResponse?.id ? String(apiResponse.id) : `tp-${Date.now()}`,
       title: title.value.trim(),
       description: description.value.trim(),
       priority: priority.value as PriorityKey,
@@ -244,14 +250,16 @@ async function createTask() {
       dueDate: formatDate(deadline.value),
       startDate: new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', ''),
       assignees: assignedUser ? [{ id: assignedUser.id, name: assignedUser.name, role: assignedUser.role }] : [],
-      subtasks: taskSubtasks.length > 0 ? taskSubtasks : undefined,
+      subtasks: subtasks.value.map((st, i) => ({ id: `st-${i}`, title: st, completed: false })),
     }
 
     addTask(newTask)
     emit('created')
     closeModal()
   } catch (err: any) {
-    errorMessage.value = err?.data?.message || err?.message || 'Erro ao atribuir tarefa no Supabase. Verifique as permissões.'
+    console.error('Erro na API Supabase:', err)
+    const backendError = err?.data?.errors ? Object.values(err.data.errors).flat().join(' ') : null
+    errorMessage.value = backendError || err?.data?.message || err?.message || 'Erro ao atribuir tarefa no Supabase. Verifique os campos.'
   } finally {
     isSubmitting.value = false
   }
