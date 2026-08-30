@@ -23,6 +23,23 @@ const tabs = [
 
 // Mock members for this team
 const teamMembers = computed<UserSummary[]>(() => {
+  if (team.value?.name === 'Planejamento e Orçamento') {
+    const map = new Map<string, UserSummary>()
+    map.set('u-costa', { id: 'u-costa', name: 'Costa Neves', role: 'Colaborador', avatar: 'https://i.pravatar.cc/80?img=47' })
+    map.set('u-gestor', { id: 'u-gestor', name: 'Milani Ribeiro', role: 'Líder de equipe', avatar: 'https://i.pravatar.cc/80?img=44' })
+
+    allTasks.value.forEach(t => {
+      if (!t.personal && t.project === project.value?.name && t.assignees) {
+        t.assignees.forEach(a => {
+          if (!map.has(a.id)) {
+            map.set(a.id, { ...a, role: 'Colaborador' })
+          }
+        })
+      }
+    })
+    return Array.from(map.values())
+  }
+
   const count = team.value?.memberCount ?? 3
   const names = ['João Pedro', 'Ana Clara', 'Rafael Lima', 'Beatriz Ribeiro', 'Costa Neves', 'Marina Costa', 'Carlos Mendes']
   return Array.from({ length: Math.min(count, names.length) }, (_, i) => ({
@@ -35,21 +52,28 @@ const teamMembers = computed<UserSummary[]>(() => {
 
 // Tasks: reuse project tasks but label them under team name
 const allTasks = useTasksRef()
-const teamTasks = computed<Task[]>(() =>
-  allTasks.value
-    .filter(t => !t.personal && t.project === project.value?.name)
-    .slice(0, team.value?.memberCount ? team.value.memberCount + 2 : 5)
-)
+const teamTasks = computed<Task[]>(() => {
+  const filtered = allTasks.value.filter(t => !t.personal && t.project === project.value?.name)
+  if (team.value?.name === 'Planejamento e Orçamento') return filtered
+  return filtered.slice(0, team.value?.memberCount ? team.value.memberCount + 2 : 5)
+})
+
+import { useTeamActivity } from '~/composables/useTeamActivity'
+const realActivities = useTeamActivity(project.value?.name || '')
 
 // Mock activities
-const activities = [
-  { id: 'a1', user: 'João Pedro', action: 'atualizou o status da tarefa', detail: 'Verificar instalações hidráulicas', time: '2h atrás' },
-  { id: 'a2', user: 'Ana Clara', action: 'enviou um novo arquivo', detail: 'Planta elétrica - revisão 02.pdf', time: '5h atrás' },
-  { id: 'a3', user: 'Rafael Lima', action: 'comentou na tarefa', detail: 'Fiscalizar obra da Nova Praça Central', time: '1 dia atrás' },
-  { id: 'a4', user: 'Macena Souza', action: 'criou a tarefa', detail: 'Revisar cronograma de execução', time: '2 dias atrás' },
-  { id: 'a5', user: 'Costa Neves', action: 'concluiu a tarefa', detail: 'Levantar materiais para fundação', time: '3 dias atrás' },
-  { id: 'a6', user: 'Ana Clara', action: 'adicionou um membro', detail: 'Carlos Mendes entrou na equipe', time: '4 dias atrás' },
-]
+const activities = computed(() => {
+  if (team.value?.name === 'Planejamento e Orçamento') return realActivities.value as any[]
+  
+  return [
+    { id: 'a1', user: 'João Pedro', action: 'atualizou o status da tarefa', detail: 'Verificar instalações hidráulicas', time: '2h atrás' },
+    { id: 'a2', user: 'Ana Clara', action: 'enviou um novo arquivo', detail: 'Planta elétrica - revisão 02.pdf', time: '5h atrás' },
+    { id: 'a3', user: 'Rafael Lima', action: 'comentou na tarefa', detail: 'Fiscalizar obra da Nova Praça Central', time: '1 dia atrás' },
+    { id: 'a4', user: 'Macena Souza', action: 'criou a tarefa', detail: 'Revisar cronograma de execução', time: '2 dias atrás' },
+    { id: 'a5', user: 'Costa Neves', action: 'concluiu a tarefa', detail: 'Levantar materiais para fundação', time: '3 dias atrás' },
+    { id: 'a6', user: 'Ana Clara', action: 'adicionou um membro', detail: 'Carlos Mendes entrou na equipe', time: '4 dias atrás' },
+  ]
+})
 
 // Progress stats
 const totalTasks = computed(() => teamTasks.value.length)
@@ -149,14 +173,15 @@ const priorityColorMap: Record<string, string> = {
      <div class="space-y-4">
       <div v-for="act in activities.slice(0, 4)" :key="act.id" class="flex items-start gap-3">
        <div class="grid size-8 shrink-0 place-items-center rounded-full bg-violet-100 text-xs font-bold text-violet-600 dark:bg-violet-500/20">
-        {{ act.user.split(' ').map(n => n[0]).join('') }}
+        {{ act.user.split(' ').map((n: string) => n[0]).join('').substring(0, 2) }}
        </div>
        <div class="min-w-0 flex-1">
-        <p class="text-sm text-slate-600 dark:text-slate-300"><strong class="text-slate-800 dark:text-slate-100">{{ act.user }}</strong> {{ act.action }}</p>
-        <p class="text-xs text-slate-400 truncate">"{{ act.detail }}"</p>
+        <p class="text-sm text-slate-600 dark:text-slate-300"><strong class="text-slate-800 dark:text-slate-100">{{ act.user }}</strong> {{ act.action || act.message }}</p>
+        <p class="text-xs text-slate-400 truncate">{{ act.detail || ('Tarefa: ' + act.taskTitle) }}</p>
        </div>
-       <span class="shrink-0 text-xs text-slate-400">{{ act.time }}</span>
+       <span class="shrink-0 text-xs text-slate-400">{{ act.time || act.timestamp }}</span>
       </div>
+      <div v-if="activities.length === 0" class="text-sm text-slate-400 text-center py-4">Nenhuma atividade recente.</div>
      </div>
      <button type="button" class="mt-4 flex items-center gap-1 text-sm font-medium text-orange-500 hover:text-orange-600" @click="activeTab = 'atividade'">
       Ver todas as atividades <UIcon name="i-heroicons-chevron-right" class="size-3.5" />
@@ -274,16 +299,22 @@ const priorityColorMap: Record<string, string> = {
   <template v-if="activeTab === 'atividade'">
    <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
     <h2 class="font-semibold text-slate-800 dark:text-slate-100 mb-4">Atividade da equipe</h2>
-    <div class="space-y-4">
+    <div v-if="activities.length === 0" class="py-10 text-center text-slate-400 text-sm">
+      Nenhuma atividade registrada na equipe.
+    </div>
+    <div v-else class="space-y-4 max-h-[600px] overflow-y-auto scroll-thin pr-2">
      <div v-for="act in activities" :key="act.id" class="flex items-start gap-3 border-b border-slate-100 pb-4 last:border-0 dark:border-slate-800">
       <div class="grid size-9 shrink-0 place-items-center rounded-full bg-violet-100 text-xs font-bold text-violet-600 dark:bg-violet-500/20">
-       {{ act.user.split(' ').map(n => n[0]).join('') }}
+       {{ act.user.split(' ').map((n: string) => n[0]).join('').substring(0, 2) }}
       </div>
       <div class="min-w-0 flex-1">
-       <p class="text-sm text-slate-600 dark:text-slate-300"><strong class="text-slate-800 dark:text-slate-100">{{ act.user }}</strong> {{ act.action }}</p>
-       <p class="text-xs text-slate-400 mt-0.5">"{{ act.detail }}"</p>
+       <p class="text-sm text-slate-600 dark:text-slate-300"><strong class="text-slate-800 dark:text-slate-100">{{ act.user }}</strong> <template v-if="act.action">{{ act.action }}</template></p>
+       <p class="text-sm mt-0.5 text-slate-700 dark:text-slate-300">{{ act.detail || act.message }}</p>
+       <NuxtLink v-if="act.taskId" :to="`/colaborador/tarefa/${act.taskId}`" class="text-xs font-medium text-violet-600 hover:underline mt-1 block">
+         Tarefa: {{ act.taskTitle }}
+       </NuxtLink>
       </div>
-      <span class="shrink-0 text-xs text-slate-400 pt-0.5">{{ act.time }}</span>
+      <span class="shrink-0 text-xs text-slate-400 pt-0.5">{{ act.time || act.timestamp }}</span>
      </div>
     </div>
    </section>
