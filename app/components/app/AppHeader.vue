@@ -51,7 +51,7 @@ const userMenu = computed(() => {
       to: '/colaborador/configuracoes',
     })
   }
-  return [primary, [{ label: 'Sair', icon: 'i-heroicons-arrow-right-on-rectangle', to: '/ponte' }]]
+  return [primary, [{ label: 'Sair', icon: 'i-heroicons-arrow-right-on-rectangle', to: '/login' }]]
 })
 
 const createOptions = computed(() => {

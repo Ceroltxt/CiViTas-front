@@ -4605,7 +4605,7 @@ function _expandFromEnv(value) {
 const _inlineRuntimeConfig = {
   "app": {
     "baseURL": "/",
-    "buildId": "9bdb93a1-8e5d-47f4-9d17-c812b0cdf0fa",
+    "buildId": "c4f4a216-ac46-4ee1-b367-450107c24aed",
     "buildAssetsDir": "/_nuxt/",
     "cdnURL": ""
   },
@@ -4639,8 +4639,8 @@ const _inlineRuntimeConfig = {
     }
   },
   "public": {
-    "appName": "",
-    "apiBase": ""
+    "appName": "CiViTas",
+    "apiBase": "http://localhost:8080/api"
   },
   "jwtCookieName": "",
   "icon": {
