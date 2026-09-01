@@ -241,8 +241,9 @@ async function createTask() {
     // Adiciona a resposta da API no estado local da tela
     const assignedUser = availableAssignees.value.find(a => a.id === selectedAssignee.value)
 
+    const createdId = apiResponse?.data?.id || apiResponse?.id
     const newTask: Task = {
-      id: apiResponse?.id ? String(apiResponse.id) : `tp-${Date.now()}`,
+      id: createdId ? String(createdId) : `tp-${Date.now()}`,
       title: title.value.trim(),
       description: description.value.trim(),
       priority: priority.value as PriorityKey,

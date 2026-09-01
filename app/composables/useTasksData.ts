@@ -136,9 +136,10 @@ export async function fetchTasksFromSupabase(): Promise<void> {
       Authorization: `Bearer ${authToken.value}`,
     }
 
-    const data = await $fetch<Task[]>(ENDPOINTS.tasks, { baseURL, headers })
-    if (Array.isArray(data) && data.length > 0) {
-      tasksRef.value = data
+    const res = await $fetch<any>(ENDPOINTS.tasks, { baseURL, headers })
+    const list = Array.isArray(res) ? res : res?.data
+    if (Array.isArray(list)) {
+      tasksRef.value = list
     }
   } catch (e) {
     console.error('Erro ao buscar tarefas do Supabase:', e)
