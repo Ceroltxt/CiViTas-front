@@ -231,8 +231,9 @@ async function createTask() {
         descricao: description.value.trim(),
         prioridade: priority.value,
         data_prazo: deadline.value,
-        ID_projeto: selectedProject.value ? Number(selectedProject.value) : 1,
+        ID_projeto: isGestorOrAdmin.value && selectedProject.value ? Number(selectedProject.value) : null,
         matricula_colaborador: isGestorOrAdmin.value ? assigneeList : [],
+        pessoal: !isGestorOrAdmin.value,
         subtarefas: subtasks.value,
       },
     })

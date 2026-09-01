@@ -116,10 +116,7 @@ const personalTasks = savedPersonalTasks !== null
   ? savedPersonalTasks.map(normalizePersonalTask)
   : defaultPersonalTasks
 
-const tasksRef = ref<Task[]>([
-  ...workTasks,
-  ...personalTasks,
-])
+const tasksRef = ref<Task[]>([])
 
 if (typeof window !== 'undefined') {
   watch(tasksRef, (tasks) => saveWorkTasks(tasks), { deep: true })
