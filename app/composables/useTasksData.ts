@@ -122,9 +122,16 @@ if (typeof window !== 'undefined') {
   watch(tasksRef, (tasks) => saveWorkTasks(tasks), { deep: true })
 }
 
+let isFetching = false
+let hasFetchedInitial = false
+
 /** Busca a lista real de tarefas no banco de dados do Supabase. */
-export async function fetchTasksFromSupabase(): Promise<void> {
+export async function fetchTasksFromSupabase(force = false): Promise<void> {
   if (typeof window === 'undefined') return
+  if (isFetching) return
+  if (hasFetchedInitial && !force) return
+
+  isFetching = true
   try {
     const config = useRuntimeConfig()
     const authToken = useCookie<string | null>('auth_token')
@@ -140,9 +147,12 @@ export async function fetchTasksFromSupabase(): Promise<void> {
     const list = Array.isArray(res) ? res : res?.data
     if (Array.isArray(list)) {
       tasksRef.value = list
+      hasFetchedInitial = true
     }
   } catch (e) {
     console.error('Erro ao buscar tarefas do Supabase:', e)
+  } finally {
+    isFetching = false
   }
 }
 
@@ -245,5 +255,5 @@ export function useProjectDotColor(projectName?: string): string {
 
 export function addTask(task: Task): void {
   tasksRef.value.unshift(task.personal ? normalizePersonalTask(task) : task)
-  fetchTasksFromSupabase()
+  fetchTasksFromSupabase(true)
 }
