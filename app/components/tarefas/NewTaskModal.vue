@@ -300,7 +300,7 @@ async function createTask() {
           />
           <p class="text-sm text-slate-600 dark:text-slate-300">
             <template v-if="isGestorOrAdmin">
-              Você está criando uma tarefa corporativa e atribuindo ao <strong class="text-amber-600 dark:text-amber-400">colaborador selecionado no Supabase</strong>.
+              Você está criando uma tarefa corporativa e atribuindo ao <strong class="text-amber-600 dark:text-amber-400">colaborador selecionado</strong>.
             </template>
             <template v-else>
               Esta tarefa é pessoal e ficará visível <strong class="text-violet-600 dark:text-violet-400">apenas para você</strong>.

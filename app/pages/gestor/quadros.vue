@@ -63,7 +63,7 @@ const selectedProjectTasks = computed(() => {
     <div class="flex flex-wrap items-start justify-between gap-3">
       <div>
         <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">Quadros</h1>
-        <p class="text-sm text-slate-400">Acompanhe o andamento das tarefas do Supabase</p>
+        <p class="text-sm text-slate-400">Acompanhe o andamento das tarefas e do projeto</p>
       </div>
 
       <UPopover v-model:open="projectOpen">

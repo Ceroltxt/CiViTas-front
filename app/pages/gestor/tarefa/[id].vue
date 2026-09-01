@@ -231,7 +231,7 @@ const displayedAuditLog = computed(() => {
             <div class="flex items-center gap-2 mb-4">
               <UIcon name="i-heroicons-clipboard-document-check" class="size-4 text-slate-500" />
               <h3 class="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                Subtarefas do Supabase <span class="text-slate-400 font-normal ml-1">({{ task.subtasks?.length || 0 }})</span>
+                Subtarefas <span class="text-slate-400 font-normal ml-1">({{ task.subtasks?.length || 0 }})</span>
               </h3>
             </div>
             

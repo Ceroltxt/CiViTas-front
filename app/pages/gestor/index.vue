@@ -79,7 +79,7 @@ const totalCompletedCount = computed(() => allTasks.filter(t => t.status === 'co
           Olá, {{ firstName }}!
         </h1>
         <p class="text-sm text-slate-500 mt-1">
-          Acompanhe o desempenho das suas equipes e projetos no Supabase.
+          Acompanhe o desempenho das suas equipes e projetos.
         </p>
       </div>
       <div class="flex items-center gap-3">
@@ -89,7 +89,7 @@ const totalCompletedCount = computed(() => allTasks.filter(t => t.status === 'co
       </div>
     </div>
 
-    <!-- Metrics Row (Conectado ao Supabase) -->
+    <!-- Metrics Row -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       <UCard :ui="{ body: { padding: 'p-3 sm:p-4' } }">
         <div class="flex items-center gap-3">
@@ -146,7 +146,7 @@ const totalCompletedCount = computed(() => allTasks.filter(t => t.status === 'co
       <UCard>
         <template #header>
           <div class="flex items-center justify-between">
-            <h3 class="font-semibold text-slate-800 dark:text-slate-100">Minhas equipes (Supabase)</h3>
+            <h3 class="font-semibold text-slate-800 dark:text-slate-100">Minhas equipes</h3>
             <NuxtLink to="/gestor/equipes" class="text-sm text-violet-600 font-medium hover:underline">Ver todas</NuxtLink>
           </div>
         </template>
@@ -178,18 +178,18 @@ const totalCompletedCount = computed(() => allTasks.filter(t => t.status === 'co
                 </td>
               </tr>
               <tr v-if="teamsData.length === 0">
-                <td colspan="4" class="py-4 text-center text-slate-400 text-xs">Nenhuma equipe carregada do Supabase.</td>
+                <td colspan="4" class="py-4 text-center text-slate-400 text-xs">Nenhuma equipe cadastrada.</td>
               </tr>
             </tbody>
           </table>
         </div>
       </UCard>
 
-      <!-- Desempenho dos projetos (Supabase) -->
+      <!-- Desempenho dos projetos -->
       <UCard>
         <template #header>
           <div class="flex items-center justify-between">
-            <h3 class="font-semibold text-slate-800 dark:text-slate-100">Desempenho dos projetos (Supabase)</h3>
+            <h3 class="font-semibold text-slate-800 dark:text-slate-100">Desempenho dos projetos</h3>
             <NuxtLink to="/gestor/quadros" class="text-sm text-violet-600 font-medium hover:underline">Ver quadros</NuxtLink>
           </div>
         </template>
@@ -238,7 +238,7 @@ const totalCompletedCount = computed(() => allTasks.filter(t => t.status === 'co
       <UCard>
         <template #header>
           <div class="flex items-center justify-between">
-            <h3 class="font-semibold text-slate-800 dark:text-slate-100">Evolução das entregas do Supabase</h3>
+            <h3 class="font-semibold text-slate-800 dark:text-slate-100">Evolução das entregas</h3>
           </div>
         </template>
         
@@ -304,7 +304,7 @@ const totalCompletedCount = computed(() => allTasks.filter(t => t.status === 'co
               <UIcon name="i-heroicons-calendar-days" class="size-5" />
             </div>
             <div class="flex-1 min-w-0">
-              <p class="font-semibold text-sm text-slate-800 dark:text-slate-200">Projeto Ativo no Supabase</p>
+              <p class="font-semibold text-sm text-slate-800 dark:text-slate-200">Projeto em andamento</p>
               <p class="text-xs text-slate-500 mt-0.5 truncate">"{{ projectsData[0]?.name || 'Nova Praça Central' }}" está em andamento.</p>
             </div>
             <UButton to="/gestor/quadros" color="white" variant="outline" size="sm" class="text-orange-600 border-orange-200 hover:bg-orange-50 px-4">Ver quadros</UButton>
