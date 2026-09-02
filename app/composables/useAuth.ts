@@ -55,6 +55,37 @@ export function useAuth() {
     try {
       const baseURL = (config.public.apiBase as string) || 'http://localhost:8080/api'
 
+      // --- MOCK LOGIN PARA DESENVOLVIMENTO (SEM BACKEND) ---
+      // Caso não haja backend rodando, você pode usar esses emails de teste
+      if (emailVal.endsWith('@civitas.test') && passwordVal === '123456') {
+        const mockRoles: Record<string, string> = {
+          'admin@civitas.test': 'admin',
+          'gestor@civitas.test': 'gestor',
+          'colaborador@civitas.test': 'colaborador'
+        }
+        const role = mockRoles[emailVal]
+        
+        if (role) {
+          const mockUser: AuthFuncionario = {
+            matricula: 'MOCK-001',
+            nome: role.charAt(0).toUpperCase() + role.slice(1) + ' Teste',
+            email: emailVal,
+            app_role: role
+          }
+          
+          // Simulando o delay da rede
+          await new Promise(resolve => setTimeout(resolve, 500))
+
+          tokenCookie.value = 'mock-token-jwt-fake-' + role
+          userState.value = mockUser
+          
+          const targetRoute = resolveRoleRoute(role)
+          isLoading.value = false
+          return { success: true, targetRoute }
+        }
+      }
+      // ------------------------------------------------------
+
       const res = await $fetch<LoginResponse>(ENDPOINTS.login, {
         method: 'POST',
         baseURL,

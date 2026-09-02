@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { TableColumn, DropdownMenuItem } from '@nuxt/ui'
 import { useClipboard } from '@vueuse/core'
-definePageMeta({ sidebarWidget: 'none' })
+definePageMeta({ sidebarWidget: 'project' })
 
 
 interface User {
@@ -141,76 +141,96 @@ const items: DropdownMenuItem[][] = [
 </script>
 
 <template>
-  <div class="mx-auto max-w-7xl space-y-5 p-4 sm:p-6 dark:bg-slate-900 min-h-screen">
-    <div class="flex items-center justify-between md:flex-col lg:flex-row gap-4">
-      <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">Acessos</h1>
-      <div class="flex items-center justify-end gap-2">
-          <UModal title="Convidar novo colaborador">
-    <UButton label="Convidar novo colaborador" trailing-icon="i-heroicons-plus" size="md" color="secondary" variant="subtle" />
-
-    <template #body>
-      <Placeholder class="h-48" />
-        <UFormField label="Email">
-    <UInput placeholder="Enter your email" />
-  </UFormField>
-    </template>
-  </UModal>
-          <UDropdownMenu :items="items" :ui="{ content: 'w-(--reka-dropdown-menu-trigger-width)' }">
-    <UButton
-      class="w-16 border-2 border-slate-200 dark:border-slate-700"
-      color="neutral"
-      variant="soft"
-      block
-      trailing-icon="i-heroicons-chevron-down"
-          :avatar="{
-      src: 'https://github.com/nuxt.png',
-      loading: 'lazy'
-    }"
-    size="md"
-    />
-  </UDropdownMenu>
+  <div class="mx-auto max-w-7xl space-y-5 p-4 sm:p-6">
+    <div class="flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">Acessos</h1>
+        <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">Gerencie usuários, permissões e convites para a plataforma.</p>
       </div>
-      </div>
-
-
-    <div class="flex flex-col gap-4 ">
-      <ul class="flex items-center gap-2">
-        <li><UButton size="md" color="secondary" variant="solid">Todos</UButton></li>
-          <li><UButton size="md" color="secondary" variant="subtle">Administradores</UButton></li>
-          <li><UButton size="md" color="secondary" variant="subtle">Gestores</UButton></li>
-        <li><UButton size="md" color="secondary" variant="subtle">Colaboradores</UButton></li>
-      </ul>
-
-<UTable :data="data" :columns="columns" class="flex-1">
-    <template #name-cell="{ row }">
       <div class="flex items-center gap-3">
-        <UAvatar
-          :src="`https://i.pravatar.cc/120?img=${row.original.id}`"
-          size="lg"
-          loading="lazy"
-          :alt="`${row.original.name} avatar`"
-        />
-        <div>
-          <p class="font-medium text-highlighted">
-            {{ row.original.name }}
-          </p>
-          <p>
-            {{ row.original.position }}
-          </p>
-        </div>
+        <UModal title="Convidar colaborador">
+          <UButton
+            color="primary"
+            icon="i-heroicons-plus"
+            label="Convidar"
+          />
+          <template #body>
+            <div class="space-y-4">
+              <UFormField label="Email">
+                <UInput placeholder="exemplo@email.com" />
+              </UFormField>
+              <UFormField label="Perfil de acesso">
+                <USelect :options="['Administrador', 'Gestor', 'Colaborador']" />
+              </UFormField>
+            </div>
+          </template>
+        </UModal>
       </div>
-    </template>
-    <template #action-cell="{ row }">
-      <UDropdownMenu :items="getDropdownActions(row.original)">
-        <UButton
-          icon="i-heroicons-ellipsis-vertical"
-          color="neutral"
-          variant="ghost"
-          aria-label="Actions"
-        />
-      </UDropdownMenu>
-    </template>
-  </UTable>
+    </div>
+
+    <div class="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex gap-1.5 overflow-x-auto pb-0.5 sm:pb-0">
+        <button
+          type="button"
+          class="shrink-0 rounded-lg px-3 py-2 text-xs font-semibold transition-colors bg-orange-50 text-orange-600 dark:bg-orange-500/10 dark:text-orange-300"
+        >
+          Todos
+        </button>
+        <button
+          type="button"
+          class="shrink-0 rounded-lg px-3 py-2 text-xs font-semibold transition-colors text-slate-500 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+        >
+          Administradores
+        </button>
+        <button
+          type="button"
+          class="shrink-0 rounded-lg px-3 py-2 text-xs font-semibold transition-colors text-slate-500 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+        >
+          Gestores
+        </button>
+        <button
+          type="button"
+          class="shrink-0 rounded-lg px-3 py-2 text-xs font-semibold transition-colors text-slate-500 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+        >
+          Colaboradores
+        </button>
+      </div>
+      <UInput icon="i-heroicons-magnifying-glass" placeholder="Buscar usuários" class="w-full sm:w-56" />
+    </div>
+
+    <div class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 overflow-hidden">
+      <UTable :data="data" :columns="columns" class="w-full">
+        <template #name-cell="{ row }">
+          <div class="flex items-center gap-3">
+            <UAvatar
+              :src="`https://i.pravatar.cc/120?img=${row.original.id}`"
+              size="md"
+              loading="lazy"
+              :alt="`${row.original.name} avatar`"
+            />
+            <div>
+              <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                {{ row.original.name }}
+              </p>
+              <p class="text-xs text-slate-500">
+                {{ row.original.position }}
+              </p>
+            </div>
+          </div>
+        </template>
+        <template #action-cell="{ row }">
+          <div class="flex justify-end">
+            <UDropdownMenu :items="getDropdownActions(row.original)">
+              <UButton
+                icon="i-heroicons-ellipsis-vertical"
+                color="neutral"
+                variant="ghost"
+                aria-label="Ações"
+              />
+            </UDropdownMenu>
+          </div>
+        </template>
+      </UTable>
+    </div>
   </div>
-      </div>
 </template>

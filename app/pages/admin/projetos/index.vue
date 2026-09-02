@@ -91,7 +91,7 @@ const filteredProjects = computed(() => {
 const router = useRouter()
 
 function openProject(projectId: string) {
-  router.push(`/colaborador/projetos/${projectId}`)
+  router.push(`/admin/projetos/${projectId}`)
 }
 const isCreateProjectOpen = ref(false)
 </script>
@@ -101,9 +101,20 @@ const isCreateProjectOpen = ref(false)
     <div class="flex flex-wrap items-end justify-between gap-3">
       <div>
         <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">Projetos</h1>
-        <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">Acompanhe os projetos dos quais você faz parte e suas entregas.</p>
+        <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">Acompanhe todos os projetos da organização e suas entregas.</p>
       </div>
-      <div class="flex items-center gap-3"><UButton color="primary" icon="i-heroicons-plus" label="Criar Projeto" @click="isCreateProjectOpen = true" /><div class="rounded-2xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-900 hidden sm:block"><p class="text-xs text-slate-400">Projetos vinculados</p><p class="mt-0.5 text-xl font-bold text-slate-800 dark:text-slate-100">{{ projectCards.length }}</p></div></div>
+      <div class="flex items-center gap-3">
+        <UButton
+          color="primary"
+          icon="i-heroicons-plus"
+          label="Criar Projeto"
+          @click="isCreateProjectOpen = true"
+        />
+        <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-900 hidden sm:block">
+          <p class="text-xs text-slate-400">Projetos cadastrados</p>
+          <p class="mt-0.5 text-xl font-bold text-slate-800 dark:text-slate-100">{{ projectCards.length }}</p>
+        </div>
+      </div>
     </div>
 
     <div class="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900 sm:flex-row sm:items-center sm:justify-between">
@@ -183,5 +194,4 @@ const isCreateProjectOpen = ref(false)
   </div>
   <ModalCreateProject v-model="isCreateProjectOpen" />
 </template>
-
 

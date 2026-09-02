@@ -11,7 +11,7 @@ const statuses = ref<StatusKey[]>([])
 const priorities = ref<PriorityKey[]>([])
 const calendar = ref({ year: 2026, month: 7 })
 const showTasks = ref(false)
-if (!project.value) await navigateTo('/gestor/projetos')
+if (!project.value) await navigateTo('/admin/projetos')
 const descriptions: Record<string, string> = { p1: 'Revitalização e acompanhamento das entregas da praça central.', p2: 'Planejamento das manutenções preventivas da frota municipal.', p3: 'Revisão técnica e documental dos processos de licitação.', p4: 'Evolução dos serviços digitais voltados ao cidadão.', p5: 'Organização, análise e aprovação de alvarás.', p6: 'Acompanhamento de melhorias na infraestrutura urbana.' }
 const projectStatuses: Record<string, string> = { p1: 'Ativo', p2: 'Planejamento', p3: 'Concluído', p4: 'Pausado', p5: 'Cancelado', p6: 'Ativo' }
 const projectTasks = computed<Task[]>(() => tasks.value.filter(task => !task.personal && task.project === project.value?.name))
@@ -59,7 +59,7 @@ const isCreateTeamOpen = ref(false)
 
 <template>
  <div v-if="project" class="mx-auto max-w-7xl space-y-5 p-4 sm:p-6">
-  <UButton to="/gestor/projetos" color="neutral" variant="link" icon="i-heroicons-arrow-left" label="Voltar para projetos" class="!p-0 text-slate-500" />
+  <UButton to="/admin/projetos" color="neutral" variant="link" icon="i-heroicons-arrow-left" label="Voltar para projetos" class="!p-0 text-slate-500" />
   <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-6">
    <div class="flex flex-col gap-5 lg:flex-row lg:justify-between">
     <div class="flex gap-4"><span class="grid size-13 shrink-0 place-items-center rounded-2xl" :class="[projectTone(project.color).surface, projectTone(project.color).text]"><UIcon name="i-heroicons-folder" class="size-6" /></span><div><div class="flex gap-2"><span class="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">{{ projectStatuses[project.id] }}</span><span class="rounded-full bg-orange-50 px-2.5 py-1 text-xs font-semibold text-orange-600">Alto impacto</span></div><h1 class="mt-2 font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{{ project.name }}</h1><p class="mt-1 text-sm text-slate-500">{{ descriptions[project.id] }}</p></div></div>
@@ -81,7 +81,7 @@ const isCreateTeamOpen = ref(false)
      <NuxtLink
       v-for="team in project.teams"
       :key="team.id"
-      :to="`/gestor/projetos/${project.id}/equipe/${team.id}`"
+      :to="`/admin/projetos/${project.id}/equipe/${team.id}`"
       class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 transition-colors hover:border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-slate-600"
      >
       <span class="grid size-10 shrink-0 place-items-center rounded-lg text-sm font-bold text-white" :class="team.color">
