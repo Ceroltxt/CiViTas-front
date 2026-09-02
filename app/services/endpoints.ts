@@ -23,6 +23,7 @@ export const ENDPOINTS = {
   timeline: '/board/timeline',
   calendarEvents: '/calendar/events',
   auditLogs: '/audit-logs',
+  adminDashboard: '/admin/dashboard',
 } as const
 
 export type EndpointKey = keyof typeof ENDPOINTS
