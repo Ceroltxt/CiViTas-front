@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 
-definePageMeta({ sidebarWidget: 'none' })
+definePageMeta({ sidebarWidget: 'project' })
 
 const perPage = ref(10)
 const view = ref<'list' | 'grid'>('list')
@@ -18,20 +18,8 @@ const gestorItems = ['Todos', 'Beatriz Milani', 'Pedro Nascimento']
 const tarefaItems = ['Todas', 'Dashboard Admin', 'Ajuste na API', 'Definição de Métricas', 'diagrama.png', 'Levantamento']
 const periodoItems = ['Todos', 'Últimos 7 dias', 'Últimos 30 dias']
 
-// Logs showing admin, gestor, and collaborator activities
+// Logs showing both collaborator (Costa Neves) and gestor actions
 const baseLogs = [
-  {
-    date: '07/06/2026',
-    user: 'Dimitri Brito',
-    action: 'Segurança',
-    actionColor: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300',
-    details: 'Alterou permissões globais de acesso do Gestor Pedro Nascimento',
-    project: 'Plataforma E-commerce',
-    team: 'BackEnd',
-    manager: 'Pedro Nascimento',
-    status: 'Concluídas',
-    statusColor: 'text-emerald-600 dark:text-emerald-400'
-  },
   {
     date: '06/06/2026',
     user: 'Pedro Nascimento',
@@ -69,18 +57,6 @@ const baseLogs = [
     statusColor: 'text-rose-600 dark:text-rose-400'
   },
   {
-    date: '03/06/2026',
-    user: 'Dimitri Brito',
-    action: 'Projeto Criado',
-    actionColor: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
-    details: 'Criou o projeto "Portal do Cliente V2"',
-    project: 'Portal do Cliente',
-    team: 'Criptografia',
-    manager: 'Pedro Nascimento',
-    status: 'Concluídas',
-    statusColor: 'text-emerald-600 dark:text-emerald-400'
-  },
-  {
     date: '02/06/2026',
     user: 'Costa Neves',
     action: 'Comentário Adicionado',
@@ -91,16 +67,39 @@ const baseLogs = [
     manager: 'Pedro Nascimento',
     status: 'Pendentes',
     statusColor: 'text-amber-600 dark:text-amber-400'
+  },
+  {
+    date: '30/05/2026',
+    user: 'Beatriz Milani',
+    action: 'Nova Tarefa',
+    actionColor: 'bg-violet-50 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300',
+    details: 'Criou a tarefa "Definição de Métricas"',
+    project: 'Sistema de Logística',
+    team: 'DataBase',
+    manager: 'Pedro Nascimento',
+    status: 'Pendentes',
+    statusColor: 'text-amber-600 dark:text-amber-400'
+  },
+  {
+    date: '27/05/2026',
+    user: 'Costa Neves',
+    action: 'Arquivo Anexado',
+    actionColor: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+    details: 'Adicionou o arquivo "diagrama.png" ao projeto',
+    project: 'Plataforma MEI',
+    team: 'FrontEnd',
+    manager: 'Beatriz Milani',
+    status: 'Pendentes',
+    statusColor: 'text-amber-600 dark:text-amber-400'
   }
 ]
 
-// Duplicate mock logs list to showcase pagination up to 100 items
+// Duplicate mock logs list to showcase pagination up to 50 items
 const logs = [
   ...baseLogs,
   ...baseLogs.map((l) => ({ ...l, date: '21/05/2026', details: l.details + ' (histórico)' })),
   ...baseLogs.map((l) => ({ ...l, date: '15/05/2026', details: l.details + ' (anterior)' })),
   ...baseLogs.map((l) => ({ ...l, date: '10/05/2026', details: l.details + ' (antigo)' })),
-  ...baseLogs.map((l) => ({ ...l, date: '05/05/2026', details: l.details + ' (antigo V2)' })),
   ...baseLogs.map((l) => ({ ...l, date: '01/05/2026', details: l.details + ' (arquivado)' }))
 ]
 
@@ -124,11 +123,11 @@ function exportLogs() {
 </script>
 
 <template>
-  <div class="space-y-5 p-4 sm:p-6 dark:bg-slate-900 min-h-screen">
+  <div class="space-y-5 p-4 sm:p-6">
     <!-- Cabeçalho -->
     <div class="flex flex-wrap items-center justify-between gap-3">
       <h1 class="flex items-center gap-2 font-display text-2xl font-bold text-slate-800 dark:text-slate-100">
-        Relatórios do Administrador
+        Relatórios do Gestor
         <UIcon name="i-heroicons-document-chart-bar" class="size-6 text-violet-500" />
       </h1>
 
@@ -145,7 +144,7 @@ function exportLogs() {
         <div class="h-6 w-px bg-slate-200 dark:bg-slate-800" />
 
         <span class="text-sm text-slate-500 font-medium">Itens:</span>
-        <USelect v-model="perPage" :items="[10, 25, 50, 100]" class="w-18 bg-white" />
+        <USelect v-model="perPage" :items="[5, 10, 25, 50]" class="w-18 bg-white" />
 
         <div class="flex overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700">
           <button

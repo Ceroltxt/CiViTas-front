@@ -52,6 +52,35 @@ const projectHealthLegend = computed(() => [
   { label: 'Atrasado', value: projectHealth.atrasado, color: 'bg-rose-500', pct: Math.round((projectHealth.atrasado / projectHealth.total) * 100) },
   { label: 'Concluído', value: projectHealth.concluido, color: 'bg-slate-400', pct: Math.round((projectHealth.concluido / projectHealth.total) * 100) },
 ])
+
+function exportDashboardCsv() {
+  const rows = [
+    ['Dashboard Admin - Relatorio Geral'],
+    [''],
+    ['Metricas Gerais'],
+    ['Metrica', 'Valor', 'Variacao'],
+    ...metrics.value.map(m => [m.label, String(m.value), `+${m.changePercent}%`]),
+    [''],
+    ['Projetos em Andamento'],
+    ['Nome', 'Tarefas Concluidas', 'Total de Tarefas', 'Progresso', 'Prazo'],
+    ...activeProjects.value.map(p => [p.name, String(p.tasksCompleted), String(p.tasksTotal), `${p.progress}%`, p.deadline]),
+    [''],
+    ['Riscos e Bloqueios'],
+    ['Projeto', 'Descricao', 'Severidade'],
+    ...risks.value.map(r => [r.projectName, r.description, r.severity])
+  ]
+
+  const csvContent = "data:text/csv;charset=utf-8," 
+    + rows.map(e => e.join(",")).join("\n")
+
+  const encodedUri = encodeURI(csvContent)
+  const link = document.createElement("a")
+  link.setAttribute("href", encodedUri)
+  link.setAttribute("download", "relatorio_admin.csv")
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+}
 </script>
 
 <template>
@@ -84,25 +113,15 @@ const projectHealthLegend = computed(() => [
           </template>
         </UPopover>
         <!-- Exportar -->
-        <UModal :modal="false" title="Exportar relatório">
-          <UButton
-            color="white"
-            variant="solid"
-            icon="i-heroicons-document-arrow-down"
-            class="text-slate-600"
-          >
-            Exportar Relatório
-          </UButton>
-          <template #body>
-            <UFileUpload
-              color="neutral"
-              highlight
-              label="Arraste e solte um arquivo ou clique para selecionar"
-              description="PDF, XLS ou CSV (max. 5MB)"
-              class="w-full min-h-48"
-            />
-          </template>
-        </UModal>
+        <UButton
+          color="white"
+          variant="solid"
+          icon="i-heroicons-document-arrow-down"
+          class="text-slate-600"
+          @click="exportDashboardCsv"
+        >
+          Exportar Relatório
+        </UButton>
       </div>
     </div>
 
@@ -236,7 +255,7 @@ const projectHealthLegend = computed(() => [
         <template #header>
           <div class="flex items-center justify-between">
             <h3 class="font-semibold text-slate-800 dark:text-slate-100">Riscos e Bloqueios</h3>
-            <span class="text-xs text-violet-600 font-medium cursor-pointer hover:underline">Ver todos →</span>
+            <NuxtLink to="/admin/projetos" class="text-xs text-violet-600 font-medium cursor-pointer hover:underline">Ver todos →</NuxtLink>
           </div>
         </template>
         <ul class="space-y-3">
@@ -285,9 +304,10 @@ const projectHealthLegend = computed(() => [
         <UCard
           v-for="project in activeProjects"
           :key="project.id"
-          class="shrink-0 w-52 transition-transform hover:-translate-y-0.5"
+          class="shrink-0 w-52 transition-transform hover:-translate-y-0.5 cursor-pointer"
           style="scroll-snap-align: start;"
           :ui="{ body: { padding: 'p-3' } }"
+          @click="navigateTo(`/admin/projetos/${project.id}`)"
         >
           <div class="flex items-center gap-2.5">
             <div :class="[project.iconBg, 'flex size-9 shrink-0 items-center justify-center rounded-lg']">
@@ -315,7 +335,8 @@ const projectHealthLegend = computed(() => [
         </UCard>
 
         <!-- Novo projeto -->
-        <div
+        <NuxtLink
+          to="/admin/projetos"
           class="flex shrink-0 w-44 items-center justify-center rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors cursor-pointer group min-h-[130px]"
           style="scroll-snap-align: start;"
         >
@@ -323,7 +344,7 @@ const projectHealthLegend = computed(() => [
             <UIcon name="i-heroicons-plus" class="size-6" />
             <span class="text-sm font-medium">Novo projeto</span>
           </div>
-        </div>
+        </NuxtLink>
       </div>
     </div>
 

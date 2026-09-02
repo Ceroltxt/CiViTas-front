@@ -21,10 +21,9 @@ const NAV_BY_ROLE: Record<AppRole, NavItem[]> = {
   ],
   admin: [
     { label: 'Início', icon: 'i-heroicons-home', to: '/admin' },
-    { label: 'Quadros', icon: 'i-heroicons-squares-2x2', to: '/admin/quadros' },
     { label: 'Projetos', icon: 'i-heroicons-folder', to: '/admin/projetos' },
+    { label: 'Relatórios', icon: 'i-heroicons-chart-bar', to: '/admin/relatorios' },
     { label: 'Acessos', icon: 'i-heroicons-key', to: '/admin/acessos' },
-    { label: 'Relatorios', icon: 'i-heroicons-shield-check', to: '/admin/relatorios' },
     { label: 'Configurações', icon: 'i-heroicons-cog-6-tooth', to: '/admin/configuracoes' },
   ],
 }

@@ -93,6 +93,7 @@ const router = useRouter()
 function openProject(projectId: string) {
   router.push(`/gestor/projetos/${projectId}`)
 }
+const isCreateProjectOpen = ref(false)
 </script>
 
 <template>
@@ -102,10 +103,7 @@ function openProject(projectId: string) {
         <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">Projetos</h1>
         <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">Acompanhe os projetos dos quais você faz parte e suas entregas.</p>
       </div>
-      <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-900">
-        <p class="text-xs text-slate-400">Projetos vinculados</p>
-        <p class="mt-0.5 text-xl font-bold text-slate-800 dark:text-slate-100">{{ projectCards.length }}</p>
-      </div>
+      <div class="flex items-center gap-3"><UButton color="primary" icon="i-heroicons-plus" label="Criar Projeto" @click="isCreateProjectOpen = true" /><div class="rounded-2xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-900 hidden sm:block"><p class="text-xs text-slate-400">Projetos vinculados</p><p class="mt-0.5 text-xl font-bold text-slate-800 dark:text-slate-100">{{ projectCards.length }}</p></div></div>
     </div>
 
     <div class="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900 sm:flex-row sm:items-center sm:justify-between">
@@ -183,4 +181,7 @@ function openProject(projectId: string) {
       <p class="mt-3 text-sm font-medium text-slate-500">Nenhum projeto encontrado.</p>
     </div>
   </div>
+  <ModalCreateProject v-model="isCreateProjectOpen" />
 </template>
+
+

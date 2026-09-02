@@ -54,6 +54,7 @@ const teamColorMap: Record<string, { bg: string, text: string }> = {
 function teamTone(color: string) {
   return teamColorMap[color] ?? { bg: 'bg-slate-100 dark:bg-slate-800', text: 'text-slate-700 dark:text-slate-300' }
 }
+const isCreateTeamOpen = ref(false)
 </script>
 
 <template>
@@ -126,4 +127,5 @@ function teamTone(color: string) {
    </div>
   </section>
  </div>
+  <ModalCreateTeam v-model="isCreateTeamOpen" />
 </template>

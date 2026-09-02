@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 
-definePageMeta({ sidebarWidget: 'none' })
+definePageMeta({ sidebarWidget: 'project' })
 
 const user = useCurrentUser()
 const name = ref('Costa Neves')
-const email = ref('admin@civitas.com')
-const role = ref('Administrador')
+const email = ref('gestor@civitas.com')
+const role = ref('Gestor')
 
 const notifications = ref(true)
 const weeklyDigest = ref(false)
@@ -27,7 +27,7 @@ function changePassword() {
 </script>
 
 <template>
-  <div class="mx-auto max-w-4xl space-y-5 p-4 sm:p-6 dark:bg-slate-900 min-h-screen">
+  <div class="mx-auto max-w-4xl space-y-5 p-4 sm:p-6">
     <!-- Cabeçalho -->
     <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
       <div>
