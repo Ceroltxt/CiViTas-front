@@ -42,6 +42,8 @@ function toggleTheme() {
   colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'
 }
 
+const auth = useAuth()
+
 const userMenu = computed(() => {
   const primary = [{ label: 'Meu perfil', icon: 'i-heroicons-user' }]
   if (appRole.value === 'colaborador') {
@@ -51,7 +53,17 @@ const userMenu = computed(() => {
       to: '/colaborador/configuracoes',
     })
   }
-  return [primary, [{ label: 'Sair', icon: 'i-heroicons-arrow-right-on-rectangle', to: '/login' }]]
+  return [
+    primary,
+    [
+      {
+        label: 'Sair',
+        icon: 'i-heroicons-arrow-right-on-rectangle',
+        click: () => auth.logout(),
+        onSelect: () => auth.logout(),
+      },
+    ],
+  ]
 })
 
 const createOptions = computed(() => {

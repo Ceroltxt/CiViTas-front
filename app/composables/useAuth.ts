@@ -85,13 +85,24 @@ export function useAuth() {
   async function logout() {
     try {
       if (tokenCookie.value) {
-        await api.post(ENDPOINTS.logout, {})
+        const baseURL = (config.public.apiBase as string) || 'http://localhost:8080/api'
+        await $fetch(ENDPOINTS.logout, {
+          method: 'POST',
+          baseURL,
+          headers: {
+            Accept: 'application/json',
+            Authorization: `Bearer ${tokenCookie.value}`,
+          },
+        })
       }
     } catch (e) {
       // Ignorar erros no logout
     } finally {
       tokenCookie.value = null
       userState.value = null
+      if (typeof document !== 'undefined') {
+        document.cookie = 'auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
+      }
       await navigateTo('/login')
     }
   }

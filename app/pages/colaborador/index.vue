@@ -5,6 +5,10 @@ import type { TaskAuditEntry } from '~/types'
 definePageMeta({ sidebarWidget: 'project' })
 
 const user = useCurrentUser()
+
+onMounted(() => {
+  fetchTasksFromSupabase()
+})
 const teamDetails = useTeamsData()
 const teamsModalOpen = ref(false)
 
