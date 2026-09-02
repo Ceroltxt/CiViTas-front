@@ -264,3 +264,97 @@ export interface TimelineGroup {
   title?: string
   tasks: TimelineTask[]
 }
+
+/** Métrica do dashboard ADMIN (com comparação com período anterior). */
+export interface AdminMetric {
+  id: string
+  label: string
+  value: number
+  /** Percentual de variação vs período anterior (ex: 12 = +12%) */
+  changePercent: number
+  icon: string
+  iconBg: string
+  iconColor: string
+}
+
+/** Desempenho de uma equipe por período (para o gráfico de barras). */
+export interface TeamPerformancePoint {
+  teamName: string
+  value: number
+  color: string
+}
+
+/** Dados de colaboradores ativos/inativos. */
+export interface CollaboratorStats {
+  total: number
+  active: number
+  inactive: number
+}
+
+/** Ponto de dados para o gráfico de desempenho de entregas (linha). */
+export interface DeliveryPerformancePoint {
+  label: string
+  concluidas: number
+  emAndamento: number
+  atrasadas: number
+}
+
+/** Risco ou bloqueio listado na seção de riscos. */
+export interface RiskItem {
+  id: string
+  projectName: string
+  description: string
+  severity: 'high' | 'medium' | 'low'
+}
+
+/** Ponto de dados para o gráfico de tendência de produtividade (linha). */
+export interface ProductivityTrendPoint {
+  label: string
+  value: number
+}
+
+/** Dados de saúde dos projetos (donut). */
+export interface ProjectHealthStats {
+  noPrazo: number
+  emRisco: number
+  atrasado: number
+  concluido: number
+  total: number
+}
+
+/** Projeto em andamento para o carrossel horizontal. */
+export interface ActiveProject {
+  id: string
+  name: string
+  icon: string
+  iconBg: string
+  iconColor: string
+  tasksCompleted: number
+  tasksTotal: number
+  progress: number
+  deadline: string
+}
+
+/** Agregado do dashboard ADMIN. */
+export interface AdminDashboardOverview {
+  metrics: AdminMetric[]
+  teamPerformance: {
+    thisMonth: TeamPerformancePoint[]
+    lastMonth: TeamPerformancePoint[]
+    lastThreeMonths: TeamPerformancePoint[]
+  }
+  collaborators: CollaboratorStats
+  deliveryPerformance: {
+    thisMonth: DeliveryPerformancePoint[]
+    lastMonth: DeliveryPerformancePoint[]
+    lastThreeMonths: DeliveryPerformancePoint[]
+  }
+  projectHealth: ProjectHealthStats
+  risks: RiskItem[]
+  productivityTrend: {
+    thisMonth: ProductivityTrendPoint[]
+    lastMonth: ProductivityTrendPoint[]
+    lastThreeMonths: ProductivityTrendPoint[]
+  }
+  activeProjects: ActiveProject[]
+}

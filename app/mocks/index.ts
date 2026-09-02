@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Dados mock do app — fonte única enquanto não há backend.
  *
  * Estes objetos representam o JSON "cru" que cada endpoint deverá devolver no
@@ -10,18 +10,27 @@
  * endpoint correspondente precisa retornar.
  */
 import type {
+  ActiveProject,
+  AdminDashboardOverview,
+  AdminMetric,
   AgendaItem,
   AuditLog,
   CalendarEvent,
+  CollaboratorStats,
   CurrentProject,
   DashboardMetric,
+  DeliveryPerformancePoint,
   NavItem,
   NotificationItem,
+  ProductivityTrendPoint,
   ProjectDetail,
+  ProjectHealthStats,
   ProjectProgress,
   RankingEntry,
+  RiskItem,
   Task,
   TeamDetail,
+  TeamPerformancePoint,
   TeamSummary,
   TimelineGroup,
   UserSummary,
@@ -1373,4 +1382,148 @@ export function mockAuditLogs(count = 10): AuditLog[] {
     details: 'Não sabe usar SQL...',
     language: '---',
   }))
+}
+
+/* --------------------------------------------------------- Dashboard ADMIN */
+
+export const mockAdminMetrics: AdminMetric[] = [
+  {
+    id: 'projetos-ativos',
+    label: 'Projetos ativos',
+    value: 24,
+    changePercent: 12,
+    icon: 'i-heroicons-briefcase',
+    iconBg: 'bg-violet-100 dark:bg-violet-900/40',
+    iconColor: 'text-violet-600 dark:text-violet-400',
+  },
+  {
+    id: 'equipes',
+    label: 'Equipes',
+    value: 18,
+    changePercent: 5,
+    icon: 'i-heroicons-user-group',
+    iconBg: 'bg-orange-100 dark:bg-orange-900/40',
+    iconColor: 'text-orange-500 dark:text-orange-400',
+  },
+  {
+    id: 'colaboradores',
+    label: 'Colaboradores',
+    value: 156,
+    changePercent: 8,
+    icon: 'i-heroicons-users',
+    iconBg: 'bg-blue-100 dark:bg-blue-900/40',
+    iconColor: 'text-blue-500 dark:text-blue-400',
+  },
+  {
+    id: 'total-tarefas',
+    label: 'Total de tarefas',
+    value: 327,
+    changePercent: 15,
+    icon: 'i-heroicons-check-circle',
+    iconBg: 'bg-emerald-100 dark:bg-emerald-900/40',
+    iconColor: 'text-emerald-500 dark:text-emerald-400',
+  },
+]
+
+const teamPerformanceThisMonth: TeamPerformancePoint[] = [
+  { teamName: 'Marketing', value: 4, color: 'rgba(255, 193, 7, 0.85)' },
+  { teamName: 'RH', value: 8, color: 'rgba(255, 107, 53, 0.85)' },
+  { teamName: 'Developers', value: 11, color: 'rgba(50, 132, 255, 0.85)' },
+  { teamName: 'Design', value: 16, color: 'rgba(97, 70, 234, 0.85)' },
+  { teamName: 'Suporte', value: 6, color: 'rgba(236, 64, 122, 0.85)' },
+]
+const teamPerformanceLastMonth: TeamPerformancePoint[] = [
+  { teamName: 'Marketing', value: 6, color: 'rgba(255, 193, 7, 0.85)' },
+  { teamName: 'RH', value: 5, color: 'rgba(255, 107, 53, 0.85)' },
+  { teamName: 'Developers', value: 14, color: 'rgba(50, 132, 255, 0.85)' },
+  { teamName: 'Design', value: 12, color: 'rgba(97, 70, 234, 0.85)' },
+  { teamName: 'Suporte', value: 9, color: 'rgba(236, 64, 122, 0.85)' },
+]
+const teamPerformanceLastThreeMonths: TeamPerformancePoint[] = [
+  { teamName: 'Marketing', value: 14, color: 'rgba(255, 193, 7, 0.85)' },
+  { teamName: 'RH', value: 21, color: 'rgba(255, 107, 53, 0.85)' },
+  { teamName: 'Developers', value: 38, color: 'rgba(50, 132, 255, 0.85)' },
+  { teamName: 'Design', value: 35, color: 'rgba(97, 70, 234, 0.85)' },
+  { teamName: 'Suporte', value: 22, color: 'rgba(236, 64, 122, 0.85)' },
+]
+const deliveryThisMonth: DeliveryPerformancePoint[] = [
+  { label: '01 Set', concluidas: 12, emAndamento: 8, atrasadas: 3 },
+  { label: '05 Set', concluidas: 15, emAndamento: 9, atrasadas: 4 },
+  { label: '10 Set', concluidas: 14, emAndamento: 11, atrasadas: 3 },
+  { label: '15 Set', concluidas: 18, emAndamento: 10, atrasadas: 2 },
+  { label: '20 Set', concluidas: 16, emAndamento: 12, atrasadas: 3 },
+  { label: '25 Set', concluidas: 19, emAndamento: 9, atrasadas: 2 },
+  { label: '01 Out', concluidas: 21, emAndamento: 10, atrasadas: 1 },
+]
+const deliveryLastMonth: DeliveryPerformancePoint[] = [
+  { label: '01 Ago', concluidas: 10, emAndamento: 7, atrasadas: 5 },
+  { label: '05 Ago', concluidas: 13, emAndamento: 8, atrasadas: 4 },
+  { label: '10 Ago', concluidas: 11, emAndamento: 10, atrasadas: 5 },
+  { label: '15 Ago', concluidas: 16, emAndamento: 9, atrasadas: 3 },
+  { label: '20 Ago', concluidas: 14, emAndamento: 11, atrasadas: 4 },
+  { label: '25 Ago', concluidas: 17, emAndamento: 8, atrasadas: 3 },
+  { label: '01 Set', concluidas: 19, emAndamento: 9, atrasadas: 2 },
+]
+const deliveryLastThreeMonths: DeliveryPerformancePoint[] = [
+  { label: 'Jul', concluidas: 38, emAndamento: 22, atrasadas: 12 },
+  { label: 'Ago', concluidas: 45, emAndamento: 25, atrasadas: 10 },
+  { label: 'Set', concluidas: 52, emAndamento: 28, atrasadas: 8 },
+]
+const productivityThisMonth: ProductivityTrendPoint[] = [
+  { label: '01 Set', value: 62 },
+  { label: '05 Set', value: 65 },
+  { label: '10 Set', value: 68 },
+  { label: '15 Set', value: 72 },
+  { label: '20 Set', value: 70 },
+  { label: '25 Set', value: 74 },
+  { label: '01 Out', value: 78 },
+]
+const productivityLastMonth: ProductivityTrendPoint[] = [
+  { label: '01 Ago', value: 55 },
+  { label: '05 Ago', value: 58 },
+  { label: '10 Ago', value: 60 },
+  { label: '15 Ago', value: 63 },
+  { label: '20 Ago', value: 61 },
+  { label: '25 Ago', value: 65 },
+  { label: '01 Set', value: 68 },
+]
+const productivityLastThreeMonths: ProductivityTrendPoint[] = [
+  { label: 'Jun', value: 62 },
+  { label: 'Jul', value: 68 },
+  { label: 'Ago', value: 74 },
+  { label: 'Set', value: 81 },
+]
+
+export const mockAdminDashboard: AdminDashboardOverview = {
+  metrics: mockAdminMetrics,
+  teamPerformance: {
+    thisMonth: teamPerformanceThisMonth,
+    lastMonth: teamPerformanceLastMonth,
+    lastThreeMonths: teamPerformanceLastThreeMonths,
+  },
+  collaborators: { total: 156, active: 132, inactive: 24 },
+  deliveryPerformance: {
+    thisMonth: deliveryThisMonth,
+    lastMonth: deliveryLastMonth,
+    lastThreeMonths: deliveryLastThreeMonths,
+  },
+  projectHealth: { noPrazo: 12, emRisco: 6, atrasado: 4, concluido: 2, total: 24 },
+  risks: [
+    { id: 'r1', projectName: 'Projeto Nova Praca Central', description: 'Atrasado ha 5 dias', severity: 'high' },
+    { id: 'r2', projectName: 'Tarefa Aprovacao de layout', description: 'Bloqueada aguardando aprovacao', severity: 'medium' },
+    { id: 'r3', projectName: 'Dependencia externa', description: 'Aguardando retorno do fornecedor', severity: 'low' },
+  ],
+  productivityTrend: {
+    thisMonth: productivityThisMonth,
+    lastMonth: productivityLastMonth,
+    lastThreeMonths: productivityLastThreeMonths,
+  },
+  activeProjects: [
+    { id: 'ap1', name: 'Sistema de Gestao RH', icon: 'i-heroicons-users', iconBg: 'bg-gradient-to-br from-violet-500 to-fuchsia-600', iconColor: 'text-white', tasksCompleted: 12, tasksTotal: 16, progress: 75, deadline: '12/06/2026' },
+    { id: 'ap2', name: 'Aplicativo Mobile', icon: 'i-heroicons-device-phone-mobile', iconBg: 'bg-gradient-to-br from-orange-400 to-amber-500', iconColor: 'text-white', tasksCompleted: 12, tasksTotal: 16, progress: 83, deadline: '12/06/2026' },
+    { id: 'ap3', name: 'Portal do Cliente', icon: 'i-heroicons-computer-desktop', iconBg: 'bg-gradient-to-br from-blue-500 to-sky-600', iconColor: 'text-white', tasksCompleted: 12, tasksTotal: 16, progress: 37, deadline: '12/06/2026' },
+    { id: 'ap4', name: 'Campanha de Marketing', icon: 'i-heroicons-megaphone', iconBg: 'bg-gradient-to-br from-emerald-500 to-green-600', iconColor: 'text-white', tasksCompleted: 12, tasksTotal: 16, progress: 51, deadline: '12/06/2026' },
+    { id: 'ap5', name: 'Nova Praca Central', icon: 'i-heroicons-building-office', iconBg: 'bg-gradient-to-br from-amber-400 to-orange-500', iconColor: 'text-white', tasksCompleted: 8, tasksTotal: 20, progress: 45, deadline: '30/06/2026' },
+    { id: 'ap6', name: 'Revisao de Licitacoes', icon: 'i-heroicons-document-magnifying-glass', iconBg: 'bg-gradient-to-br from-rose-500 to-pink-600', iconColor: 'text-white', tasksCompleted: 5, tasksTotal: 12, progress: 62, deadline: '20/07/2026' },
+  ],
 }

@@ -36,6 +36,7 @@ import {
 } from '~/schemas'
 import { v } from '~/utils/validation'
 import {
+  mockAdminDashboard,
   mockAgenda,
   mockAuditLogs,
   mockBoardTasks,
@@ -110,3 +111,9 @@ export async function fetchInicioOverview(): Promise<InicioOverview> {
   ])
   return { metrics, agenda, ranking, projects, teams }
 }
+
+export async function fetchAdminDashboard() {
+  // Backend: GET /admin/dashboard — retorna AdminDashboardOverview
+  return mockAdminDashboard
+}
+
