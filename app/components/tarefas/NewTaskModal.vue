@@ -193,28 +193,32 @@ function formatDate(dateStr: string): string {
 }
 
 async function createTask() {
+  if (isSubmitting.value) return
+  isSubmitting.value = true
   submitted.value = true
   errorMessage.value = null
 
   // Validação dos campos obrigatórios
   if (!title.value.trim()) {
     errorMessage.value = 'O título da tarefa é obrigatório.'
+    isSubmitting.value = false
     return
   }
   if (!priority.value) {
     errorMessage.value = 'Selecione a prioridade da tarefa.'
+    isSubmitting.value = false
     return
   }
   if (!deadline.value) {
     errorMessage.value = 'Selecione o prazo final da tarefa.'
+    isSubmitting.value = false
     return
   }
   if (deadline.value < todayISO.value) {
     errorMessage.value = 'O prazo final deve ser hoje ou uma data futura.'
+    isSubmitting.value = false
     return
   }
-
-  isSubmitting.value = true
 
   try {
     const baseURL = (config.public.apiBase as string) || 'http://localhost:8080/api'
@@ -526,6 +530,7 @@ async function createTask() {
         <button
           type="button"
           class="flex-1 h-[42px] rounded-lg bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 text-sm font-bold text-white shadow-sm transition-all hover:shadow-md hover:brightness-110 flex items-center justify-center gap-2"
+          :class="isSubmitting && 'opacity-50 pointer-events-none cursor-not-allowed'"
           :disabled="isSubmitting"
           @click="createTask"
         >

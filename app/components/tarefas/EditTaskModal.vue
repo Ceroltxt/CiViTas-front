@@ -35,6 +35,7 @@ function closeModal() {
 }
 
 async function handleSave() {
+  if (isSubmitting.value) return
   if (!currentTask.value?.id) return
   if (!title.value.trim()) {
     errorMessage.value = 'O título da tarefa é obrigatório.'
@@ -62,6 +63,7 @@ async function handleSave() {
 }
 
 async function handleDelete() {
+  if (isSubmitting.value) return
   if (!currentTask.value?.id) return
   if (!confirm('Tem certeza que deseja excluir esta tarefa permanentemente?')) return
 
