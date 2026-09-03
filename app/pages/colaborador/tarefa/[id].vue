@@ -90,6 +90,13 @@ async function addComment() {
       headers,
       body: { comentario: newComment.value.trim() },
     })
+    newComment.value = ''
+    await loadTaskDetails()
+  } catch (e) {
+    console.error('Erro ao enviar comentario:', e)
+  }
+}
+
 const auth = useAuth()
 const editTaskOpen = ref(false)
 
