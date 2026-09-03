@@ -6,23 +6,29 @@ import { fetchGestoresFromSupabase } from '~/composables/useTeamsData'
 const open = defineModel<boolean>('open', { default: false })
 const emit = defineEmits<{ created: [] }>()
 
+const auth = useAuth()
+
 const name = ref('')
 const description = ref('')
 const priority = ref<'alta' | 'media' | 'baixa'>('media')
 const startDate = ref('')
 const endDate = ref('')
-const selectedGestores = ref<number[]>([])
-const gestoresOptions = ref<{ id: number; name: string; role?: string }[]>([])
+const selectedGestor = ref<string>('')  // matrícula do gestor selecionado no dropdown
+const gestoresOptions = ref<{ id: string; name: string; role: string }[]>([])
 const isSubmitting = ref(false)
 const errorMessage = ref<string | null>(null)
 
 async function loadGestores() {
   const list = await fetchGestoresFromSupabase()
-  gestoresOptions.value = list.map(item => ({
-    id: Number(item.id),
-    name: item.name,
-    role: item.role,
-  }))
+  // Excluir o próprio admin do dropdown (admin já tem todas as permissões)
+  const adminId = String(auth.user.value?.matricula || '')
+  gestoresOptions.value = list
+    .filter(item => String(item.id) !== adminId)
+    .map(item => ({
+      id: String(item.id),
+      name: item.name,
+      role: item.role || 'Gestor',
+    }))
 }
 
 onMounted(() => {
@@ -33,17 +39,8 @@ function closeModal() {
   open.value = false
   name.value = ''
   description.value = ''
-  selectedGestores.value = []
+  selectedGestor.value = ''
   errorMessage.value = null
-}
-
-function toggleGestor(id: number) {
-  const idx = selectedGestores.value.indexOf(id)
-  if (idx > -1) {
-    selectedGestores.value.splice(idx, 1)
-  } else {
-    selectedGestores.value.push(id)
-  }
 }
 
 async function handleCreateProject() {
@@ -56,13 +53,15 @@ async function handleCreateProject() {
   isSubmitting.value = true
   errorMessage.value = null
 
+  const gestores = selectedGestor.value ? [Number(selectedGestor.value)] : []
+
   const success = await createProjectInSupabase({
     nome: name.value.trim(),
-    descricao: description.value.trim(),
+    descricao: description.value.trim() || undefined,
     prioridade: priority.value,
     data_inicio: startDate.value || undefined,
     data_previsao_fim: endDate.value || undefined,
-    gestores: selectedGestores.value,
+    gestores,
   })
 
   isSubmitting.value = false
@@ -71,7 +70,7 @@ async function handleCreateProject() {
     emit('created')
     closeModal()
   } else {
-    errorMessage.value = 'Erro ao criar projeto no Supabase.'
+    errorMessage.value = 'Erro ao criar projeto no Supabase. Tente novamente.'
   }
 }
 </script>
@@ -99,6 +98,7 @@ async function handleCreateProject() {
           {{ errorMessage }}
         </div>
 
+        <!-- Nome -->
         <div>
           <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
             Nome do Projeto <span class="text-rose-500">*</span>
@@ -106,6 +106,7 @@ async function handleCreateProject() {
           <UInput v-model="name" placeholder="Ex: Revitalização do Parque Municipal" class="w-full" :disabled="isSubmitting" />
         </div>
 
+        <!-- Descrição -->
         <div>
           <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
             Descrição
@@ -113,41 +114,31 @@ async function handleCreateProject() {
           <UTextarea v-model="description" :rows="3" placeholder="Descrição detalhada das metas do projeto..." class="w-full" :disabled="isSubmitting" />
         </div>
 
+        <!-- Gestor Responsável (dropdown) -->
         <div>
           <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
-            Gestores Responsáveis (Alocados)
+            Gestor Responsável
           </label>
-          <div class="max-h-40 overflow-y-auto space-y-1.5 rounded-lg border border-slate-200 p-2.5 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
-            <div
-              v-for="g in gestoresOptions"
-              :key="g.id"
-              class="flex items-center justify-between p-2 rounded-md hover:bg-white dark:hover:bg-slate-800 transition-colors cursor-pointer"
-              @click="toggleGestor(g.id)"
-            >
-              <div class="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  :checked="selectedGestores.includes(g.id)"
-                  class="rounded text-violet-600 focus:ring-violet-500 size-4"
-                  @click.stop="toggleGestor(g.id)"
-                />
-                <span class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ g.name }}</span>
-              </div>
-              <span class="text-xs px-2 py-0.5 rounded-full bg-violet-100 dark:bg-violet-900/40 text-violet-600 dark:text-violet-300 font-semibold">
-                {{ g.role || 'Gestor' }}
-              </span>
-            </div>
-            <div v-if="gestoresOptions.length === 0" class="text-xs text-slate-400 text-center py-2">
-              Buscando gestores no Supabase...
-            </div>
-          </div>
+          <select
+            v-model="selectedGestor"
+            class="w-full h-[38px] rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+            :disabled="isSubmitting"
+          >
+            <option value="">Sem gestor (definir depois)</option>
+            <option v-for="g in gestoresOptions" :key="g.id" :value="g.id">
+              {{ g.name }}
+              <template v-if="g.role"> — {{ g.role }}</template>
+            </option>
+          </select>
+          <p class="mt-1 text-xs text-slate-400">
+            O administrador não precisa ser listado como gestor — ele já tem acesso total.
+          </p>
         </div>
 
+        <!-- Prioridade + Datas -->
         <div class="grid grid-cols-3 gap-3">
           <div>
-            <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
-              Prioridade
-            </label>
+            <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">Prioridade</label>
             <select
               v-model="priority"
               class="w-full h-[38px] rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
@@ -160,16 +151,12 @@ async function handleCreateProject() {
           </div>
 
           <div>
-            <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
-              Data Início
-            </label>
+            <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">Data Início</label>
             <UInput v-model="startDate" type="date" class="w-full" :disabled="isSubmitting" />
           </div>
 
           <div>
-            <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
-              Previsão Término
-            </label>
+            <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">Previsão Término</label>
             <UInput v-model="endDate" type="date" class="w-full" :disabled="isSubmitting" />
           </div>
         </div>

@@ -1,39 +1,27 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { createTeamInSupabase, fetchGestoresFromSupabase } from '~/composables/useTeamsData'
-import { useDashboardApi } from '~/composables/useDashboardApi'
+import { createTeamInSupabase } from '~/composables/useTeamsData'
+import { fetchUserProjectsFromSupabase, useGestorProjectsRef } from '~/composables/useUserProjects'
 
 const open = defineModel<boolean>('open', { default: false })
 const emit = defineEmits<{ created: [] }>()
 
 const name = ref('')
-const selectedGestor = ref<string>('')
 const selectedProject = ref<string>('')
-const gestoresOptions = ref<{ id: string; name: string }[]>([])
-const projectsOptions = ref<{ id: string; name: string }[]>([])
 const isSubmitting = ref(false)
 const errorMessage = ref<string | null>(null)
 
-async function loadOptions() {
-  const [g, p] = await Promise.all([
-    fetchGestoresFromSupabase(),
-    useDashboardApi().fetchProjects(),
-  ])
-  gestoresOptions.value = g.map(item => ({ id: String(item.id), name: item.name }))
-  projectsOptions.value = p.map(item => ({ id: String(item.id), name: item.name }))
+// Projetos do gestor logado (alocados a ele pelo admin)
+const gestorProjects = useGestorProjectsRef()
 
-  if (gestoresOptions.value.length > 0 && !selectedGestor.value) {
-    selectedGestor.value = gestoresOptions.value[0].id
-  }
-}
-
-onMounted(() => {
-  loadOptions()
+onMounted(async () => {
+  await fetchUserProjectsFromSupabase()
 })
 
 function closeModal() {
   open.value = false
   name.value = ''
+  selectedProject.value = ''
   errorMessage.value = null
 }
 
@@ -43,18 +31,21 @@ async function handleCreateTeam() {
     errorMessage.value = 'O nome da equipe é obrigatório.'
     return
   }
-  if (!selectedGestor.value) {
-    errorMessage.value = 'Selecione o Gestor Responsável pela equipe.'
+  if (!selectedProject.value) {
+    errorMessage.value = 'Selecione o Projeto ao qual a equipe pertence.'
     return
   }
 
   isSubmitting.value = true
   errorMessage.value = null
 
+  const auth = useAuth()
+  const gestorMatricula = Number(auth.user.value?.matricula || 0)
+
   const success = await createTeamInSupabase({
     nome: name.value.trim(),
-    matricula_gestor: Number(selectedGestor.value),
-    ID_projeto: selectedProject.value ? Number(selectedProject.value) : null,
+    matricula_gestor: gestorMatricula,
+    ID_projeto: Number(selectedProject.value),
   })
 
   isSubmitting.value = false
@@ -63,13 +54,13 @@ async function handleCreateTeam() {
     emit('created')
     closeModal()
   } else {
-    errorMessage.value = 'Erro ao criar equipe no Supabase.'
+    errorMessage.value = 'Erro ao criar equipe. Tente novamente.'
   }
 }
 </script>
 
 <template>
-  <UModal v-model:open="open" :ui="{ content: 'max-w-lg' }">
+  <UModal v-model:open="open" :ui="{ content: 'max-w-md' }">
     <template #header>
       <div class="flex items-center justify-between w-full">
         <h2 class="text-lg font-bold text-slate-900 dark:text-slate-100">
@@ -91,6 +82,7 @@ async function handleCreateTeam() {
           {{ errorMessage }}
         </div>
 
+        <!-- Nome da Equipe -->
         <div>
           <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
             Nome da Equipe <span class="text-rose-500">*</span>
@@ -98,35 +90,24 @@ async function handleCreateTeam() {
           <UInput v-model="name" placeholder="Ex: Equipe de Infraestrutura" class="w-full" :disabled="isSubmitting" />
         </div>
 
+        <!-- Projeto Vinculado — somente projetos alocados ao gestor -->
         <div>
           <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
-            Gestor Responsável <span class="text-rose-500">*</span>
-          </label>
-          <select
-            v-model="selectedGestor"
-            class="w-full h-[38px] rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
-            :disabled="isSubmitting"
-          >
-            <option v-for="g in gestoresOptions" :key="g.id" :value="g.id">
-              {{ g.name }}
-            </option>
-          </select>
-        </div>
-
-        <div>
-          <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
-            Projeto Vinculado (Opcional)
+            Projeto Vinculado <span class="text-rose-500">*</span>
           </label>
           <select
             v-model="selectedProject"
             class="w-full h-[38px] rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
             :disabled="isSubmitting"
           >
-            <option value="">Nenhum (Projeto Geral)</option>
-            <option v-for="p in projectsOptions" :key="p.id" :value="p.id">
+            <option value="">Selecione um projeto...</option>
+            <option v-for="p in gestorProjects" :key="p.id" :value="p.id">
               {{ p.name }}
             </option>
           </select>
+          <p v-if="gestorProjects.length === 0" class="mt-1 text-xs text-amber-500">
+            Nenhum projeto foi alocado a você ainda. Peça ao administrador para te adicionar a um projeto.
+          </p>
         </div>
       </div>
     </template>

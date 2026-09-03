@@ -1,11 +1,16 @@
 <script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
 import type { Task } from '~/types'
+import { fetchUserProjectsFromSupabase, useGestorProjectsRef } from '~/composables/useUserProjects'
 
 definePageMeta({ sidebarWidget: 'project' })
 
 type ProjectStatus = 'planejamento' | 'ativo' | 'concluido' | 'pausado' | 'cancelado'
 
-const projects = useUserProjects()
+// Projetos alocados ao gestor logado (reativos — atualiza após o fetch)
+const gestorProjects = useGestorProjectsRef()
+onMounted(() => fetchUserProjectsFromSupabase())
+
 const tasks = useTasksRef()
 const search = ref('')
 const selectedStatus = ref<'todos' | ProjectStatus>('todos')
@@ -66,14 +71,14 @@ const statusFilters: Array<{ value: 'todos' | ProjectStatus, label: string }> = 
   { value: 'cancelado', label: 'Cancelados' },
 ]
 
-const projectCards = computed(() => projects.map((project) => {
+const projectCards = computed(() => gestorProjects.value.map((project) => {
   const projectTasks = tasks.value.filter((task) => !task.personal && task.project === project.name)
   const done = projectTasks.filter((task) => task.status === 'concluido').length
   return {
     ...project,
-    status: projectStatus[project.id] ?? 'ativo',
-    description: projectDescriptions[project.id] ?? 'Projeto em acompanhamento.',
-    info: projectInfo[project.id] ?? { priority: 'Média', deadline: 'Indefinido' },
+    status: 'ativo' as ProjectStatus,
+    description: project.description || 'Projeto em acompanhamento.',
+    info: { priority: (project as any).prioridade || 'Média', deadline: (project as any).data_previsao_fim || 'Indefinido' },
     taskCount: projectTasks.length,
     doneCount: done,
   }
