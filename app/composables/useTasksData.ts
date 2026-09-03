@@ -190,6 +190,12 @@ export function getAuthToken(): string | null {
 let isFetching = false
 let hasFetchedInitial = false
 
+export function clearTasksState(): void {
+  tasksRef.value = []
+  hasFetchedInitial = false
+  isFetching = false
+}
+
 /** Busca a lista real de tarefas no banco de dados do Supabase. */
 export async function fetchTasksFromSupabase(force = false): Promise<void> {
   if (typeof window === 'undefined') return

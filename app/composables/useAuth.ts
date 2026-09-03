@@ -1,6 +1,7 @@
 import { useState, useCookie, navigateTo, useRuntimeConfig } from '#imports'
 import { ENDPOINTS } from '~/services/endpoints'
 import { useApi } from '~/services/http'
+import { clearTasksState, fetchTasksFromSupabase } from '~/composables/useTasksData'
 
 export interface AuthFuncionario {
   matricula: string | number
@@ -65,6 +66,8 @@ export function useAuth() {
       if (res && res.token) {
         tokenCookie.value = res.token
         userState.value = res.funcionario
+        clearTasksState()
+        fetchTasksFromSupabase(true)
 
         const role = res.funcionario.app_role || res.funcionario.cargo?.nome || 'colaborador'
         const targetRoute = resolveRoleRoute(role)
@@ -98,6 +101,7 @@ export function useAuth() {
     } catch (e) {
       // Ignorar erros no logout
     } finally {
+      clearTasksState()
       tokenCookie.value = null
       userState.value = null
       if (typeof document !== 'undefined') {
