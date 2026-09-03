@@ -88,6 +88,14 @@ const filteredProjects = computed(() => {
   })
 })
 
+const auth = useAuth()
+const isRoleAdmin = computed(() => {
+  const r = (auth.user.value?.app_role || auth.user.value?.role || '').toLowerCase()
+  return r === 'admin' || r === 'administrador'
+})
+
+const newProjectOpen = ref(false)
+
 const router = useRouter()
 
 function openProject(projectId: string) {
@@ -102,9 +110,20 @@ function openProject(projectId: string) {
         <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">Projetos</h1>
         <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">Acompanhe os projetos dos quais você faz parte e suas entregas.</p>
       </div>
-      <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-900">
-        <p class="text-xs text-slate-400">Projetos vinculados</p>
-        <p class="mt-0.5 text-xl font-bold text-slate-800 dark:text-slate-100">{{ projectCards.length }}</p>
+
+      <div class="flex items-center gap-3">
+        <UButton
+          v-if="isRoleAdmin"
+          color="primary"
+          icon="i-heroicons-plus-circle"
+          label="Novo Projeto"
+          class="bg-violet-600 hover:bg-violet-700 text-white"
+          @click="newProjectOpen = true"
+        />
+        <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-900">
+          <p class="text-xs text-slate-400">Projetos vinculados</p>
+          <p class="mt-0.5 text-xl font-bold text-slate-800 dark:text-slate-100">{{ projectCards.length }}</p>
+        </div>
       </div>
     </div>
 
@@ -182,5 +201,7 @@ function openProject(projectId: string) {
       <UIcon name="i-heroicons-folder-open" class="mx-auto size-8 text-slate-300" />
       <p class="mt-3 text-sm font-medium text-slate-500">Nenhum projeto encontrado.</p>
     </div>
+
+    <ProjetosNewProjectModal v-model:open="newProjectOpen" />
   </div>
 </template>
