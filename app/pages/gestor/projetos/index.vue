@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import type { Task } from '~/types'
-import { fetchUserProjectsFromSupabase, useGestorProjectsRef } from '~/composables/useUserProjects'
+import { fetchUserProjectsFromSupabase, useGestorProjectsRef, useProjectsLoading } from '~/composables/useUserProjects'
 
 definePageMeta({ sidebarWidget: 'project' })
 
 type ProjectStatus = 'planejamento' | 'ativo' | 'concluido' | 'pausado' | 'cancelado'
 
-// Projetos alocados ao gestor logado (reativos — atualiza após o fetch)
+// Projetos alocados ao gestor logado (ref reativa singleton — sem flickering)
 const gestorProjects = useGestorProjectsRef()
+const isLoadingProjects = useProjectsLoading()
+// Carrega uma única vez se ainda não tiver dados; o Promise é deduplicado
 onMounted(() => fetchUserProjectsFromSupabase())
 
 const tasks = useTasksRef()
@@ -148,7 +150,12 @@ function openProject(projectId: string) {
       <UInput v-model="search" icon="i-heroicons-magnifying-glass" placeholder="Buscar projetos" class="w-full sm:w-56" />
     </div>
 
-    <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+    <!-- Loading skeleton -->
+    <div v-if="isLoadingProjects && gestorProjects.length === 0" class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div v-for="n in 3" :key="n" class="h-56 animate-pulse rounded-2xl border border-slate-200 bg-slate-100 dark:border-slate-800 dark:bg-slate-800" />
+    </div>
+
+    <div v-else class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
       <article
         v-for="project in filteredProjects"
         :key="project.id"
@@ -202,7 +209,7 @@ function openProject(projectId: string) {
       </article>
     </div>
 
-    <div v-if="filteredProjects.length === 0" class="rounded-2xl border border-dashed border-slate-300 py-16 text-center dark:border-slate-700">
+    <div v-if="!isLoadingProjects && filteredProjects.length === 0" class="rounded-2xl border border-dashed border-slate-300 py-16 text-center dark:border-slate-700">
       <UIcon name="i-heroicons-folder-open" class="mx-auto size-8 text-slate-300" />
       <p class="mt-3 text-sm font-medium text-slate-500">Nenhum projeto encontrado.</p>
     </div>

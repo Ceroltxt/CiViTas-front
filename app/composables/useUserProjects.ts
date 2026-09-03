@@ -2,13 +2,13 @@ import type { ProjectProgress } from '~/types'
 import { getAuthToken } from '~/composables/useTasksData'
 import { ref } from 'vue'
 
-// Projetos do gestor logado (filtrado pela API conforme equipe alocada)
+// --- Estado global singleton ---
 const gestorProjectsRef = ref<ProjectProgress[]>([])
-// Todos os projetos (para o admin ver tudo)
-const allProjectsRef = ref<ProjectProgress[]>([])
+const isLoadingProjects = ref(false)
 
-let isFetchingGestorProjects = false
-let isFetchingAllProjects = false
+// Rastreia se já temos dados válidos para o token atual
+let lastFetchedToken: string | null = null
+let pendingFetch: Promise<void> | null = null
 
 function getHeaders() {
   const token = getAuthToken()
@@ -23,40 +23,70 @@ function getBaseURL() {
   return (config.public.apiBase as string) || 'http://localhost:8080/api'
 }
 
-/** Busca projetos alocados ao gestor/colaborador logado via /dashboard/projects */
-export async function fetchUserProjectsFromSupabase(): Promise<void> {
+/**
+ * Busca projetos alocados ao usuário logado via /dashboard/projects.
+ * Deduplicada: múltiplas chamadas simultâneas reutilizam o mesmo Promise.
+ * Se o token mudou (troca de usuário), força um novo fetch.
+ */
+export async function fetchUserProjectsFromSupabase(force = false): Promise<void> {
   if (typeof window === 'undefined') return
-  if (isFetchingGestorProjects) return
 
-  isFetchingGestorProjects = true
-  try {
-    const res = await $fetch<any>('/dashboard/projects', {
-      baseURL: getBaseURL(),
-      headers: getHeaders(),
-    })
-    const data = Array.isArray(res) ? res : res?.data
-    if (Array.isArray(data)) {
-      gestorProjectsRef.value = data.map(p => ({
-        id: String(p.id),
-        name: p.name,
-        color: p.color || 'bg-violet-500',
-        progress: p.progress || 0,
-        completedTasks: p.completedTasks || 0,
-        totalTasks: p.totalTasks || 0,
-        teams: p.teams || [],
-      }))
-    }
-  } catch (e) {
-    console.error('Erro ao buscar projetos do gestor no Supabase:', e)
-  } finally {
-    isFetchingGestorProjects = false
+  const token = getAuthToken()
+  if (!token) return
+
+  // Se já temos dados para este token e não é forçado, pular
+  if (!force && lastFetchedToken === token && gestorProjectsRef.value.length > 0) {
+    return
   }
+
+  // Se já há um fetch em andamento, aguardar o mesmo Promise (sem disparar outro)
+  if (pendingFetch) {
+    return pendingFetch
+  }
+
+  pendingFetch = (async () => {
+    isLoadingProjects.value = true
+    try {
+      const res = await $fetch<any>('/dashboard/projects', {
+        baseURL: getBaseURL(),
+        headers: getHeaders(),
+      })
+      const data = Array.isArray(res) ? res : res?.data
+      if (Array.isArray(data)) {
+        gestorProjectsRef.value = data.map(p => ({
+          id: String(p.id),
+          name: p.name,
+          color: p.color || 'bg-violet-500',
+          progress: p.progress || 0,
+          completedTasks: p.completedTasks || 0,
+          totalTasks: p.totalTasks || 0,
+          teams: p.teams || [],
+          description: p.description || '',
+          prioridade: p.prioridade || p.priority || 'media',
+          data_previsao_fim: p.data_previsao_fim || '',
+        }))
+        lastFetchedToken = token
+      }
+    } catch (e) {
+      console.error('Erro ao buscar projetos do Supabase:', e)
+    } finally {
+      isLoadingProjects.value = false
+      pendingFetch = null
+    }
+  })()
+
+  return pendingFetch
 }
 
-/** Busca TODOS os projetos existentes (para admin) via /projects */
+/** Limpa o cache de projetos (usar no logout). */
+export function clearProjectsState(): void {
+  gestorProjectsRef.value = []
+  lastFetchedToken = null
+  pendingFetch = null
+}
+
+/** Busca TODOS os projetos (admin) via /projects. */
 export async function fetchAllProjectsFromSupabase(): Promise<ProjectProgress[]> {
-  if (isFetchingAllProjects) return allProjectsRef.value
-  isFetchingAllProjects = true
   try {
     const res = await $fetch<any>('/projects', {
       baseURL: getBaseURL(),
@@ -64,7 +94,7 @@ export async function fetchAllProjectsFromSupabase(): Promise<ProjectProgress[]>
     })
     const data = Array.isArray(res) ? res : res?.data
     if (Array.isArray(data)) {
-      allProjectsRef.value = data.map(p => ({
+      return data.map(p => ({
         id: String(p.id),
         name: p.name,
         color: p.color || 'bg-violet-500',
@@ -76,10 +106,8 @@ export async function fetchAllProjectsFromSupabase(): Promise<ProjectProgress[]>
     }
   } catch (e) {
     console.error('Erro ao buscar todos os projetos no Supabase:', e)
-  } finally {
-    isFetchingAllProjects = false
   }
-  return allProjectsRef.value
+  return []
 }
 
 export async function createProjectInSupabase(payload: {
@@ -97,7 +125,7 @@ export async function createProjectInSupabase(payload: {
       headers: getHeaders(),
       body: payload,
     })
-    await fetchUserProjectsFromSupabase()
+    await fetchUserProjectsFromSupabase(true) // força refresh após criar
     return true
   } catch (e) {
     console.error('Erro ao criar projeto no Supabase:', e)
@@ -113,7 +141,7 @@ export async function updateProjectInSupabase(id: string, payload: { nome?: stri
       headers: getHeaders(),
       body: payload,
     })
-    await fetchUserProjectsFromSupabase()
+    await fetchUserProjectsFromSupabase(true)
     return true
   } catch (e) {
     console.error('Erro ao atualizar projeto no Supabase:', e)
@@ -128,7 +156,7 @@ export async function deleteProjectFromSupabase(id: string): Promise<boolean> {
       baseURL: getBaseURL(),
       headers: getHeaders(),
     })
-    await fetchUserProjectsFromSupabase()
+    await fetchUserProjectsFromSupabase(true)
     return true
   } catch (e) {
     console.error('Erro ao excluir projeto no Supabase:', e)
@@ -136,7 +164,7 @@ export async function deleteProjectFromSupabase(id: string): Promise<boolean> {
   }
 }
 
-/** Retorna projetos do gestor logado (apenas os que ele está alocado). */
+/** Retorna array reativo dos projetos do usuário logado. */
 export function useUserProjects(): ProjectProgress[] {
   if (typeof window !== 'undefined') {
     fetchUserProjectsFromSupabase()
@@ -144,7 +172,12 @@ export function useUserProjects(): ProjectProgress[] {
   return gestorProjectsRef.value
 }
 
-/** Ref reativa dos projetos do gestor (para watch/v-model). */
+/** Ref reativa dos projetos (para computed e v-model). */
 export function useGestorProjectsRef() {
   return gestorProjectsRef
+}
+
+/** Ref de loading dos projetos. */
+export function useProjectsLoading() {
+  return isLoadingProjects
 }

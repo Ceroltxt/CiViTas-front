@@ -2,6 +2,7 @@ import { useState, useCookie, navigateTo, useRuntimeConfig } from '#imports'
 import { ENDPOINTS } from '~/services/endpoints'
 import { useApi } from '~/services/http'
 import { clearTasksState, fetchTasksFromSupabase } from '~/composables/useTasksData'
+import { clearProjectsState } from '~/composables/useUserProjects'
 
 export interface AuthFuncionario {
   matricula: string | number
@@ -105,6 +106,7 @@ export function useAuth() {
       // Ignorar erros no logout
     } finally {
       clearTasksState()
+      clearProjectsState()
       tokenCookie.value = null
       userState.value = null
       if (typeof document !== 'undefined') {
