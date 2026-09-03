@@ -142,7 +142,7 @@ const pagination = ref({
   pageSize: 5,
 });
 
-const globalFilter = ref("");
+const newProjectOpen = ref(false)
 </script>
 
 <template>
@@ -156,120 +156,15 @@ const globalFilter = ref("");
         >
           Projetos        </h1>
       </div>
-      <UModal title="Criar novo projeto">
-        <UButton
-          label="Criar novo projeto"
-          trailing-icon="i-heroicons-plus"
-          size="md"
-          color="secondary"
-          variant="subtle"
-        />
-
-        <template #body>
-          <div class="flex flex-col w-full max-w-lg mx-auto gap-4 justify-center">
-            <h1>Informações gerais</h1>
-            <UFormField label="Nome do projeto" required>
-              <UInput placeholder="Nome do projeto" color="secondary" class="w-full" />
-            </UFormField>
-            <!-- Nome do projetoooo-->
-            <UFormField label="Descrição">
-              <UTextarea placeholder="Digite a descrição do projeto..." color="secondary" class="w-full" />
-            </UFormField>
-            <!-- Descrição do projeto, para o gestor colocar mais detalhes sobre o projeto e tals, tipo o que é, quais são os objetivos, essas coisas todas. -->
-            <ul class="flex flex-col gap-4">
-              <li>
-                <UFormField label="Categoria" required>
-                  <UInput placeholder="Categoria..." color="secondary" class="w-full"/>
-                </UFormField>
-              </li>
-              <li>
-                <UFormField label="Prioridade" required>
-                  <UInputTags placeholder="Selecionar a prioridade..." color="secondary" class="w-full"/>
-                </UFormField>
-                <ul class="flex items-center gap-2 flex-row mt-2">
-                  <li>
-                    <UBadge
-                      icon="i-heroicons-chevron-double-up"
-                      size="md"
-                      color="error"
-                      variant="soft"
-                      >Alta</UBadge
-                    >
-                  </li>
-                  <li>
-                    <UBadge
-                      icon="i-heroicons-chevron-up"
-                      size="md"
-                      color="warning"
-                      variant="soft"
-                      >Média</UBadge
-                    >
-                  </li>
-                  <li>
-                    <UBadge
-                      icon="i-heroicons-chevron-up-down"
-                      size="md"
-                      color="success"
-                      variant="soft"
-                      >Baixa</UBadge
-                    >
-                  </li>
-                </ul>
-                <!-- As badges de prioridade bonitinhas-->
-              </li>
-              <li>
-                <UFormField label="Datas : início - término" required>
-                  <UPopover :content="{ align: 'center' }">
-                  <UButton
-                    color="neutral"
-                    variant="soft"
-                    icon="i-heroicons-calendar-days"
-                  >
-                    {{ label }}
-                  </UButton>
-
-                  <template #content>
-                    <div
-                      class="flex items-stretch divide-x divide-(--ui-border)"
-                    >
-                      <div class="hidden sm:flex flex-col justify-center py-2">
-                        <UButton
-                          v-for="(range, index) in ranges"
-                          :key="index"
-                          :label="range.label"
-                          color="neutral"
-                          variant="ghost"
-                          class="rounded-none px-4"
-                          :class="[
-                            isRangeSelected(range)
-                              ? 'bg-elevated'
-                              : 'hover:bg-elevated/50',
-                          ]"
-                          truncate
-                          @click="selectRange(range)"
-                        />
-                      </div>
-
-                      <UCalendar
-                        v-model="modelValue"
-                        class="p-2"
-                        :number-of-months="isDesktop ? 2 : 1"
-                        range
-                      />
-                    </div>
-                  </template>
-                </UPopover>
-                </UFormField>
-                
-              </li> <!--Calendário do início e término-->
-            </ul>
-          </div>
-           <div class="flex justify-center gap-2 mt-4 w-full">
-        <UButton color="error" variant="outline" class="w-full justify-center">Cancelar</UButton>
-        <UButton color="secondary" variant="subtle" class="w-full justify-center">Criar</UButton>
-      </div>
-        </template>
-      </UModal> <!--Modal para criar um novo projeto-->
+      <UButton
+        label="Criar novo projeto"
+        trailing-icon="i-heroicons-plus"
+        size="md"
+        color="secondary"
+        variant="subtle"
+        class="bg-violet-600 hover:bg-violet-700 text-white cursor-pointer"
+        @click="newProjectOpen = true"
+      />
     </div>
     <!-- Os elementos do topo da págima, talez meser no icone do botção se acharem melhor a outra opção-->
     <ul
@@ -390,5 +285,7 @@ const globalFilter = ref("");
         />
       </div>
     </div>
+
+    <ProjetosNewProjectModal v-model:open="newProjectOpen" />
   </div>
 </template>
