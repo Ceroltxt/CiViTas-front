@@ -15,7 +15,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
     await auth.fetchUser()
   }
 
-  const role = (auth.user.value?.app_role || '').toLowerCase().trim()
+  const user = auth.user.value
+  const role = (user?.app_role || user?.role || (user as any)?.role_label || '').toLowerCase().trim()
 
   // 3. Se usuário logado tentar acessar a tela de /login ou a raiz (/), envia para a home do seu perfil
   if (token.value && (to.path === '/login' || to.path === '/')) {

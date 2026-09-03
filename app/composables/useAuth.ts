@@ -116,13 +116,25 @@ export function useAuth() {
       return userState.value
     }
     try {
-      const res = await api.get<AuthFuncionario>(
+      const res = await api.get<any>(
         ENDPOINTS.meAuth,
         undefined as any,
         () => (userState.value || { matricula: '0', nome: 'Usuário', email: '' })
       )
-      userState.value = res
-      return res
+      if (res) {
+        const rawRole = res.app_role || res.role || res.cargo?.nome || 'colaborador'
+        const app_role = String(rawRole).toLowerCase().trim()
+        userState.value = {
+          matricula: res.id || res.matricula || '0',
+          nome: res.name || res.nome || 'Usuário',
+          email: res.email || '',
+          app_role,
+          role_label: res.role || res.role_label || 'Colaborador',
+          cargo: res.cargo || { id: 0, nome: res.role || 'Colaborador' },
+          ...res,
+        }
+      }
+      return userState.value
     } catch (e) {
       return null
     }
