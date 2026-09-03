@@ -7,15 +7,14 @@ definePageMeta({ sidebarWidget: 'project' })
 
 const currentUser = useCurrentUser()
 
-// Esta tela é exclusiva da liderança: cada projeto conserva somente até duas
-// equipes cujo líder é o usuário logado.
-const leadershipProjects = computed<ProjectProgress[]>(() => mockProjects
-  .map(project => ({
-    ...project,
-    teams: project.teams?.filter(team => team.leader === currentUser.name).slice(0, 2),
-  }))
-  .filter(project => project.teams?.length)
-)
+const dashboardApi = useDashboardApi()
+const realProjects = ref<any[]>([])
+
+onMounted(async () => {
+  realProjects.value = await dashboardApi.fetchProjects()
+})
+
+const leadershipProjects = computed<any[]>(() => realProjects.value)
 
 // Controle de abrir/fechar as equipes de cada projeto
 const collapsed = ref<Record<string, boolean>>({})

@@ -1,18 +1,40 @@
 import type { ProjectProgress } from '~/types'
-import { projectProgressSchema } from '~/schemas'
-import { v } from '~/utils/validation'
-import { mockProjects } from '~/mocks'
+import { useDashboardApi } from '~/composables/useDashboardApi'
+import { ref } from 'vue'
 
-/** Projetos em que o colaborador está envolvido (dropdown de Quadros etc.). */
-export function useUserProjects(): ProjectProgress[] {
-  const projects = v.array(projectProgressSchema).parse(mockProjects, 'userProjects')
-  const user = useCurrentUser()
-  
-  if (user.role === 'Gestor') {
-    return projects.filter(p => 
-      p.teams?.some(t => t.leader === 'Milani Ribeiro')
-    )
+const userProjectsRef = ref<ProjectProgress[]>([])
+let isFetchingUserProjects = false
+
+export async function fetchUserProjectsFromSupabase(): Promise<void> {
+  if (typeof window === 'undefined') return
+  if (isFetchingUserProjects) return
+
+  isFetchingUserProjects = true
+  try {
+    const dashboardApi = useDashboardApi()
+    const projects = await dashboardApi.fetchProjects()
+    if (Array.isArray(projects) && projects.length > 0) {
+      userProjectsRef.value = projects.map(p => ({
+        id: p.id,
+        name: p.name,
+        color: p.color || 'bg-violet-500',
+        progress: p.progress || 0,
+        completedTasks: 0,
+        totalTasks: 0,
+        teams: p.teams || [],
+      }))
+    }
+  } catch (e) {
+    console.error('Erro ao buscar projetos do usuário no Supabase:', e)
+  } finally {
+    isFetchingUserProjects = false
   }
-  
-  return projects
+}
+
+/** Projetos em que o colaborador/gestor está envolvido. */
+export function useUserProjects(): ProjectProgress[] {
+  if (typeof window !== 'undefined') {
+    fetchUserProjectsFromSupabase()
+  }
+  return userProjectsRef.value
 }
