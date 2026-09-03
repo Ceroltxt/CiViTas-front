@@ -46,7 +46,10 @@ export function useAuth() {
     if (normalized === 'gestor') {
       return '/gestor'
     }
-    return '/colaborador'
+    if (normalized === 'colaborador') {
+      return '/colaborador'
+    }
+    return '/login'
   }
 
   async function login(emailVal: string, passwordVal: string): Promise<{ success: boolean; targetRoute?: string; error?: string }> {
