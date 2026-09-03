@@ -1,6 +1,4 @@
 import type { PriorityKey, Task } from '~/types'
-import { tasksSchema } from '~/schemas'
-import { mockTasks } from '~/mocks'
 import { mockProjects } from '~/mocks'
 import { ref, watch } from 'vue'
 import { ENDPOINTS } from '~/services/endpoints'
@@ -170,17 +168,6 @@ export function updatePersonalTasksPriority(taskIds: string[], priority: Priorit
   })
   if (changed) savePersonalTasks()
 }
-
-const initialMockTasks = tasksSchema.parse(mockTasks, 'tasks')
-const savedPersonalTasks = readStoredPersonalTasks(STORAGE_KEY)
-const savedWorkTasks = readStoredPersonalTasks(WORK_TASKS_STORAGE_KEY)
-const defaultWorkTasks = initialMockTasks.filter((task) => !task.personal)
-const workTasks = savedWorkTasks ?? defaultWorkTasks
-const defaultPersonalTasks = initialMockTasks.filter((task) => task.personal).map(normalizePersonalTask)
-
-const personalTasks = savedPersonalTasks !== null
-  ? savedPersonalTasks.map(normalizePersonalTask)
-  : defaultPersonalTasks
 
 const tasksRef = ref<Task[]>([])
 
