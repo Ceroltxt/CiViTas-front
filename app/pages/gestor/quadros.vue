@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import { computed, ref, onMounted } from 'vue'
+import { fetchTasksFromSupabase } from '~/composables/useTasksData'
 
 definePageMeta({ sidebarWidget: 'none' })
+
+onMounted(() => {
+  fetchTasksFromSupabase(true)
+})
 
 const projects = useUserProjects()
 const current = useCurrentProject()

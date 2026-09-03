@@ -6,7 +6,11 @@ definePageMeta({ sidebarWidget: 'none' })
 
 const tasks = useTasksData()
 const currentUser = useCurrentUser()
-import { deletePersonalTask, deletePersonalTasks, isPersonalTaskOverdue, updatePersonalTask, updatePersonalTasksPriority, updatePersonalTasksStatus, type PersonalTaskStatus } from '~/composables/useTasksData'
+import { deletePersonalTask, deletePersonalTasks, isPersonalTaskOverdue, updatePersonalTask, updatePersonalTasksPriority, updatePersonalTasksStatus, fetchTasksFromSupabase, type PersonalTaskStatus } from '~/composables/useTasksData'
+
+onMounted(() => {
+  fetchTasksFromSupabase(true)
+})
 const mainTabs = [
   { id: 'trabalho', label: 'Trabalho', icon: 'i-heroicons-briefcase', tooltip: 'Tarefas de Trabalho' },
   { id: 'pessoais', label: 'Pessoais', icon: 'i-heroicons-user', tooltip: 'Tarefas Pessoais' },

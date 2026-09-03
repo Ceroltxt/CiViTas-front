@@ -188,6 +188,18 @@ if (typeof window !== 'undefined') {
   watch(tasksRef, (tasks) => saveWorkTasks(tasks), { deep: true })
 }
 
+export function getAuthToken(): string | null {
+  const cookie = useCookie<string | null>('auth_token')
+  if (cookie.value) return cookie.value
+
+  if (typeof document !== 'undefined') {
+    const match = document.cookie.match(/(?:^|; )auth_token=([^;]*)/)
+    if (match && match[1]) return decodeURIComponent(match[1])
+  }
+
+  return null
+}
+
 let isFetching = false
 let hasFetchedInitial = false
 
@@ -195,18 +207,17 @@ let hasFetchedInitial = false
 export async function fetchTasksFromSupabase(force = false): Promise<void> {
   if (typeof window === 'undefined') return
   if (isFetching) return
-  if (hasFetchedInitial && !force) return
+
+  const token = getAuthToken()
+  if (!token) return
 
   isFetching = true
   try {
     const config = useRuntimeConfig()
-    const authToken = useCookie<string | null>('auth_token')
-    if (!authToken.value) return
-
     const baseURL = (config.public.apiBase as string) || 'http://localhost:8080/api'
     const headers = {
       Accept: 'application/json',
-      Authorization: `Bearer ${authToken.value}`,
+      Authorization: `Bearer ${token}`,
     }
 
     const res = await $fetch<any>(ENDPOINTS.tasks, { baseURL, headers })

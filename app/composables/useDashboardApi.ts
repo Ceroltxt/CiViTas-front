@@ -22,14 +22,16 @@ export interface DashboardRankingItem {
   avatar?: string
 }
 
+import { getAuthToken } from '~/composables/useTasksData'
+
 export function useDashboardApi() {
   const config = useRuntimeConfig()
-  const authToken = useCookie<string | null>('auth_token')
 
   function getHeaders() {
     const headers: Record<string, string> = { Accept: 'application/json' }
-    if (authToken.value) {
-      headers.Authorization = `Bearer ${authToken.value}`
+    const token = getAuthToken()
+    if (token) {
+      headers.Authorization = `Bearer ${token}`
     }
     return headers
   }
