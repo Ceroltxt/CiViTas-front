@@ -1,20 +1,19 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import type { ProjectProgress } from '~/types'
-import { mockProjects } from '~/mocks'
+import { computed, ref, onMounted } from 'vue'
+import { fetchUserProjectsFromSupabase, useGestorProjectsRef } from '~/composables/useUserProjects'
 
 definePageMeta({ sidebarWidget: 'project' })
 
 const currentUser = useCurrentUser()
 
-const dashboardApi = useDashboardApi()
-const realProjects = ref<any[]>([])
+// Projetos alocados ao gestor logado (mesma ref reativa usada em /gestor/projetos)
+const gestorProjectsRef = useGestorProjectsRef()
 
 onMounted(async () => {
-  realProjects.value = await dashboardApi.fetchProjects()
+  await fetchUserProjectsFromSupabase(true)
 })
 
-const leadershipProjects = computed<any[]>(() => realProjects.value)
+const leadershipProjects = computed<any[]>(() => gestorProjectsRef.value)
 
 // Controle de abrir/fechar as equipes de cada projeto
 const collapsed = ref<Record<string, boolean>>({})

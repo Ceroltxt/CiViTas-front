@@ -10,8 +10,8 @@ type ProjectStatus = 'planejamento' | 'ativo' | 'concluido' | 'pausado' | 'cance
 // Projetos alocados ao gestor logado (ref reativa singleton — sem flickering)
 const gestorProjects = useGestorProjectsRef()
 const isLoadingProjects = useProjectsLoading()
-// Carrega uma única vez se ainda não tiver dados; o Promise é deduplicado
-onMounted(() => fetchUserProjectsFromSupabase())
+// Força refresh para sempre refletir dados atuais do servidor
+onMounted(() => fetchUserProjectsFromSupabase(true))
 
 const tasks = useTasksRef()
 const search = ref('')

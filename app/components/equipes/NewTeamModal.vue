@@ -15,7 +15,7 @@ const errorMessage = ref<string | null>(null)
 const gestorProjects = useGestorProjectsRef()
 
 onMounted(async () => {
-  await fetchUserProjectsFromSupabase()
+  await fetchUserProjectsFromSupabase(true)
 })
 
 function closeModal() {
