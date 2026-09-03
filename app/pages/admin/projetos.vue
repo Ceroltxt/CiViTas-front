@@ -1,291 +1,251 @@
 <script setup lang="ts">
-import { getPaginationRowModel } from "@tanstack/vue-table";
-import type { TableColumn } from "@nuxt/ui";
-import { breakpointsTailwind, useBreakpoints } from "@vueuse/core";
-import {
-  DateFormatter,
-  getLocalTimeZone,
-  today,
-} from "@internationalized/date";
-definePageMeta({ sidebarWidget: "none" });
+import { ref, computed, onMounted } from 'vue'
+import { fetchAllProjectsFromSupabase } from '~/composables/useUserProjects'
+import { getAuthToken } from '~/composables/useTasksData'
 
-const df = new DateFormatter("en-US", { dateStyle: "medium" });
-const tz = getLocalTimeZone();
-const breakpoints = useBreakpoints(breakpointsTailwind);
-const isDesktop = breakpoints.greaterOrEqual("sm");
+definePageMeta({ sidebarWidget: 'none' })
 
-const ranges = [
-  { label: "Last 7 days", days: 7 },
-  { label: "Last 14 days", days: 14 },
-  { label: "Last 30 days", days: 30 },
-  { label: "Last 3 months", months: 3 },
-  { label: "Last 6 months", months: 6 },
-  { label: "Last year", years: 1 },
-];
-
-const initialEnd = today(tz);
-const modelValue = shallowRef({
-  start: initialEnd.subtract({ days: 14 }),
-  end: initialEnd,
-});
-
-const label = computed(() => {
-  const { start, end } = modelValue.value;
-  if (!start) return "Pick a date";
-  if (!end) return df.format(start.toDate(tz));
-  return `${df.format(start.toDate(tz))} - ${df.format(end.toDate(tz))}`;
-});
-
-function computeStart(range: (typeof ranges)[number]) {
-  const end = today(tz);
-  return {
-    start: end.subtract({
-      days: range.days,
-      months: range.months,
-      years: range.years,
-    }),
-    end,
-  };
-}
-
-function isRangeSelected(range: (typeof ranges)[number]) {
-  if (!modelValue.value?.start || !modelValue.value?.end) return false;
-  const { start, end } = computeStart(range);
-  return (
-    modelValue.value.start.compare(start) === 0 &&
-    modelValue.value.end.compare(end) === 0
-  );
-}
-
-function selectRange(range: (typeof ranges)[number]) {
-  modelValue.value = computeStart(range);
-}
-
-const table = useTemplateRef("table");
-
-type Payment = {
-  id: string;
-  date: string;
-  email: string;
-  amount: number;
-};
-const data = ref<Payment[]>([
-  {
-    id: "4600",
-    date: "2026-06-16T15:30:00",
-    email: "RH",
-    amount: 594,
-  },
-  {
-    id: "4599",
-    date: "2026-06-11T10:10:00",
-    email: "Marketing",
-    amount: 276,
-  },
-  {
-    id: "4598",
-    date: "2026-06-11T08:50:00",
-    email: "Mobile",
-    amount: 315,
-  },
-  {
-    id: "4597",
-    date: "2026-06-10T19:45:00",
-    email: "Portal do cliente",
-    amount: 529,
-  },
-]);
-const columns: TableColumn<Payment>[] = [
-  {
-    accessorKey: "id",
-    header: "#",
-    cell: ({ row }) => `#${row.getValue("id")}`,
-  },
-  {
-    accessorKey: "date",
-    header: "Date",
-    cell: ({ row }) => {
-      return new Date(row.getValue("date")).toLocaleString("en-US", {
-        day: "numeric",
-        month: "short",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      });
-    },
-  },
-  {
-    accessorKey: "email",
-    header: "Email",
-  },
-  {
-    accessorKey: "amount",
-    header: "Amount",
-    meta: {
-      class: {
-        th: "text-right",
-        td: "text-right font-medium",
-      },
-    },
-    cell: ({ row }) => {
-      const amount = Number.parseFloat(row.getValue("amount"));
-      return new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: "EUR",
-      }).format(amount);
-    },
-  },
-];
-
-const pagination = ref({
-  pageIndex: 0,
-  pageSize: 5,
-});
-
+// ─── Estado ──────────────────────────────────────────────────────────────────
+const projects = ref<any[]>([])
+const isLoading = ref(true)
+const globalFilter = ref('')
 const newProjectOpen = ref(false)
+
+// ─── Busca dos projetos ───────────────────────────────────────────────────────
+async function loadProjects() {
+  isLoading.value = true
+  const data = await fetchAllProjectsFromSupabase()
+  projects.value = data
+  isLoading.value = false
+}
+
+onMounted(loadProjects)
+
+// ─── Métricas derivadas do banco ─────────────────────────────────────────────
+const total = computed(() => projects.value.length)
+const ativos = computed(() => projects.value.filter(p => p.ativo !== false).length)
+const concluidos = computed(() => projects.value.filter(p => p.status === 'concluido').length)
+
+// Gestores únicos entre todas as equipes
+const gestoresAtivos = computed(() => {
+  const ids = new Set<string>()
+  projects.value.forEach(p => {
+    (p.teams || []).forEach((t: any) => {
+      if (t.gestor?.id) ids.add(String(t.gestor.id))
+    })
+  })
+  return ids.size
+})
+
+// ─── Tabela ───────────────────────────────────────────────────────────────────
+const priorityLabel: Record<string, string> = {
+  alta: 'Alta',
+  media: 'Média',
+  baixa: 'Baixa',
+}
+
+const priorityClass: Record<string, string> = {
+  alta: 'bg-rose-50 text-rose-700 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300',
+  media: 'bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300',
+  baixa: 'bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300',
+}
+
+const tableRows = computed(() => {
+  const term = globalFilter.value.trim().toLowerCase()
+  return projects.value
+    .filter(p => !term || p.name.toLowerCase().includes(term))
+    .map(p => ({
+      id: p.id,
+      name: p.name,
+      prioridade: p.prioridade || 'media',
+      progress: p.progress || 0,
+      equipes: (p.teams || []).length,
+      gestores: (p.teams || [])
+        .map((t: any) => t.leader || '—')
+        .filter((n: string) => n !== '—')
+        .join(', ') || '—',
+    }))
+})
+
+const pageSize = 8
+const page = ref(0)
+const pageRows = computed(() => tableRows.value.slice(page.value * pageSize, (page.value + 1) * pageSize))
+const totalPages = computed(() => Math.ceil(tableRows.value.length / pageSize))
+
+// Ao criar um projeto novo, recarregar a lista
+function onProjectCreated() {
+  loadProjects()
+}
 </script>
 
 <template>
   <div class="mx-auto max-w-7xl space-y-5 p-4 sm:p-6 dark:bg-slate-900 min-h-screen">
-    <div
-      class="flex items-center justify-between md:flex-col lg:flex-row gap-4"
-    >
+
+    <!-- Cabeçalho -->
+    <div class="flex items-center justify-between gap-4">
       <div>
-        <h1
-          class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100"
-        >
-          Projetos        </h1>
+        <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">Projetos</h1>
+        <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">Gerencie todos os projetos e suas equipes alocadas.</p>
       </div>
       <UButton
         label="Criar novo projeto"
         trailing-icon="i-heroicons-plus"
         size="md"
-        color="secondary"
-        variant="subtle"
         class="bg-violet-600 hover:bg-violet-700 text-white cursor-pointer"
         @click="newProjectOpen = true"
       />
     </div>
-    <!-- Os elementos do topo da págima, talez meser no icone do botção se acharem melhor a outra opção-->
-    <ul
-      class="mt-4 flex flex-col gap-4 md:flex-col lg:flex-row md:w-full lg:w-full md:justify-center"
-    >
+
+    <!-- Métricas (dados reais) -->
+    <ul class="mt-4 flex flex-wrap gap-4">
+      <!-- Total -->
       <li>
-        <div
-          class="flex items-center gap-4 flex-col md:flex-row lg:flex-row border-2 rounded-lg p-2 border-slate-200 dark:border-slate-700 lg:w-54 lg:h-32 border-t-violet-600 border-t-4 dark:border-t-violet-600 hover:translate-y-1 transition-transform duration-400 hover:shadow-lg"
-        >
-          <UIcon
-            name="i-heroicons-inbox-stack"
-            class="size-12 rounded-full bg-[#bd52c9] p-2 text-fuchsia-100 shadow-lg shadow-fuchsia-800/40"
-          />
-          <div class="flex flex-col sm:items-center md:items-start lg:items-start hover:translate-y-1 transition-transform duration-400">
-            <p class="font-medium text-slate-700 dark:text-slate-300">
-              Total de projetos
-            </p>
-            <h1 class="text-2xl font-bold text-violet-600">7</h1>
+        <div class="flex items-center gap-4 border-2 rounded-lg p-2 border-slate-200 dark:border-slate-700 border-t-violet-600 border-t-4 dark:border-t-violet-600 hover:translate-y-1 transition-transform duration-300 hover:shadow-lg w-52 h-28">
+          <UIcon name="i-heroicons-inbox-stack" class="size-12 rounded-full bg-[#bd52c9] p-2 text-fuchsia-100 shadow-lg shadow-fuchsia-800/40 shrink-0" />
+          <div class="flex flex-col">
+            <p class="font-medium text-slate-700 dark:text-slate-300 text-sm">Total de projetos</p>
+            <p v-if="isLoading" class="h-7 w-10 animate-pulse rounded bg-slate-200 dark:bg-slate-700 mt-1" />
+            <h2 v-else class="text-2xl font-bold text-violet-600">{{ total }}</h2>
           </div>
         </div>
       </li>
+
+      <!-- Em andamento -->
       <li>
-        <div
-          class="flex items-center gap-4 flex-col md:flex-row lg:flex-row border-2 rounded-lg p-2 border-slate-200 dark:border-slate-700 lg:w-54 lg:h-32 border-t-orange-400 border-t-4 dark:border-t-orange-400 hover:translate-y-1 transition-transform duration-400 hover:shadow-lg"
-        >
-          <UIcon
-            name="i-heroicons-play-circle"
-            class="size-12 text-yellow-200 bg-orange-400 rounded-full p-2 shadow-lg shadow-orange-800/50"
-          />
-          <div class="flex flex-col sm:items-center md:items-center lg:items-start">
-            <p class="font-medium text-slate-700 dark:text-slate-300">
-              em andamento
-            </p>
-            <h1 class="text-2xl font-bold text-orange-500">5</h1>
+        <div class="flex items-center gap-4 border-2 rounded-lg p-2 border-slate-200 dark:border-slate-700 border-t-orange-400 border-t-4 dark:border-t-orange-400 hover:translate-y-1 transition-transform duration-300 hover:shadow-lg w-52 h-28">
+          <UIcon name="i-heroicons-play-circle" class="size-12 text-yellow-200 bg-orange-400 rounded-full p-2 shadow-lg shadow-orange-800/50 shrink-0" />
+          <div class="flex flex-col">
+            <p class="font-medium text-slate-700 dark:text-slate-300 text-sm">Em andamento</p>
+            <p v-if="isLoading" class="h-7 w-10 animate-pulse rounded bg-slate-200 dark:bg-slate-700 mt-1" />
+            <h2 v-else class="text-2xl font-bold text-orange-500">{{ ativos }}</h2>
           </div>
         </div>
       </li>
+
+      <!-- Concluídos -->
       <li>
-        <div
-          class="flex items-center gap-4 flex-col md:flex-row lg:flex-row border-2 rounded-lg p-2 border-slate-200 dark:border-slate-700 lg:w-54 lg:h-32 border-t-green-600 border-t-4 dark:border-t-green-600 hover:translate-y-1 transition-transform duration-400 hover:shadow-lg"
-        >
-          <UIcon
-            name="i-heroicons-check-badge"
-            class="size-12 text-emerald-200 bg-green-600 rounded-full p-2 shadow-lg shadow-emerald-800/50"
-          />
-          <div class="flex flex-col  sm:items-center md:items-center lg:items-start hover:translate-y-1 transition-transform duration-400">
-            <p class="font-medium text-slate-700 dark:text-slate-300">
-              Concluídos
-            </p>
-            <h1 class="text-2xl font-bold text-green-600">2</h1>
+        <div class="flex items-center gap-4 border-2 rounded-lg p-2 border-slate-200 dark:border-slate-700 border-t-green-600 border-t-4 dark:border-t-green-600 hover:translate-y-1 transition-transform duration-300 hover:shadow-lg w-52 h-28">
+          <UIcon name="i-heroicons-check-badge" class="size-12 text-emerald-200 bg-green-600 rounded-full p-2 shadow-lg shadow-emerald-800/50 shrink-0" />
+          <div class="flex flex-col">
+            <p class="font-medium text-slate-700 dark:text-slate-300 text-sm">Concluídos</p>
+            <p v-if="isLoading" class="h-7 w-10 animate-pulse rounded bg-slate-200 dark:bg-slate-700 mt-1" />
+            <h2 v-else class="text-2xl font-bold text-green-600">{{ concluidos }}</h2>
           </div>
         </div>
       </li>
+
+      <!-- Gestores ativos -->
       <li>
-        <div
-          class="flex items-center gap-4 flex-col md:flex-row lg:flex-row border-2 rounded-lg p-2 border-slate-200 dark:border-slate-700 lg:w-54 lg:h-32 border-t-red-600 border-t-4 dark:border-t-red-600 hover:translate-y-1 transition-transform duration-400 hover:shadow-lg"
-        >
-          <UIcon
-            name="i-heroicons-exclamation-circle"
-            class="size-12 text-rose-200 bg-red-500 rounded-full p-2 shadow-lg shadow-red-800/50"
-          />
-          <div class="flex flex-col sm:items-center md:items-center lg:items-start  hover:translate-y-1 transition-transform duration-400">
-            <p class="font-medium text-slate-700 dark:text-slate-300">
-              Atrasados
-            </p>
-            <h1 class="text-2xl font-bold text-red-500">3</h1>
-          </div>
-        </div>
-      </li>
-      <li>
-        <div
-          class="flex items-center gap-4 flex-col md:flex-row lg:flex-row border-2 rounded-lg p-2 border-slate-200 dark:border-slate-700 lg:w-54 lg:h-32 border-t-blue-600 border-t-4 dark:border-t-blue-600 hover:translate-y-1 transition-transform duration-400 hover:shadow-lg"
-        >
-          <UIcon
-            name="i-heroicons-user-group"
-            class="size-12 text-sky-300 bg-blue-600 rounded-full p-2 shadow-lg shadow-sky-800/50"
-          />
-          <div class="flex flex-col sm:items-center md:items-center lg:items-start hover:translate-y-1 transition-transform duration-400">
-            <p class="font-medium text-slate-700 dark:text-slate-300">
-              Gestores ativos
-            </p>
-            <h1 class="text-2xl font-bold text-blue-600">12</h1>
+        <div class="flex items-center gap-4 border-2 rounded-lg p-2 border-slate-200 dark:border-slate-700 border-t-blue-600 border-t-4 dark:border-t-blue-600 hover:translate-y-1 transition-transform duration-300 hover:shadow-lg w-52 h-28">
+          <UIcon name="i-heroicons-user-group" class="size-12 text-sky-300 bg-blue-600 rounded-full p-2 shadow-lg shadow-sky-800/50 shrink-0" />
+          <div class="flex flex-col">
+            <p class="font-medium text-slate-700 dark:text-slate-300 text-sm">Gestores ativos</p>
+            <p v-if="isLoading" class="h-7 w-10 animate-pulse rounded bg-slate-200 dark:bg-slate-700 mt-1" />
+            <h2 v-else class="text-2xl font-bold text-blue-600">{{ gestoresAtivos }}</h2>
           </div>
         </div>
       </li>
     </ul>
-    <!--Cards de progresso dos projetos, para ficar mais visual para o usuário. PS: Niguém mexe nesse troço, principalmente na responsividade dele, pffffff!!!!-->
-    <div class="w-full space-y-4 pb-4">
-      <div class="flex px-4 py-3.5 border-b border-accented">
+
+    <!-- Tabela de projetos -->
+    <div class="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden">
+      <!-- Filtro -->
+      <div class="flex items-center justify-between gap-3 px-4 py-3.5 border-b border-slate-100 dark:border-slate-800">
         <UInput
           v-model="globalFilter"
-          class="max-w-sm"
-          placeholder="Filtro..."
-          color="secondary"
+          icon="i-heroicons-magnifying-glass"
+          class="max-w-xs w-full"
+          placeholder="Filtrar projetos..."
+          @input="page = 0"
         />
+        <span class="text-xs text-slate-400">{{ tableRows.length }} projeto(s)</span>
       </div>
 
-      <UTable
-        ref="table"
-        v-model:pagination="pagination"
-        v-model:global-filter="globalFilter"
-        :data="data"
-        :columns="columns"
-        :pagination-options="{
-          getPaginationRowModel: getPaginationRowModel(),
-        }"
-        class="flex-1"
-      />
-     
-      
-
-      <div class="flex justify-end border-t border-default pt-4 px-4">
-        <UPagination
-          :page="(table?.tableApi?.getState().pagination.pageIndex || 0) + 1"
-          :items-per-page="table?.tableApi?.getState().pagination.pageSize"
-          :total="table?.tableApi?.getFilteredRowModel().rows.length"
-          @update:page="(p) => table?.tableApi?.setPageIndex(p - 1)"
-        />
+      <!-- Loading -->
+      <div v-if="isLoading" class="p-6 space-y-3">
+        <div v-for="n in 4" :key="n" class="h-10 animate-pulse rounded-lg bg-slate-100 dark:bg-slate-800" />
       </div>
+
+      <!-- Tabela real -->
+      <template v-else>
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 dark:bg-slate-800/60 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+            <tr>
+              <th class="px-5 py-3 text-left">Projeto</th>
+              <th class="px-5 py-3 text-left">Gestor(es)</th>
+              <th class="px-5 py-3 text-center">Equipes</th>
+              <th class="px-5 py-3 text-center">Prioridade</th>
+              <th class="px-5 py-3 text-center">Progresso</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+            <tr
+              v-for="row in pageRows"
+              :key="row.id"
+              class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
+            >
+              <td class="px-5 py-3.5 font-semibold text-slate-800 dark:text-slate-100">
+                {{ row.name }}
+              </td>
+              <td class="px-5 py-3.5 text-slate-600 dark:text-slate-300 max-w-[200px] truncate">
+                {{ row.gestores }}
+              </td>
+              <td class="px-5 py-3.5 text-center text-slate-600 dark:text-slate-300">
+                {{ row.equipes }}
+              </td>
+              <td class="px-5 py-3.5 text-center">
+                <span
+                  class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1"
+                  :class="priorityClass[row.prioridade] || priorityClass.media"
+                >
+                  {{ priorityLabel[row.prioridade] || 'Média' }}
+                </span>
+              </td>
+              <td class="px-5 py-3.5">
+                <div class="flex items-center gap-2">
+                  <div class="flex-1 h-2 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
+                    <div
+                      class="h-full rounded-full bg-violet-500 transition-all duration-500"
+                      :style="{ width: `${row.progress}%` }"
+                    />
+                  </div>
+                  <span class="text-xs text-slate-500 w-8 text-right">{{ row.progress }}%</span>
+                </div>
+              </td>
+            </tr>
+            <tr v-if="pageRows.length === 0">
+              <td colspan="5" class="py-12 text-center text-slate-400 text-sm">
+                <UIcon name="i-heroicons-folder-open" class="mx-auto size-8 mb-2" />
+                <p>Nenhum projeto cadastrado ainda.</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Paginação -->
+        <div v-if="totalPages > 1" class="flex items-center justify-between border-t border-slate-100 dark:border-slate-800 px-5 py-3">
+          <span class="text-xs text-slate-400">Página {{ page + 1 }} de {{ totalPages }}</span>
+          <div class="flex gap-2">
+            <UButton
+              size="xs"
+              variant="outline"
+              icon="i-heroicons-chevron-left"
+              :disabled="page === 0"
+              @click="page--"
+            />
+            <UButton
+              size="xs"
+              variant="outline"
+              icon="i-heroicons-chevron-right"
+              :disabled="page >= totalPages - 1"
+              @click="page++"
+            />
+          </div>
+        </div>
+      </template>
     </div>
 
-    <ProjetosNewProjectModal v-model:open="newProjectOpen" />
+    <!-- Modal de criação -->
+    <ProjetosNewProjectModal v-model:open="newProjectOpen" @created="onProjectCreated" />
   </div>
 </template>
