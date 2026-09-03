@@ -63,9 +63,75 @@ function saveWorkTasks(tasks: Task[]): void {
 
 export function deletePersonalTask(taskId: string): void {
   const idx = tasksRef.value.findIndex(t => t.id === taskId)
-  if (idx > -1 && tasksRef.value[idx].personal) {
+  if (idx > -1) {
     tasksRef.value.splice(idx, 1)
-    savePersonalTasks()
+  }
+  deleteTaskFromSupabase(taskId)
+}
+
+export async function updateTaskInSupabase(taskId: string, payload: { nome?: string; descricao?: string; prioridade?: string; data_prazo?: string }): Promise<boolean> {
+  try {
+    const config = useRuntimeConfig()
+    const authToken = useCookie<string | null>('auth_token')
+    if (!authToken.value) return false
+
+    const baseURL = (config.public.apiBase as string) || 'http://localhost:8080/api'
+    const headers = {
+      Accept: 'application/json',
+      Authorization: `Bearer ${authToken.value}`,
+    }
+
+    const res = await $fetch<any>(`${ENDPOINTS.tasks}/${taskId}`, {
+      method: 'PUT',
+      baseURL,
+      headers,
+      body: payload,
+    })
+
+    const updated = res?.data || res
+    if (updated && updated.id) {
+      const idx = tasksRef.value.findIndex(t => String(t.id) === String(taskId))
+      if (idx > -1) {
+        tasksRef.value[idx] = { ...tasksRef.value[idx], ...updated }
+      }
+    }
+
+    fetchTasksFromSupabase(true)
+    return true
+  } catch (e) {
+    console.error('Erro ao atualizar tarefa no Supabase:', e)
+    return false
+  }
+}
+
+export async function deleteTaskFromSupabase(taskId: string): Promise<boolean> {
+  try {
+    const config = useRuntimeConfig()
+    const authToken = useCookie<string | null>('auth_token')
+    if (!authToken.value) return false
+
+    const baseURL = (config.public.apiBase as string) || 'http://localhost:8080/api'
+    const headers = {
+      Accept: 'application/json',
+      Authorization: `Bearer ${authToken.value}`,
+    }
+
+    await $fetch(`${ENDPOINTS.tasks}/${taskId}`, {
+      method: 'DELETE',
+      baseURL,
+      headers,
+    })
+
+    const idx = tasksRef.value.findIndex(t => String(t.id) === String(taskId))
+    if (idx > -1) {
+      tasksRef.value.splice(idx, 1)
+    }
+
+    fetchTasksFromSupabase(true)
+    return true
+  } catch (e) {
+    console.error('Erro ao excluir tarefa no Supabase:', e)
+    return false
   }
 }
 

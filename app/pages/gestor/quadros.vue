@@ -55,6 +55,19 @@ const selectedProjectTasks = computed(() => {
 
   return list
 })
+const editTaskOpen = ref(false)
+const taskToEdit = ref<Task | null>(null)
+
+function handleEditTask(task: Task) {
+  taskToEdit.value = task
+  editTaskOpen.value = true
+}
+
+function handleDeleteTask(taskId: string) {
+  if (confirm('Tem certeza que deseja excluir esta tarefa permanentemente?')) {
+    deleteTaskFromSupabase(taskId)
+  }
+}
 </script>
 
 <template>
@@ -141,7 +154,9 @@ const selectedProjectTasks = computed(() => {
     </div>
 
     <!-- Conteúdo da aba -->
-    <QuadrosKanbanBoard v-if="activeTab === 'kanban'" :tasks="selectedProjectTasks" />
-    <QuadrosGanttChart v-else-if="activeTab === 'timeline'" :tasks="selectedProjectTasks" />
+    <QuadrosKanbanBoard v-if="activeTab === 'kanban'" :tasks="selectedProjectTasks" @edit="handleEditTask" @delete="handleDeleteTask" />
+    <QuadrosGanttChart v-else-if="activeTab === 'timeline'" :tasks="selectedProjectTasks" @edit="handleEditTask" />
+
+    <TarefasEditTaskModal v-model:open="editTaskOpen" :task-to-edit="taskToEdit" @updated="editTaskOpen = false" />
   </div>
 </template>

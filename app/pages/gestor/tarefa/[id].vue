@@ -93,7 +93,17 @@ async function addComment() {
     newComment.value = ''
     await loadTaskDetails()
   } catch (e) {
-    console.error('Erro ao enviar comentario:', e)
+    console.error('Erro ao adicionar comentário:', e)
+  }
+}
+
+const editTaskOpen = ref(false)
+
+async function deleteTask() {
+  if (!confirm('Tem certeza que deseja excluir esta tarefa permanentemente?')) return
+  const success = await deleteTaskFromSupabase(taskId)
+  if (success) {
+    navigateTo('/gestor/quadros')
   }
 }
 
@@ -202,11 +212,17 @@ const displayedAuditLog = computed(() => {
             </div>
           </div>
 
-          <!-- Ações de Status -->
-          <div class="mb-8 flex flex-wrap gap-2 rounded-xl border border-slate-100 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-800/40">
-            <UButton size="sm" class="bg-emerald-500 hover:bg-emerald-600" icon="i-heroicons-check-circle" @click="updateStatus('concluido')">Marcar concluída</UButton>
-            <UButton size="sm" color="amber" variant="soft" icon="i-heroicons-clock" @click="updateStatus('em-andamento')">Em andamento</UButton>
-            <UButton size="sm" color="neutral" variant="outline" icon="i-heroicons-pause" @click="updateStatus('pausado')">Pausar tarefa</UButton>
+          <!-- Ações de Status & Edição -->
+          <div class="mb-8 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-100 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-800/40">
+            <div class="flex flex-wrap gap-2">
+              <UButton size="sm" class="bg-emerald-500 hover:bg-emerald-600" icon="i-heroicons-check-circle" @click="updateStatus('concluido')">Marcar concluída</UButton>
+              <UButton size="sm" color="amber" variant="soft" icon="i-heroicons-clock" @click="updateStatus('em-andamento')">Em andamento</UButton>
+              <UButton size="sm" color="neutral" variant="outline" icon="i-heroicons-pause" @click="updateStatus('pausado')">Pausar tarefa</UButton>
+            </div>
+            <div class="flex gap-2">
+              <UButton size="sm" color="neutral" variant="ghost" icon="i-heroicons-pencil" @click="editTaskOpen = true">Editar</UButton>
+              <UButton size="sm" color="error" variant="ghost" icon="i-heroicons-trash" @click="deleteTask">Excluir</UButton>
+            </div>
           </div>
 
           <UDivider class="my-8" />
@@ -323,5 +339,6 @@ const displayedAuditLog = computed(() => {
         </div>
       </div>
     </div>
+    <TarefasEditTaskModal v-model:open="editTaskOpen" :task="task" @updated="loadTaskDetails" />
   </div>
 </template>
