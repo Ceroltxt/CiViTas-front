@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { dueDateOrder } from '~/utils/date'
 import type { TaskAuditEntry } from '~/types'
+import { fetchUserProjectsFromSupabase } from '~/composables/useUserProjects'
 
 definePageMeta({ sidebarWidget: 'project' })
 
 const user = useCurrentUser()
 
 onMounted(() => {
-  fetchTasksFromSupabase()
+  fetchTasksFromSupabase(true)
+  fetchUserProjectsFromSupabase(true)
 })
 const teamDetails = useTeamsData()
 const teamsModalOpen = ref(false)
