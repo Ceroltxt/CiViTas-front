@@ -1,185 +1,92 @@
 <script setup lang="ts">
-import type { PriorityKey, StatusKey, Task, Subtask } from '~/types'
-import { updatePersonalTask } from '~/composables/useTasksData'
+import type { PriorityKey, Task } from '~/types'
+import { updateTaskInSupabase, deleteTaskFromSupabase } from '~/composables/useTasksData'
 
 const open = defineModel<boolean>('open', { default: false })
-const props = defineProps<{ taskToEdit: Task | null }>()
-const emit = defineEmits<{ updated: [] }>()
+const props = defineProps<{ task?: Task | null; taskToEdit?: Task | null }>()
+const currentTask = computed(() => props.task || props.taskToEdit || null)
 
-/* ── Form state ── */
+const emit = defineEmits<{ updated: []; deleted: [] }>()
+
 const title = ref('')
 const description = ref('')
-const priority = ref<PriorityKey | ''>('')
-const status = ref<StatusKey>('a-fazer')
+const priority = ref<PriorityKey>('media')
 const deadline = ref('')
-const subtaskInput = ref('')
-const subtasks = ref<string[]>([])
-const notifyUpdates = ref(true)
+const isSubmitting = ref(false)
+const errorMessage = ref<string | null>(null)
 
-/* ── Validation ── */
-const submitted = ref(false)
-
-const errors = computed(() => ({
-  title: submitted.value && !title.value.trim(),
-  priority: submitted.value && !priority.value,
-  deadline: submitted.value && !deadline.value,
-  deadlinePast: submitted.value && !!deadline.value && deadline.value < todayISO.value,
-}))
-
-const todayISO = computed(() => {
-  const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-})
-
-const isDeadlineOverdue = computed(() => !!deadline.value && deadline.value < todayISO.value)
-
-const priorityPills: { value: PriorityKey; label: string; dot: string }[] = [
-  { value: 'alta', label: 'Alta', dot: 'bg-rose-500' },
-  { value: 'media', label: 'Média', dot: 'bg-amber-400' },
-  { value: 'baixa', label: 'Baixa', dot: 'bg-emerald-500' },
-]
-
-function addSubtask() {
-  const v = subtaskInput.value.trim()
-  if (v && !subtasks.value.includes(v)) {
-    subtasks.value.unshift(v)
-  }
-  subtaskInput.value = ''
-}
-
-function onSubtaskKeydown(e: KeyboardEvent) {
-  if (e.key === 'Enter') {
-    e.preventDefault()
-    addSubtask()
-  }
-}
-
-function removeSubtask(index: number) {
-  subtasks.value.splice(index, 1)
-}
-
-const draggedIndex = ref<number | null>(null)
-
-function onDragStart(index: number, event: DragEvent) {
-  draggedIndex.value = index
-  if (event.dataTransfer) {
-    event.dataTransfer.effectAllowed = 'move'
-  }
-}
-
-function onDragEnter(index: number) {
-  if (draggedIndex.value === null || draggedIndex.value === index) return
-  const items = [...subtasks.value]
-  const draggedItem = items[draggedIndex.value]
-  items.splice(draggedIndex.value, 1)
-  items.splice(index, 0, draggedItem)
-  subtasks.value = items
-  draggedIndex.value = index
-}
-
-function onDragEnd() {
-  draggedIndex.value = null
-}
-
-function unformatDate(formatted: string): string {
-  if (!formatted) return ''
-  const parts = formatted.split(' ')
-  if (parts.length < 2) return ''
-  const d = parts[0].padStart(2, '0')
-  const mStr = parts[1].slice(0, 3)
-  const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
-  const mIndex = monthNames.indexOf(mStr)
-  if (mIndex === -1) return ''
-  const m = String(mIndex + 1).padStart(2, '0')
-  const y = new Date().getFullYear()
-  return `${y}-${m}-${d}`
-}
-
-watch(() => props.taskToEdit, (val) => {
-  if (val) {
-    title.value = val.title
-    description.value = val.description || ''
-    priority.value = val.priority
-    status.value = ['a-fazer', 'em-andamento', 'concluido'].includes(val.status) ? val.status : 'a-fazer'
-    deadline.value = val.dueDate ? unformatDate(val.dueDate) : ''
-    subtasks.value = val.subtasks?.map(s => s.title) || []
+watch(currentTask, (task) => {
+  if (task) {
+    title.value = task.title || ''
+    description.value = task.description || ''
+    priority.value = task.priority || 'media'
+    
+    const d = new Date()
+    const year = d.getFullYear()
+    const month = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    deadline.value = `${year}-${month}-${day}`
   }
 }, { immediate: true })
 
-function resetForm() {
-  if (props.taskToEdit) {
-    title.value = props.taskToEdit.title
-    description.value = props.taskToEdit.description || ''
-    priority.value = props.taskToEdit.priority
-    status.value = ['a-fazer', 'em-andamento', 'concluido'].includes(props.taskToEdit.status) ? props.taskToEdit.status : 'a-fazer'
-    deadline.value = props.taskToEdit.dueDate ? unformatDate(props.taskToEdit.dueDate) : ''
-    subtasks.value = props.taskToEdit.subtasks?.map(s => s.title) || []
-  } else {
-    title.value = ''
-    description.value = ''
-    priority.value = ''
-    status.value = 'a-fazer'
-    deadline.value = ''
-    subtasks.value = []
-  }
-  subtaskInput.value = ''
-  notifyUpdates.value = true
-  submitted.value = false
-}
-
 function closeModal() {
   open.value = false
-  resetForm()
+  errorMessage.value = null
 }
 
-function formatDate(dateStr: string): string {
-  if (!dateStr) return ''
-  const [y, m, d] = dateStr.split('-')
-  return `${d} ${['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'][Number(m) - 1]}`
-}
-
-function updateTask() {
-  submitted.value = true
-
-  if (!title.value.trim() || !priority.value || !deadline.value) {
+async function handleSave() {
+  if (isSubmitting.value) return
+  if (!currentTask.value?.id) return
+  if (!title.value.trim()) {
+    errorMessage.value = 'O título da tarefa é obrigatório.'
     return
   }
-  if (!props.taskToEdit) return
 
-  const taskSubtasks: Subtask[] = subtasks.value.map((st, i) => {
-    // try to keep existing id if it matches
-    const existing = props.taskToEdit?.subtasks?.find(s => s.title === st)
-    return {
-      id: existing ? existing.id : `${props.taskToEdit!.id}-st${Date.now() + i}`,
-      title: st,
-      completed: existing ? existing.completed : false,
-    }
+  isSubmitting.value = true
+  errorMessage.value = null
+
+  const success = await updateTaskInSupabase(currentTask.value.id, {
+    nome: title.value.trim(),
+    descricao: description.value.trim(),
+    prioridade: priority.value,
+    data_prazo: deadline.value,
   })
 
-  const updatedTask: Task = {
-    ...props.taskToEdit,
-    title: title.value.trim(),
-    description: description.value.trim(),
-    priority: priority.value as PriorityKey,
-    status: status.value,
-    dueDate: formatDate(deadline.value),
-    subtasks: taskSubtasks.length > 0 ? taskSubtasks : undefined,
-  }
+  isSubmitting.value = false
 
-  updatePersonalTask(updatedTask)
-  emit('updated')
-  closeModal()
+  if (success) {
+    emit('updated')
+    closeModal()
+  } else {
+    errorMessage.value = 'Erro ao salvar alterações na tarefa no Supabase.'
+  }
+}
+
+async function handleDelete() {
+  if (isSubmitting.value) return
+  if (!currentTask.value?.id) return
+  if (!confirm('Tem certeza que deseja excluir esta tarefa permanentemente?')) return
+
+  isSubmitting.value = true
+  const success = await deleteTaskFromSupabase(currentTask.value.id)
+  isSubmitting.value = false
+
+  if (success) {
+    emit('deleted')
+    closeModal()
+  } else {
+    errorMessage.value = 'Erro ao excluir tarefa no Supabase.'
+  }
 }
 </script>
 
 <template>
-  <UModal
-    v-model:open="open"
-    :ui="{ content: 'max-w-xl sm:max-w-lg' }"
-  >
+  <UModal v-model:open="open" :ui="{ content: 'max-w-lg' }">
     <template #header>
       <div class="flex items-center justify-between w-full">
-        <h2 class="text-lg font-bold text-slate-900 dark:text-slate-100">Editar Tarefa Pessoal</h2>
+        <h2 class="text-lg font-bold text-slate-900 dark:text-slate-100">
+          Editar Tarefa
+        </h2>
         <button
           type="button"
           class="flex items-center justify-center size-8 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
@@ -191,217 +98,73 @@ function updateTask() {
     </template>
 
     <template #body>
-      <div class="space-y-6">
-        <!-- Banner informativo -->
-        <div class="flex items-center gap-3 rounded-xl bg-violet-50 px-4 py-3 dark:bg-violet-950/30">
-          <UIcon name="i-heroicons-user-circle" class="size-5 shrink-0 text-violet-500" />
-          <p class="text-sm text-slate-600 dark:text-slate-300">
-            Esta tarefa é pessoal e ficará visível <strong class="text-violet-600 dark:text-violet-400">apenas para você</strong>.
-          </p>
+      <div class="space-y-4">
+        <div v-if="errorMessage" class="p-3 bg-rose-100 border border-rose-400 text-rose-700 rounded-lg text-xs font-semibold">
+          {{ errorMessage }}
         </div>
 
-        <!-- Separador -->
-        <hr class="border-slate-100 dark:border-slate-800" />
-
-        <!-- Informações Gerais -->
-        <section class="space-y-4">
-          <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100">Informações Gerais</h3>
-
-          <!-- Título -->
-          <div>
-            <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
-              Título da Tarefa <span class="text-rose-500">*</span>
-            </label>
-            <UInput
-              v-model="title"
-              placeholder="Ex: Criar protótipo da dashboard"
-              class="w-full"
-              :class="{ 'ring-1 ring-rose-400 rounded-lg': errors.title }"
-            />
-            <p v-if="errors.title" class="mt-1 text-xs text-rose-500">Campo obrigatório</p>
-          </div>
-
-          <!-- Descrição -->
-          <div>
-            <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
-              Descrição
-            </label>
-            <div class="relative">
-              <UTextarea
-                v-model="description"
-                :rows="4"
-                placeholder="Descreva o que precisa ser feito, objetivos e detalhes importantes..."
-                class="w-full"
-                :maxlength="1000"
-              />
-              <span class="absolute bottom-2 right-3 text-xs text-slate-400">
-                {{ description.length }}/1000
-              </span>
-            </div>
-          </div>
-
-          <!-- Prioridade + Prazo Final -->
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
-                Prioridade <span class="text-rose-500">*</span>
-              </label>
-              <div class="relative">
-                <select
-                  v-model="priority"
-                  class="w-full h-[38px] appearance-none rounded-lg border px-3 pr-8 text-sm outline-none transition-colors focus:border-violet-400 focus:ring-1 focus:ring-violet-400 dark:bg-slate-900 dark:text-slate-200"
-                  :class="errors.priority
-                    ? 'border-rose-400 bg-rose-50/50 text-slate-700 dark:border-rose-500'
-                    : 'border-slate-200 bg-white text-slate-700 dark:border-slate-700'"
-                >
-                  <option value="" disabled>Selecione a prioridade</option>
-                  <option value="alta">Alta</option>
-                  <option value="media">Média</option>
-                  <option value="baixa">Baixa</option>
-                </select>
-                <UIcon name="i-heroicons-chevron-down" class="size-4 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-              </div>
-              <p v-if="errors.priority" class="mt-1 text-xs text-rose-500">Selecione a prioridade</p>
-              <!-- Pills de prioridade -->
-              <div class="mt-2 flex flex-wrap gap-2">
-                <button
-                  v-for="p in priorityPills"
-                  :key="p.value"
-                  type="button"
-                  class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold transition-colors"
-                  :class="priority === p.value
-                    ? 'border-violet-300 bg-violet-50 text-violet-700 dark:border-violet-700 dark:bg-violet-950/40 dark:text-violet-300'
-                    : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'"
-                  @click="priority = p.value"
-                >
-                  <span class="size-2.5 rounded-full" :class="p.dot" />
-                  {{ p.label }}
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
-                Prazo Final <span class="text-rose-500">*</span>
-              </label>
-              <UInput
-                v-model="deadline"
-                type="date"
-                icon="i-heroicons-calendar-days"
-                class="w-full"
-                :class="{ 'ring-1 ring-rose-400 rounded-lg': errors.deadline || errors.deadlinePast }"
-                :min="todayISO"
-              />
-              <p v-if="errors.deadline" class="mt-1 text-xs text-rose-500">Campo obrigatório</p>
-              <p v-else-if="errors.deadlinePast" class="mt-1 text-xs text-rose-500">A data deve ser hoje ou futura</p>
-            </div>
-          </div>
-
-          <!-- Status: disponível somente ao editar tarefas pessoais. -->
-          <div>
-            <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
-              Status
-            </label>
-            <div class="relative">
-              <select
-                v-model="status"
-                :disabled="isDeadlineOverdue"
-                class="h-[38px] w-full appearance-none rounded-lg border border-slate-200 bg-white px-3 pr-8 text-sm text-slate-700 outline-none transition-colors focus:border-violet-400 focus:ring-1 focus:ring-violet-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
-                :class="isDeadlineOverdue && 'cursor-not-allowed opacity-50'"
-              >
-                <option value="a-fazer">A fazer</option>
-                <option value="em-andamento">Em andamento</option>
-                <option value="concluido">Concluído</option>
-              </select>
-              <UIcon name="i-heroicons-chevron-down" class="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-            </div>
-            <p v-if="isDeadlineOverdue" class="mt-1 text-xs text-amber-600 dark:text-amber-400">
-              Atualize o prazo para uma data futura antes de alterar o status.
-            </p>
-          </div>
-        </section>
-
-        <!-- Subtarefas -->
-        <section class="space-y-3">
-          <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100">Subtarefas</h3>
-
-          <!-- Input de subtarefa -->
-          <div class="relative">
-            <UInput
-              v-model="subtaskInput"
-              placeholder="Adicionar uma subtarefa..."
-              class="w-full"
-              @keydown="onSubtaskKeydown"
-            />
-            <button
-              type="button"
-              class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center size-6 rounded-md text-slate-400 hover:text-violet-600 hover:bg-violet-50 transition-colors"
-              @click="addSubtask"
-            >
-              <UIcon name="i-heroicons-plus" class="size-4" />
-            </button>
-          </div>
-
-          <!-- Lista de subtarefas ou estado vazio -->
-          <div v-if="subtasks.length === 0" class="flex flex-col items-center justify-center rounded-xl bg-slate-50 py-8 dark:bg-slate-800/50">
-            <UIcon name="i-heroicons-clipboard-document-list" class="size-8 text-slate-300 dark:text-slate-600 mb-2" />
-            <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Nenhuma subtarefa adicionada</p>
-            <p class="text-xs text-slate-400 dark:text-slate-500">Adicione subtarefas para organizar melhor o trabalho.</p>
-          </div>
-
-          <ul v-else class="space-y-1.5">
-            <li
-              v-for="(st, i) in subtasks"
-              :key="st + '-' + i"
-              draggable="true"
-              @dragstart="onDragStart(i, $event)"
-              @dragenter.prevent="onDragEnter(i)"
-              @dragover.prevent
-              @dragend="onDragEnd"
-              class="flex items-center gap-2 rounded-lg border border-slate-100 bg-white px-3 py-2 text-sm text-slate-700 transition-all cursor-move hover:shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
-              :class="{ 'opacity-50': draggedIndex === i }"
-            >
-              <UIcon name="i-heroicons-bars-2" class="size-4 text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing" />
-              <input 
-                v-model="subtasks[i]" 
-                type="text"
-                class="flex-1 bg-transparent text-sm text-slate-700 outline-none border-b border-transparent focus:border-violet-500 hover:border-slate-200 transition-colors dark:text-slate-200" 
-              />
-              <button type="button" class="text-slate-300 hover:text-rose-500 transition-colors" @click="removeSubtask(i)">
-                <UIcon name="i-heroicons-x-mark" class="size-3.5" />
-              </button>
-            </li>
-          </ul>
-        </section>
-
-        <!-- Notificações -->
-        <section class="space-y-2">
-          <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100">Notificações</h3>
-          <label class="flex cursor-pointer items-center gap-3 py-1">
-            <UCheckbox v-model="notifyUpdates" color="primary" />
-            <UIcon name="i-heroicons-bell" class="size-4 text-slate-400" />
-            <span class="text-sm text-slate-700 dark:text-slate-200">Notificar sobre atualizações</span>
+        <div>
+          <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
+            Título da Tarefa <span class="text-rose-500">*</span>
           </label>
-        </section>
+          <UInput v-model="title" placeholder="Título da tarefa" class="w-full" :disabled="isSubmitting" />
+        </div>
+
+        <div>
+          <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
+            Descrição
+          </label>
+          <UTextarea v-model="description" :rows="3" placeholder="Descrição detalhada..." class="w-full" :disabled="isSubmitting" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
+              Prioridade
+            </label>
+            <select
+              v-model="priority"
+              class="w-full h-[38px] rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+              :disabled="isSubmitting"
+            >
+              <option value="alta">Alta</option>
+              <option value="media">Média</option>
+              <option value="baixa">Baixa</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
+              Prazo Final
+            </label>
+            <UInput v-model="deadline" type="date" class="w-full" :disabled="isSubmitting" />
+          </div>
+        </div>
       </div>
     </template>
 
     <template #footer>
-      <div class="flex w-full gap-3">
-        <button
-          type="button"
-          class="flex-1 h-[42px] rounded-lg border border-slate-200 bg-white text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-          @click="closeModal"
-        >
-          Cancelar
-        </button>
-        <button
-          type="button"
-          class="flex-1 h-[42px] rounded-lg bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 text-sm font-bold text-white shadow-sm transition-all hover:shadow-md hover:brightness-110"
-          @click="updateTask"
-        >
-          Salvar Alterações
-        </button>
+      <div class="flex w-full justify-between items-center gap-3">
+        <UButton
+          color="error"
+          variant="ghost"
+          icon="i-heroicons-trash"
+          label="Excluir Tarefa"
+          :loading="isSubmitting"
+          @click="handleDelete"
+        />
+
+        <div class="flex gap-2">
+          <UButton color="neutral" variant="outline" label="Cancelar" @click="closeModal" />
+          <UButton
+            color="primary"
+            variant="solid"
+            label="Salvar Alterações"
+            class="bg-violet-600 hover:bg-violet-700 text-white"
+            :loading="isSubmitting"
+            @click="handleSave"
+          />
+        </div>
       </div>
     </template>
   </UModal>

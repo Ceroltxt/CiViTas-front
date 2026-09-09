@@ -97,6 +97,25 @@ async function addComment() {
   }
 }
 
+const auth = useAuth()
+const editTaskOpen = ref(false)
+
+const canEditOrDelete = computed(() => {
+  if (!task.value) return false
+  const role = (auth.user.value?.app_role || '').toLowerCase()
+  if (role === 'admin' || role === 'gestor') return true
+  if (task.value.personal) return true
+  return false
+})
+
+async function deleteTask() {
+  if (!confirm('Tem certeza que deseja excluir esta tarefa permanentemente?')) return
+  const success = await deleteTaskFromSupabase(taskId)
+  if (success) {
+    navigateTo('/colaborador/minhas-tarefas')
+  }
+}
+
 async function updateStatus(newStatus: string) {
   try {
     const config = useRuntimeConfig()
@@ -203,9 +222,15 @@ const displayedAuditLog = computed(() => {
           </div>
 
           <!-- Ações do Colaborador -->
-          <div class="mb-8 flex flex-wrap gap-2 rounded-xl border border-slate-100 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-800/40">
-            <UButton size="sm" class="bg-emerald-500 hover:bg-emerald-600" icon="i-heroicons-check-circle" @click="updateStatus('concluido')">Concluir Tarefa</UButton>
-            <UButton size="sm" color="amber" variant="soft" icon="i-heroicons-clock" @click="updateStatus('em-andamento')">Iniciar Trabalho</UButton>
+          <div class="mb-8 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-100 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-800/40">
+            <div class="flex flex-wrap gap-2">
+              <UButton size="sm" class="bg-emerald-500 hover:bg-emerald-600" icon="i-heroicons-check-circle" @click="updateStatus('concluido')">Concluir Tarefa</UButton>
+              <UButton size="sm" color="amber" variant="soft" icon="i-heroicons-clock" @click="updateStatus('em-andamento')">Iniciar Trabalho</UButton>
+            </div>
+            <div v-if="canEditOrDelete" class="flex gap-2">
+              <UButton size="sm" color="neutral" variant="ghost" icon="i-heroicons-pencil" @click="editTaskOpen = true">Editar</UButton>
+              <UButton size="sm" color="error" variant="ghost" icon="i-heroicons-trash" @click="deleteTask">Excluir</UButton>
+            </div>
           </div>
 
           <UDivider class="my-8" />
@@ -322,5 +347,6 @@ const displayedAuditLog = computed(() => {
         </div>
       </div>
     </div>
+    <TarefasEditTaskModal v-model:open="editTaskOpen" :task="task" @updated="loadTaskDetails" />
   </div>
 </template>

@@ -1,11 +1,18 @@
 <script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
 import type { Task } from '~/types'
+import { fetchUserProjectsFromSupabase, useGestorProjectsRef, useProjectsLoading } from '~/composables/useUserProjects'
 
 definePageMeta({ sidebarWidget: 'project' })
 
 type ProjectStatus = 'planejamento' | 'ativo' | 'concluido' | 'pausado' | 'cancelado'
 
-const projects = useUserProjects()
+// Projetos alocados ao gestor logado (ref reativa singleton — sem flickering)
+const gestorProjects = useGestorProjectsRef()
+const isLoadingProjects = useProjectsLoading()
+// Força refresh para sempre refletir dados atuais do servidor
+onMounted(() => fetchUserProjectsFromSupabase(true))
+
 const tasks = useTasksRef()
 const search = ref('')
 const selectedStatus = ref<'todos' | ProjectStatus>('todos')
@@ -66,14 +73,14 @@ const statusFilters: Array<{ value: 'todos' | ProjectStatus, label: string }> = 
   { value: 'cancelado', label: 'Cancelados' },
 ]
 
-const projectCards = computed(() => projects.map((project) => {
+const projectCards = computed(() => gestorProjects.value.map((project) => {
   const projectTasks = tasks.value.filter((task) => !task.personal && task.project === project.name)
   const done = projectTasks.filter((task) => task.status === 'concluido').length
   return {
     ...project,
-    status: projectStatus[project.id] ?? 'ativo',
-    description: projectDescriptions[project.id] ?? 'Projeto em acompanhamento.',
-    info: projectInfo[project.id] ?? { priority: 'Média', deadline: 'Indefinido' },
+    status: 'ativo' as ProjectStatus,
+    description: project.description || 'Projeto em acompanhamento.',
+    info: { priority: (project as any).prioridade || 'Média', deadline: (project as any).data_previsao_fim || 'Indefinido' },
     taskCount: projectTasks.length,
     doneCount: done,
   }
@@ -88,12 +95,19 @@ const filteredProjects = computed(() => {
   })
 })
 
+const auth = useAuth()
+const isRoleAdmin = computed(() => {
+  const r = (auth.user.value?.app_role || auth.user.value?.role || '').toLowerCase()
+  return r === 'admin' || r === 'administrador'
+})
+
+const newProjectOpen = ref(false)
+
 const router = useRouter()
 
 function openProject(projectId: string) {
   router.push(`/gestor/projetos/${projectId}`)
 }
-const isCreateProjectOpen = ref(false)
 </script>
 
 <template>
@@ -103,7 +117,21 @@ const isCreateProjectOpen = ref(false)
         <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">Projetos</h1>
         <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">Acompanhe os projetos dos quais você faz parte e suas entregas.</p>
       </div>
-      <div class="flex items-center gap-3"><UButton color="primary" icon="i-heroicons-plus" label="Criar Projeto" @click="isCreateProjectOpen = true" /><div class="rounded-2xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-900 hidden sm:block"><p class="text-xs text-slate-400">Projetos vinculados</p><p class="mt-0.5 text-xl font-bold text-slate-800 dark:text-slate-100">{{ projectCards.length }}</p></div></div>
+
+      <div class="flex items-center gap-3">
+        <UButton
+          v-if="isRoleAdmin"
+          color="primary"
+          icon="i-heroicons-plus-circle"
+          label="Novo Projeto"
+          class="bg-violet-600 hover:bg-violet-700 text-white"
+          @click="newProjectOpen = true"
+        />
+        <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-900">
+          <p class="text-xs text-slate-400">Projetos vinculados</p>
+          <p class="mt-0.5 text-xl font-bold text-slate-800 dark:text-slate-100">{{ projectCards.length }}</p>
+        </div>
+      </div>
     </div>
 
     <div class="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900 sm:flex-row sm:items-center sm:justify-between">
@@ -122,7 +150,12 @@ const isCreateProjectOpen = ref(false)
       <UInput v-model="search" icon="i-heroicons-magnifying-glass" placeholder="Buscar projetos" class="w-full sm:w-56" />
     </div>
 
-    <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+    <!-- Loading skeleton -->
+    <div v-if="isLoadingProjects && gestorProjects.length === 0" class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div v-for="n in 3" :key="n" class="h-56 animate-pulse rounded-2xl border border-slate-200 bg-slate-100 dark:border-slate-800 dark:bg-slate-800" />
+    </div>
+
+    <div v-else class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
       <article
         v-for="project in filteredProjects"
         :key="project.id"
@@ -176,12 +209,11 @@ const isCreateProjectOpen = ref(false)
       </article>
     </div>
 
-    <div v-if="filteredProjects.length === 0" class="rounded-2xl border border-dashed border-slate-300 py-16 text-center dark:border-slate-700">
+    <div v-if="!isLoadingProjects && filteredProjects.length === 0" class="rounded-2xl border border-dashed border-slate-300 py-16 text-center dark:border-slate-700">
       <UIcon name="i-heroicons-folder-open" class="mx-auto size-8 text-slate-300" />
       <p class="mt-3 text-sm font-medium text-slate-500">Nenhum projeto encontrado.</p>
     </div>
+
+    <ProjetosNewProjectModal v-model:open="newProjectOpen" />
   </div>
-  <ModalCreateProject v-model="isCreateProjectOpen" />
 </template>
-
-

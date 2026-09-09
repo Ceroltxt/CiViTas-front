@@ -1,21 +1,19 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import type { ProjectProgress } from '~/types'
-import { mockProjects } from '~/mocks'
+import { computed, ref, onMounted } from 'vue'
+import { fetchUserProjectsFromSupabase, useGestorProjectsRef } from '~/composables/useUserProjects'
 
 definePageMeta({ sidebarWidget: 'project' })
 
 const currentUser = useCurrentUser()
 
-// Esta tela é exclusiva da liderança: cada projeto conserva somente até duas
-// equipes cujo líder é o usuário logado.
-const leadershipProjects = computed<ProjectProgress[]>(() => mockProjects
-  .map(project => ({
-    ...project,
-    teams: project.teams?.filter(team => team.leader === currentUser.name).slice(0, 2),
-  }))
-  .filter(project => project.teams?.length)
-)
+// Projetos alocados ao gestor logado (mesma ref reativa usada em /gestor/projetos)
+const gestorProjectsRef = useGestorProjectsRef()
+
+onMounted(async () => {
+  await fetchUserProjectsFromSupabase(true)
+})
+
+const leadershipProjects = computed<any[]>(() => gestorProjectsRef.value)
 
 // Controle de abrir/fechar as equipes de cada projeto
 const collapsed = ref<Record<string, boolean>>({})
@@ -57,17 +55,28 @@ function getTeamStatus(teamId: string) {
   return { label: 'Ativa', class: 'text-violet-700 bg-violet-50 ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-500/30' }
 }
 
+const newTeamOpen = ref(false)
 </script>
 
 <template>
   <div class="mx-auto max-w-7xl space-y-8 p-4 sm:p-6">
-    <div>
-      <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">
-        Minhas Equipes
-      </h1>
-      <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
-        Acompanhe as equipes em que você atua como líder.
-      </p>
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">
+          Minhas Equipes
+        </h1>
+        <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+          Acompanhe as equipes e alocações de gestores e membros.
+        </p>
+      </div>
+
+      <UButton
+        color="primary"
+        icon="i-heroicons-plus-circle"
+        label="Nova Equipe"
+        class="bg-violet-600 hover:bg-violet-700 text-white"
+        @click="newTeamOpen = true"
+      />
     </div>
 
     <!-- Lista de Projetos -->
@@ -165,5 +174,7 @@ function getTeamStatus(teamId: string) {
         <p class="mt-3 text-sm font-medium text-slate-500">Você ainda não lidera nenhuma equipe.</p>
       </div>
     </div>
+
+    <EquipesNewTeamModal v-model:open="newTeamOpen" />
   </div>
 </template>

@@ -1,6 +1,8 @@
 import { useState, useCookie, navigateTo, useRuntimeConfig } from '#imports'
 import { ENDPOINTS } from '~/services/endpoints'
 import { useApi } from '~/services/http'
+import { clearTasksState, fetchTasksFromSupabase } from '~/composables/useTasksData'
+import { clearProjectsState } from '~/composables/useUserProjects'
 
 export interface AuthFuncionario {
   matricula: string | number
@@ -45,7 +47,10 @@ export function useAuth() {
     if (normalized === 'gestor') {
       return '/gestor'
     }
-    return '/colaborador'
+    if (normalized === 'colaborador') {
+      return '/colaborador'
+    }
+    return '/login'
   }
 
   async function login(emailVal: string, passwordVal: string): Promise<{ success: boolean; targetRoute?: string; error?: string }> {
@@ -96,6 +101,8 @@ export function useAuth() {
       if (res && res.token) {
         tokenCookie.value = res.token
         userState.value = res.funcionario
+        clearTasksState()
+        fetchTasksFromSupabase(true)
 
         const role = res.funcionario.app_role || res.funcionario.cargo?.nome || 'colaborador'
         const targetRoute = resolveRoleRoute(role)
@@ -129,6 +136,8 @@ export function useAuth() {
     } catch (e) {
       // Ignorar erros no logout
     } finally {
+      clearTasksState()
+      clearProjectsState()
       tokenCookie.value = null
       userState.value = null
       if (typeof document !== 'undefined') {
@@ -143,14 +152,31 @@ export function useAuth() {
       return userState.value
     }
     try {
-      const res = await api.get<AuthFuncionario>(
-        ENDPOINTS.meAuth,
-        undefined as any,
-        () => (userState.value || { matricula: '0', nome: 'Usuário', email: '' })
-      )
-      userState.value = res
-      return res
+      const baseURL = (config.public.apiBase as string) || 'http://localhost:8080/api'
+      const res = await $fetch<any>(ENDPOINTS.meAuth, {
+        baseURL,
+        headers: {
+          Accept: 'application/json',
+          Authorization: `Bearer ${tokenCookie.value}`,
+        },
+      })
+      if (res) {
+        // /auth/me devolve { id, name, role } — normalizar para o formato interno
+        const rawRole = res.app_role || res.role || res.cargo?.nome || 'colaborador'
+        const app_role = String(rawRole).toLowerCase().trim()
+        userState.value = {
+          matricula: res.id || res.matricula || '0',
+          nome: res.name || res.nome || 'Usuário',
+          email: res.email || '',
+          app_role,
+          role_label: res.role || res.role_label || app_role,
+          cargo: res.cargo || { id: 0, nome: app_role },
+          ...res,
+        }
+      }
+      return userState.value
     } catch (e) {
+      // Token inválido/expirado — retornar null para o middleware poder limpar
       return null
     }
   }

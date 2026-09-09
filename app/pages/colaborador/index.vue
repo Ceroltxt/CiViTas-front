@@ -1,13 +1,17 @@
 <script setup lang="ts">
 import { dueDateOrder } from '~/utils/date'
 import type { TaskAuditEntry } from '~/types'
+import { fetchUserProjectsFromSupabase } from '~/composables/useUserProjects'
+import { useTasksLoading } from '~/composables/useTasksData'
 
 definePageMeta({ sidebarWidget: 'project' })
 
 const user = useCurrentUser()
+const isLoadingTasks = useTasksLoading()
 
 onMounted(() => {
-  fetchTasksFromSupabase()
+  fetchTasksFromSupabase(true)
+  fetchUserProjectsFromSupabase(true)
 })
 const teamDetails = useTeamsData()
 const teamsModalOpen = ref(false)
@@ -423,7 +427,16 @@ function openTask(taskId: string) {
 
     <!-- Indicadores de desempenho -->
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <!-- Skeletons enquanto carrega -->
+      <template v-if="isLoadingTasks">
+        <div
+          v-for="n in 4"
+          :key="n"
+          class="h-24 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-800"
+        />
+      </template>
       <InicioStatCard
+        v-else
         v-for="metric in performanceMetrics"
         :key="metric.label"
         v-bind="metric"
@@ -464,7 +477,11 @@ function openTask(taskId: string) {
       </template>
 
       <div class="-mx-5 -mb-5 mt-1 overflow-x-auto sm:-mx-6 sm:-mb-6">
-        <table class="w-full min-w-[650px] text-left">
+        <!-- Skeleton da tabela -->
+        <div v-if="isLoadingTasks" class="space-y-2 p-4">
+          <div v-for="n in 5" :key="n" class="h-10 animate-pulse rounded-lg bg-slate-100 dark:bg-slate-800" />
+        </div>
+        <table v-else class="w-full min-w-[650px] text-left">
           <thead class="border-y border-slate-100 bg-slate-50/70 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-900/60">
             <tr><th class="px-5 py-3">Tarefa</th><th class="px-4 py-3">Projeto</th><th class="px-4 py-3">Status</th><th class="px-4 py-3">Prioridade</th><th class="px-5 py-3">Prazo</th></tr>
           </thead>

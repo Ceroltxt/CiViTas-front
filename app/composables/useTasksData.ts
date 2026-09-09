@@ -1,6 +1,4 @@
 import type { PriorityKey, Task } from '~/types'
-import { tasksSchema } from '~/schemas'
-import { mockTasks } from '~/mocks'
 import { mockProjects } from '~/mocks'
 import { ref, watch } from 'vue'
 import { ENDPOINTS } from '~/services/endpoints'
@@ -63,9 +61,75 @@ function saveWorkTasks(tasks: Task[]): void {
 
 export function deletePersonalTask(taskId: string): void {
   const idx = tasksRef.value.findIndex(t => t.id === taskId)
-  if (idx > -1 && tasksRef.value[idx].personal) {
+  if (idx > -1) {
     tasksRef.value.splice(idx, 1)
-    savePersonalTasks()
+  }
+  deleteTaskFromSupabase(taskId)
+}
+
+export async function updateTaskInSupabase(taskId: string, payload: { nome?: string; descricao?: string; prioridade?: string; data_prazo?: string }): Promise<boolean> {
+  try {
+    const config = useRuntimeConfig()
+    const authToken = useCookie<string | null>('auth_token')
+    if (!authToken.value) return false
+
+    const baseURL = (config.public.apiBase as string) || 'http://localhost:8080/api'
+    const headers = {
+      Accept: 'application/json',
+      Authorization: `Bearer ${authToken.value}`,
+    }
+
+    const res = await $fetch<any>(`${ENDPOINTS.tasks}/${taskId}`, {
+      method: 'PUT',
+      baseURL,
+      headers,
+      body: payload,
+    })
+
+    const updated = res?.data || res
+    if (updated && updated.id) {
+      const idx = tasksRef.value.findIndex(t => String(t.id) === String(taskId))
+      if (idx > -1) {
+        tasksRef.value[idx] = { ...tasksRef.value[idx], ...updated }
+      }
+    }
+
+    fetchTasksFromSupabase(true)
+    return true
+  } catch (e) {
+    console.error('Erro ao atualizar tarefa no Supabase:', e)
+    return false
+  }
+}
+
+export async function deleteTaskFromSupabase(taskId: string): Promise<boolean> {
+  try {
+    const config = useRuntimeConfig()
+    const authToken = useCookie<string | null>('auth_token')
+    if (!authToken.value) return false
+
+    const baseURL = (config.public.apiBase as string) || 'http://localhost:8080/api'
+    const headers = {
+      Accept: 'application/json',
+      Authorization: `Bearer ${authToken.value}`,
+    }
+
+    await $fetch(`${ENDPOINTS.tasks}/${taskId}`, {
+      method: 'DELETE',
+      baseURL,
+      headers,
+    })
+
+    const idx = tasksRef.value.findIndex(t => String(t.id) === String(taskId))
+    if (idx > -1) {
+      tasksRef.value.splice(idx, 1)
+    }
+
+    fetchTasksFromSupabase(true)
+    return true
+  } catch (e) {
+    console.error('Erro ao excluir tarefa no Supabase:', e)
+    return false
   }
 }
 
@@ -105,42 +169,56 @@ export function updatePersonalTasksPriority(taskIds: string[], priority: Priorit
   if (changed) savePersonalTasks()
 }
 
-const initialMockTasks = tasksSchema.parse(mockTasks, 'tasks')
-const savedPersonalTasks = readStoredPersonalTasks(STORAGE_KEY)
-const savedWorkTasks = readStoredPersonalTasks(WORK_TASKS_STORAGE_KEY)
-const defaultWorkTasks = initialMockTasks.filter((task) => !task.personal)
-const workTasks = savedWorkTasks ?? defaultWorkTasks
-const defaultPersonalTasks = initialMockTasks.filter((task) => task.personal).map(normalizePersonalTask)
-
-const personalTasks = savedPersonalTasks !== null
-  ? savedPersonalTasks.map(normalizePersonalTask)
-  : defaultPersonalTasks
-
 const tasksRef = ref<Task[]>([])
+const isLoadingTasksRef = ref(false)
 
 if (typeof window !== 'undefined') {
   watch(tasksRef, (tasks) => saveWorkTasks(tasks), { deep: true })
 }
 
+/** Retorna ref reativa de loading de tarefas — use em páginas para exibir skeletons. */
+export function useTasksLoading() {
+  return isLoadingTasksRef
+}
+
+export function getAuthToken(): string | null {
+  const cookie = useCookie<string | null>('auth_token')
+  if (cookie.value) return cookie.value
+
+  if (typeof document !== 'undefined') {
+    const match = document.cookie.match(/(?:^|; )auth_token=([^;]*)/)
+    if (match && match[1]) return decodeURIComponent(match[1])
+  }
+
+  return null
+}
+
 let isFetching = false
 let hasFetchedInitial = false
+
+export function clearTasksState(): void {
+  tasksRef.value = []
+  hasFetchedInitial = false
+  isFetching = false
+  isLoadingTasksRef.value = false
+}
 
 /** Busca a lista real de tarefas no banco de dados do Supabase. */
 export async function fetchTasksFromSupabase(force = false): Promise<void> {
   if (typeof window === 'undefined') return
   if (isFetching) return
-  if (hasFetchedInitial && !force) return
+
+  const token = getAuthToken()
+  if (!token) return
 
   isFetching = true
+  isLoadingTasksRef.value = true
   try {
     const config = useRuntimeConfig()
-    const authToken = useCookie<string | null>('auth_token')
-    if (!authToken.value) return
-
     const baseURL = (config.public.apiBase as string) || 'http://localhost:8080/api'
     const headers = {
       Accept: 'application/json',
-      Authorization: `Bearer ${authToken.value}`,
+      Authorization: `Bearer ${token}`,
     }
 
     const res = await $fetch<any>(ENDPOINTS.tasks, { baseURL, headers })
@@ -153,6 +231,7 @@ export async function fetchTasksFromSupabase(force = false): Promise<void> {
     console.error('Erro ao buscar tarefas do Supabase:', e)
   } finally {
     isFetching = false
+    isLoadingTasksRef.value = false
   }
 }
 
