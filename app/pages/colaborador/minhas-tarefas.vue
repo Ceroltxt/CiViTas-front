@@ -6,7 +6,9 @@ definePageMeta({ sidebarWidget: 'none' })
 
 const tasks = useTasksData()
 const currentUser = useCurrentUser()
-import { deletePersonalTask, deletePersonalTasks, isPersonalTaskOverdue, updatePersonalTask, updatePersonalTasksPriority, updatePersonalTasksStatus, fetchTasksFromSupabase, type PersonalTaskStatus } from '~/composables/useTasksData'
+import { deletePersonalTask, deletePersonalTasks, isPersonalTaskOverdue, updatePersonalTask, updatePersonalTasksPriority, updatePersonalTasksStatus, fetchTasksFromSupabase, useTasksLoading, type PersonalTaskStatus } from '~/composables/useTasksData'
+
+const isLoadingTasks = useTasksLoading()
 
 onMounted(() => {
   fetchTasksFromSupabase(true)
@@ -679,41 +681,48 @@ function clearFilter(key: 'project' | 'status' | 'priority') {
 
     <!-- Lista / Tabela -->
     <div v-if="activeView === 'lista'" class="-mt-3 space-y-2">
-      <div class="flex items-center justify-between px-1">
-        <p class="text-xs text-slate-400 dark:text-slate-500">
-          <template v-if="activeMainTab === 'pessoais'">
-            {{ filtered.length }} {{ filtered.length === 1 ? 'tarefa pessoal' : 'tarefas pessoais' }}
-          </template>
-          <template v-else>
-            {{ filtered.length }} {{ filtered.length === 1 ? 'tarefa de trabalho' : 'tarefas de trabalho' }}
-          </template>
-        </p>
-        <UButton
-          color="neutral"
-          variant="ghost"
-          size="xs"
-          :icon="isSelecting ? 'i-heroicons-x-mark' : 'i-heroicons-check-circle'"
-          :label="isSelecting ? 'Cancelar seleção' : 'Selecionar'"
-          class="text-slate-500 hover:text-violet-600 dark:hover:text-violet-300"
-          @click="toggleSelectionMode"
-        />
-      </div>
-      <TarefasTaskTable
-        v-if="filtered.length > 0"
-        :tasks="filtered"
-        :is-personal="activeMainTab === 'pessoais'"
-        :is-selecting="isSelecting"
-        v-model:selected-ids="selectedTasks"
-        @edit="openEditTaskModal"
-        @delete="handleDeleteTask"
-      />
+      <!-- Skeleton de carregamento -->
+      <template v-if="isLoadingTasks">
+        <div v-for="n in 6" :key="n" class="h-14 animate-pulse rounded-xl bg-slate-100 dark:bg-slate-800" />
+      </template>
 
-      <div
-        v-if="filtered.length === 0"
-        class="rounded-2xl border border-dashed border-slate-200 py-12 text-center text-sm text-slate-400 dark:border-slate-700"
-      >
-        Nenhuma tarefa encontrada para os filtros selecionados.
-      </div>
+      <template v-else>
+        <div class="flex items-center justify-between px-1">
+          <p class="text-xs text-slate-400 dark:text-slate-500">
+            <template v-if="activeMainTab === 'pessoais'">
+              {{ filtered.length }} {{ filtered.length === 1 ? 'tarefa pessoal' : 'tarefas pessoais' }}
+            </template>
+            <template v-else>
+              {{ filtered.length }} {{ filtered.length === 1 ? 'tarefa de trabalho' : 'tarefas de trabalho' }}
+            </template>
+          </p>
+          <UButton
+            color="neutral"
+            variant="ghost"
+            size="xs"
+            :icon="isSelecting ? 'i-heroicons-x-mark' : 'i-heroicons-check-circle'"
+            :label="isSelecting ? 'Cancelar seleção' : 'Selecionar'"
+            class="text-slate-500 hover:text-violet-600 dark:hover:text-violet-300"
+            @click="toggleSelectionMode"
+          />
+        </div>
+        <TarefasTaskTable
+          v-if="filtered.length > 0"
+          :tasks="filtered"
+          :is-personal="activeMainTab === 'pessoais'"
+          :is-selecting="isSelecting"
+          v-model:selected-ids="selectedTasks"
+          @edit="openEditTaskModal"
+          @delete="handleDeleteTask"
+        />
+
+        <div
+          v-if="filtered.length === 0"
+          class="rounded-2xl border border-dashed border-slate-200 py-12 text-center text-sm text-slate-400 dark:border-slate-700"
+        >
+          Nenhuma tarefa encontrada para os filtros selecionados.
+        </div>
+      </template>
     </div>
 
     <QuadrosKanbanBoard

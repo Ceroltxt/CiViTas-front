@@ -170,9 +170,15 @@ export function updatePersonalTasksPriority(taskIds: string[], priority: Priorit
 }
 
 const tasksRef = ref<Task[]>([])
+const isLoadingTasksRef = ref(false)
 
 if (typeof window !== 'undefined') {
   watch(tasksRef, (tasks) => saveWorkTasks(tasks), { deep: true })
+}
+
+/** Retorna ref reativa de loading de tarefas — use em páginas para exibir skeletons. */
+export function useTasksLoading() {
+  return isLoadingTasksRef
 }
 
 export function getAuthToken(): string | null {
@@ -194,6 +200,7 @@ export function clearTasksState(): void {
   tasksRef.value = []
   hasFetchedInitial = false
   isFetching = false
+  isLoadingTasksRef.value = false
 }
 
 /** Busca a lista real de tarefas no banco de dados do Supabase. */
@@ -205,6 +212,7 @@ export async function fetchTasksFromSupabase(force = false): Promise<void> {
   if (!token) return
 
   isFetching = true
+  isLoadingTasksRef.value = true
   try {
     const config = useRuntimeConfig()
     const baseURL = (config.public.apiBase as string) || 'http://localhost:8080/api'
@@ -223,6 +231,7 @@ export async function fetchTasksFromSupabase(force = false): Promise<void> {
     console.error('Erro ao buscar tarefas do Supabase:', e)
   } finally {
     isFetching = false
+    isLoadingTasksRef.value = false
   }
 }
 
