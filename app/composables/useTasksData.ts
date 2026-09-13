@@ -21,18 +21,20 @@ function readStoredPersonalTasks(key: string): Task[] | null {
   }
 }
 
-export function isPersonalTaskOverdue(task: Task, referenceDate = new Date()): boolean {
-  if (!task.personal || !task.dueDate || task.status === 'concluido') return false
+export function isTaskOverdue(task: Task, referenceDate = new Date()): boolean {
+  if (task.status === 'concluido' || !task.dueDate) return false
   const [dayText, monthText] = task.dueDate.trim().split(/\s+/)
   const month = MONTHS_SHORT.findIndex((item) => item.toLowerCase() === monthText?.slice(0, 3).toLowerCase())
   const day = Number(dayText)
   if (!Number.isInteger(day) || month === -1) return false
 
-  const dueDate = new Date(referenceDate.getFullYear(), month, day)
-  dueDate.setHours(0, 0, 0, 0)
-  const today = new Date(referenceDate)
-  today.setHours(0, 0, 0, 0)
-  return dueDate < today
+  const dueDate = new Date(referenceDate.getFullYear(), month, day, 23, 59, 59)
+  return dueDate < referenceDate
+}
+
+export function isPersonalTaskOverdue(task: Task, referenceDate = new Date()): boolean {
+  if (!task.personal || !task.dueDate || task.status === 'concluido') return false
+  return isTaskOverdue(task, referenceDate)
 }
 
 function normalizePersonalTask(task: Task): Task {
@@ -224,7 +226,12 @@ export async function fetchTasksFromSupabase(force = false): Promise<void> {
     const res = await $fetch<any>(ENDPOINTS.tasks, { baseURL, headers })
     const list = Array.isArray(res) ? res : res?.data
     if (Array.isArray(list)) {
-      tasksRef.value = list
+      tasksRef.value = list.map((task: Task) => {
+        if (task.status !== 'concluido' && (task.status === 'atrasado' || isTaskOverdue(task))) {
+          return { ...task, status: 'atrasado' }
+        }
+        return task
+      })
       hasFetchedInitial = true
     }
   } catch (e) {

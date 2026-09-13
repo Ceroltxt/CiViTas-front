@@ -86,7 +86,7 @@ export function useDashboardStats(_dateFrom: Ref<string>, _dateTo: Ref<string>, 
       const belongsToUser = userId
         // O dashboard do colaborador mostra a carteira de trabalho. Tarefas
         // pessoais vivem na aba própria e não devem inflar os indicadores.
-        ? !task.personal && task.assignees.some((assignee) => assignee.id === unref(userId))
+        ? !task.personal && task.assignees?.some((assignee) => String(assignee.id) === String(unref(userId)))
         : !task.personal
       return belongsToUser
     })

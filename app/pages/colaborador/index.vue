@@ -270,8 +270,8 @@ function resetFilter() {
 }
 
 // Tarefas a fazer para o resumo da home
-const allTasks = useTasksData()
-const myTasks = computed(() => allTasks.filter((task) => task.personal || task.assignees.some((assignee) => assignee.id === user.id)))
+const allTasks = useTasksRef()
+const myTasks = computed(() => allTasks.value.filter((task) => task.personal || task.assignees?.some((assignee) => String(assignee.id) === String(user.id))))
 const taskOverviewFilter = ref<'todas' | 'a-fazer' | 'em-andamento' | 'em-revisao' | 'validar' | 'atrasadas' | 'concluidas' | 'pausado'>('todas')
 const taskOverviewTabs = [
   { id: 'todas', label: 'Todas' },
