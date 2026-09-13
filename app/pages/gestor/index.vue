@@ -1,72 +1,76 @@
 <script setup lang="ts">
 import { computed, ref, onMounted } from 'vue'
 import chartLine from '~/components/chart/chartLine.vue'
-import type { DashboardMetricItem, DashboardProjectItem } from '~/composables/useDashboardApi'
+import { fetchUserProjectsFromSupabase, useGestorProjectsRef, useProjectsLoading } from '~/composables/useUserProjects'
+import { fetchTasksFromSupabase, useTasksRef, useTasksLoading, getAuthToken } from '~/composables/useTasksData'
 
 definePageMeta({ sidebarWidget: 'none' })
 
 const auth = useAuth()
-const dashboardApi = useDashboardApi()
 
 const firstName = computed(() => {
   const name = auth.user.value?.nome || 'Gestor'
   return name.split(' ')[0]
 })
 
-const metricsData = ref<DashboardMetricItem[]>([])
-const projectsData = ref<DashboardProjectItem[]>([])
-const teamsData = ref<any[]>([])
-const allTasks = useTasksData()
+const gestorProjects = useGestorProjectsRef()
+const allTasks = useTasksRef()
+const isLoadingProjects = useProjectsLoading()
+const isLoadingTasks = useTasksLoading()
 
-const isLoading = ref(true)
+const teamsData = ref<any[]>([])
+const isLoadingTeams = ref(true)
+
+async function fetchTeams() {
+  isLoadingTeams.value = true
+  try {
+    const config = useRuntimeConfig()
+    const baseURL = (config.public.apiBase as string) || 'http://localhost:8080/api'
+    const token = getAuthToken()
+    const headers: Record<string, string> = { Accept: 'application/json' }
+    if (token) {
+      headers.Authorization = `Bearer ${token}`
+    }
+    const t = await $fetch<any[]>('/teams', { baseURL, headers })
+    if (Array.isArray(t)) {
+      teamsData.value = t
+    }
+  } catch (e) {
+    console.error('Erro ao buscar equipes no Gestor:', e)
+  } finally {
+    isLoadingTeams.value = false
+  }
+}
 
 async function loadDashboardData() {
-  isLoading.value = true
-  try {
-    const [m, p] = await Promise.all([
-      dashboardApi.fetchMetrics(),
-      dashboardApi.fetchProjects(),
-    ])
-    metricsData.value = m
-    projectsData.value = p
-
-    const config = useRuntimeConfig()
-    const authToken = useCookie<string | null>('auth_token')
-    const baseURL = (config.public.apiBase as string) || 'http://localhost:8080/api'
-    const headers: Record<string, string> = { Accept: 'application/json' }
-    if (authToken.value) {
-      headers.Authorization = `Bearer ${authToken.value}`
-    }
-    const t = await $fetch<any[]>(ENDPOINTS.teams, { baseURL, headers })
-    if (Array.isArray(t)) teamsData.value = t
-  } catch (e) {
-    console.error('Erro ao carregar dados do dashboard no Gestor:', e)
-  } finally {
-    isLoading.value = false
-  }
+  await Promise.all([
+    fetchUserProjectsFromSupabase(true),
+    fetchTasksFromSupabase(true),
+    fetchTeams(),
+  ])
 }
 
 onMounted(() => {
   loadDashboardData()
 })
 
-/* Métricas calculadas com fallback */
-const projectCount = computed(() => projectsData.value.length || 1)
-const teamCount = computed(() => teamsData.value.length || 1)
-const delayedCount = computed(() => {
-  const fromMetrics = metricsData.value.find(m => m.id === 'atraso')?.value
-  if (fromMetrics !== undefined) return Number(fromMetrics)
-  return allTasks.filter(t => t.status === 'atrasado').length
-})
-const productivityRate = computed(() => {
-  const fromMetrics = metricsData.value.find(m => m.id === 'produtividade')?.value
-  if (fromMetrics) return fromMetrics
-  const completed = allTasks.filter(t => t.status === 'concluido').length
-  const total = allTasks.length
-  return total ? `${Math.round((completed / total) * 100)}%` : '0%'
-})
+const isLoading = computed(() => isLoadingProjects.value || isLoadingTasks.value || isLoadingTeams.value)
 
-const totalCompletedCount = computed(() => allTasks.filter(t => t.status === 'concluido').length)
+/* Métricas reais derivadas do banco */
+const projectCount = computed(() => gestorProjects.value.length)
+const teamCount = computed(() => teamsData.value.length)
+
+const workTasks = computed(() => allTasks.value.filter(t => !t.personal))
+const delayedTasks = computed(() => workTasks.value.filter(t => t.status === 'atrasado'))
+const delayedCount = computed(() => delayedTasks.value.length)
+const completedTasks = computed(() => workTasks.value.filter(t => t.status === 'concluido'))
+const totalCompletedCount = computed(() => completedTasks.value.length)
+
+const productivityRate = computed(() => {
+  const total = workTasks.value.length
+  if (!total) return '0%'
+  return `${Math.round((completedTasks.value.length / total) * 100)}%`
+})
 </script>
 
 <template>
@@ -79,7 +83,7 @@ const totalCompletedCount = computed(() => allTasks.filter(t => t.status === 'co
           Olá, {{ firstName }}!
         </h1>
         <p class="text-sm text-slate-500 mt-1">
-          Acompanhe o desempenho das suas equipes e projetos.
+          Acompanhe o desempenho das suas equipes e projetos em tempo real.
         </p>
       </div>
       <div class="flex items-center gap-3">
@@ -98,7 +102,8 @@ const totalCompletedCount = computed(() => allTasks.filter(t => t.status === 'co
           </div>
           <div class="min-w-0">
             <p class="whitespace-nowrap text-xs font-medium leading-3 text-slate-500">Projetos gerenciados</p>
-            <p class="mt-0.5 text-xl font-bold leading-5 text-slate-800 dark:text-slate-100">{{ projectCount }}</p>
+            <p v-if="isLoading" class="mt-1 h-5 w-8 animate-pulse rounded bg-slate-200 dark:bg-slate-700" />
+            <p v-else class="mt-0.5 text-xl font-bold leading-5 text-slate-800 dark:text-slate-100">{{ projectCount }}</p>
           </div>
         </div>
       </UCard>
@@ -110,7 +115,8 @@ const totalCompletedCount = computed(() => allTasks.filter(t => t.status === 'co
           </div>
           <div class="min-w-0">
             <p class="whitespace-nowrap text-xs font-medium leading-3 text-slate-500">Equipes</p>
-            <p class="mt-0.5 text-xl font-bold leading-5 text-slate-800 dark:text-slate-100">{{ teamCount }}</p>
+            <p v-if="isLoading" class="mt-1 h-5 w-8 animate-pulse rounded bg-slate-200 dark:bg-slate-700" />
+            <p v-else class="mt-0.5 text-xl font-bold leading-5 text-slate-800 dark:text-slate-100">{{ teamCount }}</p>
           </div>
         </div>
       </UCard>
@@ -122,7 +128,8 @@ const totalCompletedCount = computed(() => allTasks.filter(t => t.status === 'co
           </div>
           <div class="min-w-0">
             <p class="whitespace-nowrap text-xs font-medium leading-3 text-slate-500">Tarefas atrasadas</p>
-            <p class="mt-0.5 text-xl font-bold leading-5 text-slate-800 dark:text-slate-100">{{ delayedCount }}</p>
+            <p v-if="isLoading" class="mt-1 h-5 w-8 animate-pulse rounded bg-slate-200 dark:bg-slate-700" />
+            <p v-else class="mt-0.5 text-xl font-bold leading-5 text-slate-800 dark:text-slate-100">{{ delayedCount }}</p>
           </div>
         </div>
       </UCard>
@@ -134,7 +141,8 @@ const totalCompletedCount = computed(() => allTasks.filter(t => t.status === 'co
           </div>
           <div class="min-w-0">
             <p class="whitespace-nowrap text-xs font-medium leading-3 text-slate-500">Progresso geral</p>
-            <p class="mt-0.5 text-xl font-bold leading-5 text-slate-800 dark:text-slate-100">{{ productivityRate }}</p>
+            <p v-if="isLoading" class="mt-1 h-5 w-12 animate-pulse rounded bg-slate-200 dark:bg-slate-700" />
+            <p v-else class="mt-0.5 text-xl font-bold leading-5 text-slate-800 dark:text-slate-100">{{ productivityRate }}</p>
           </div>
         </div>
       </UCard>
@@ -151,7 +159,10 @@ const totalCompletedCount = computed(() => allTasks.filter(t => t.status === 'co
           </div>
         </template>
         
-        <div class="overflow-x-auto">
+        <div v-if="isLoading" class="space-y-3 p-4">
+          <div v-for="n in 3" :key="n" class="h-8 animate-pulse rounded bg-slate-100 dark:bg-slate-800" />
+        </div>
+        <div v-else class="overflow-x-auto">
           <table class="w-full text-sm text-left">
             <thead class="text-[10px] text-slate-400 font-bold uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
               <tr>
@@ -171,14 +182,16 @@ const totalCompletedCount = computed(() => allTasks.filter(t => t.status === 'co
                     <span class="font-medium text-slate-700 dark:text-slate-200">{{ team.name }}</span>
                   </div>
                 </td>
-                <td class="py-3 px-2 text-center text-slate-500">{{ team.members?.length || 1 }}</td>
-                <td class="py-3 px-2 text-center font-semibold text-slate-700 dark:text-slate-300">{{ allTasks.length }}</td>
+                <td class="py-3 px-2 text-center text-slate-500">{{ team.memberCount ?? 0 }}</td>
+                <td class="py-3 px-2 text-center font-semibold text-slate-700 dark:text-slate-300">
+                  {{ workTasks.filter(t => t.team === team.name).length }}
+                </td>
                 <td class="py-3 pl-2 text-right">
                   <UBadge color="emerald" variant="subtle" class="font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10">Ativa</UBadge>
                 </td>
               </tr>
               <tr v-if="teamsData.length === 0">
-                <td colspan="4" class="py-4 text-center text-slate-400 text-xs">Nenhuma equipe cadastrada.</td>
+                <td colspan="4" class="py-8 text-center text-slate-400 text-xs">Nenhuma equipe cadastrada ainda.</td>
               </tr>
             </tbody>
           </table>
@@ -190,11 +203,14 @@ const totalCompletedCount = computed(() => allTasks.filter(t => t.status === 'co
         <template #header>
           <div class="flex items-center justify-between">
             <h3 class="font-semibold text-slate-800 dark:text-slate-100">Desempenho dos projetos</h3>
-            <NuxtLink to="/gestor/quadros" class="text-sm text-violet-600 font-medium hover:underline">Ver quadros</NuxtLink>
+            <NuxtLink to="/gestor/projetos" class="text-sm text-violet-600 font-medium hover:underline">Ver projetos</NuxtLink>
           </div>
         </template>
 
-        <div class="overflow-x-auto">
+        <div v-if="isLoading" class="space-y-3 p-4">
+          <div v-for="n in 3" :key="n" class="h-8 animate-pulse rounded bg-slate-100 dark:bg-slate-800" />
+        </div>
+        <div v-else class="overflow-x-auto">
           <table class="w-full text-sm text-left">
             <thead class="text-[10px] text-slate-400 font-bold uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
               <tr>
@@ -205,7 +221,7 @@ const totalCompletedCount = computed(() => allTasks.filter(t => t.status === 'co
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-              <tr v-for="proj in projectsData" :key="proj.id">
+              <tr v-for="proj in gestorProjects" :key="proj.id">
                 <td class="py-3 pr-2">
                   <div class="flex items-center gap-3">
                     <div class="size-2.5 rounded-full bg-violet-500 shrink-0"></div>
@@ -220,11 +236,15 @@ const totalCompletedCount = computed(() => allTasks.filter(t => t.status === 'co
                     </div>
                   </div>
                 </td>
-                <td class="py-3 px-2 text-center text-slate-500 font-medium">{{ allTasks.length }}</td>
-                <td class="py-3 px-2 text-center text-rose-500 font-medium">{{ delayedCount }}</td>
+                <td class="py-3 px-2 text-center text-slate-500 font-medium">
+                  {{ workTasks.filter(t => t.project === proj.name).length }}
+                </td>
+                <td class="py-3 px-2 text-center text-rose-500 font-medium">
+                  {{ workTasks.filter(t => t.project === proj.name && t.status === 'atrasado').length }}
+                </td>
               </tr>
-              <tr v-if="projectsData.length === 0">
-                <td colspan="4" class="py-4 text-center text-slate-400 text-xs">Nenhum projeto encontrado.</td>
+              <tr v-if="gestorProjects.length === 0">
+                <td colspan="4" class="py-8 text-center text-slate-400 text-xs">Nenhum projeto encontrado.</td>
               </tr>
             </tbody>
           </table>
@@ -247,8 +267,8 @@ const totalCompletedCount = computed(() => allTasks.filter(t => t.status === 'co
             <chartLine 
               :labels="['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4', 'Hoje']"
               :datasets="[
-                { label: 'Concluídas', data: [1, 2, 3, totalCompletedCount, totalCompletedCount], borderColor: '#10b981', backgroundColor: '#10b981', tension: 0.4 },
-                { label: 'Atrasadas', data: [0, 1, 0, delayedCount, delayedCount], borderColor: '#ef4444', backgroundColor: '#ef4444', tension: 0.4 }
+                { label: 'Concluídas', data: [0, 1, 1, totalCompletedCount, totalCompletedCount], borderColor: '#10b981', backgroundColor: '#10b981', tension: 0.4 },
+                { label: 'Atrasadas', data: [0, 0, 0, delayedCount, delayedCount], borderColor: '#ef4444', backgroundColor: '#ef4444', tension: 0.4 }
               ]"
             />
           </ClientOnly>
@@ -284,30 +304,36 @@ const totalCompletedCount = computed(() => allTasks.filter(t => t.status === 'co
         </template>
         
         <div class="flex-1 flex flex-col gap-5 py-2">
-          <!-- Item 1 -->
+          <!-- Item 1: Tarefas atrasadas -->
           <div class="flex items-center gap-4">
             <div class="flex size-10 shrink-0 items-center justify-center bg-gradient-to-br from-red-500 to-rose-600 text-white rounded-xl shadow-sm">
               <UIcon name="i-heroicons-exclamation-triangle" class="size-5" />
             </div>
             <div class="flex-1 min-w-0">
-              <p class="font-semibold text-sm text-slate-800 dark:text-slate-200">{{ delayedCount }} tarefas precisam de atenção</p>
-              <p class="text-xs text-slate-500 mt-0.5 truncate">Verifique as tarefas marcadas com atraso ou prazo estourado.</p>
+              <p class="font-semibold text-sm text-slate-800 dark:text-slate-200">
+                {{ delayedCount > 0 ? `${delayedCount} tarefas precisam de atenção` : 'Nenhuma tarefa atrasada' }}
+              </p>
+              <p class="text-xs text-slate-500 mt-0.5 truncate">
+                {{ delayedCount > 0 ? 'Verifique as tarefas marcadas com atraso ou prazo estourado.' : 'Todas as atividades da equipe estão em dia.' }}
+              </p>
             </div>
             <UButton to="/gestor/quadros" color="white" variant="outline" size="sm" class="text-red-600 border-red-200 hover:bg-red-50 px-4">Ver tarefas</UButton>
           </div>
           
           <UDivider />
           
-          <!-- Item 2 -->
+          <!-- Item 2: Projeto em andamento -->
           <div class="flex items-center gap-4">
             <div class="flex size-10 shrink-0 items-center justify-center bg-gradient-to-br from-orange-400 to-orange-600 text-white rounded-xl shadow-sm">
               <UIcon name="i-heroicons-calendar-days" class="size-5" />
             </div>
             <div class="flex-1 min-w-0">
-              <p class="font-semibold text-sm text-slate-800 dark:text-slate-200">Projeto em andamento</p>
-              <p class="text-xs text-slate-500 mt-0.5 truncate">"{{ projectsData[0]?.name || 'Nova Praça Central' }}" está em andamento.</p>
+              <p class="font-semibold text-sm text-slate-800 dark:text-slate-200">Projetos em andamento</p>
+              <p class="text-xs text-slate-500 mt-0.5 truncate">
+                {{ gestorProjects[0] ? `"${gestorProjects[0].name}" e mais ${gestorProjects.length - 1} projeto(s)` : 'Nenhum projeto ativo no momento.' }}
+              </p>
             </div>
-            <UButton to="/gestor/quadros" color="white" variant="outline" size="sm" class="text-orange-600 border-orange-200 hover:bg-orange-50 px-4">Ver quadros</UButton>
+            <UButton to="/gestor/projetos" color="white" variant="outline" size="sm" class="text-orange-600 border-orange-200 hover:bg-orange-50 px-4">Ver projetos</UButton>
           </div>
         </div>
       </UCard>
