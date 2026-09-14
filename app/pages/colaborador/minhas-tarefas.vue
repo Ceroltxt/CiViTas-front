@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import type { CalendarEvent, PriorityKey, StatusKey, Task } from '~/types'
 import { dueDateOrder, formatMonthLabel, MONTHS_SHORT } from '~/utils/date'
+import { deletePersonalTask, deletePersonalTasks, isPersonalTaskOverdue, updatePersonalTask, updatePersonalTasksPriority, updatePersonalTasksStatus, fetchTasksFromSupabase, useTasksRef, useTasksLoading, updateTaskStatusInSupabase, type PersonalTaskStatus } from '~/composables/useTasksData'
 
 definePageMeta({ sidebarWidget: 'none' })
 
-const tasks = useTasksData()
+const tasks = useTasksRef()
 const currentUser = useCurrentUser()
-import { deletePersonalTask, deletePersonalTasks, isPersonalTaskOverdue, updatePersonalTask, updatePersonalTasksPriority, updatePersonalTasksStatus, fetchTasksFromSupabase, useTasksLoading, type PersonalTaskStatus } from '~/composables/useTasksData'
-
 const isLoadingTasks = useTasksLoading()
 
 onMounted(() => {
@@ -112,10 +111,18 @@ function handleDeleteTask(taskId: string) {
   }
 }
 
-function handleKanbanMove(taskId: string, status: StatusKey) {
-  if (!['a-fazer', 'em-andamento', 'concluido'].includes(status)) return
-  const task = tasks.find((item) => item.id === taskId)
-  if (task?.personal) updatePersonalTask({ ...task, status })
+async function handleKanbanMove(taskId: string, status: StatusKey) {
+  const task = tasks.value.find((item) => String(item.id) === String(taskId))
+  if (!task) return
+
+  if (task.personal) {
+    if (['a-fazer', 'em-andamento', 'concluido'].includes(status)) {
+      updatePersonalTask({ ...task, status })
+    }
+  } else {
+    // Tarefa de trabalho: atualiza na API
+    await updateTaskStatusInSupabase(taskId, status)
+  }
 }
 
 watch(() => route.query.nova_tarefa, (newVal) => {
@@ -174,7 +181,7 @@ function compareByDueDate(a: Task, b: Task): number {
   return dueDateOrder(a.dueDate) - dueDateOrder(b.dueDate)
 }
 
-const projectFilterItems = computed(() => [...new Set(tasks.flatMap((task) => task.project ? [task.project] : []))])
+const projectFilterItems = computed(() => [...new Set(tasks.value.flatMap((task) => task.project ? [task.project] : []))])
 
 const hasProjectFilter = computed(() => selectedProjects.value.length > 0)
 const hasStatusFilter = computed(() => selectedStatuses.value.length > 0)
@@ -227,13 +234,13 @@ function clearSearch() {
 const filtered = computed(() => {
   const term = search.value.trim().toLowerCase()
 
-  let list = tasks.filter((t) => {
+  let list = tasks.value.filter((t) => {
     const isPersonalTask = !!t.personal
     if ((activeMainTab.value === 'pessoais') !== isPersonalTask) return false
 
     // If it's a work task, it MUST be assigned to the current user
     if (!isPersonalTask && currentUser) {
-      if (!t.assignees || !t.assignees.some(a => a.id === currentUser.id || a.name === currentUser.name)) {
+      if (!t.assignees || !t.assignees.some(a => String(a.id) === String(currentUser.id) || a.name === currentUser.name)) {
         return false
       }
     }
@@ -728,7 +735,7 @@ function clearFilter(key: 'project' | 'status' | 'priority') {
     <QuadrosKanbanBoard
       v-else-if="activeView === 'kanban'"
       :tasks="filtered"
-      :interactive="activeMainTab === 'pessoais'"
+      :interactive="true"
       @move="handleKanbanMove"
       @edit="openEditTaskModal"
       @delete="handleDeleteTask"

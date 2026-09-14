@@ -1,22 +1,29 @@
 <script setup lang="ts">
 import { computed, ref, onMounted } from 'vue'
-import { fetchTasksFromSupabase } from '~/composables/useTasksData'
+import type { Task, StatusKey } from '~/types'
+import { fetchTasksFromSupabase, useTasksRef, updateTaskStatusInSupabase, deleteTaskFromSupabase } from '~/composables/useTasksData'
+import { fetchUserProjectsFromSupabase, useGestorProjectsRef } from '~/composables/useUserProjects'
 
 definePageMeta({ sidebarWidget: 'none' })
 
-onMounted(() => {
-  fetchTasksFromSupabase(true)
+const projects = useGestorProjectsRef()
+const allTasks = useTasksRef()
+
+onMounted(async () => {
+  await Promise.all([
+    fetchUserProjectsFromSupabase(true),
+    fetchTasksFromSupabase(true),
+  ])
 })
 
-const projects = useUserProjects()
-const current = useCurrentProject()
-const selectedProjectId = ref(
-  projects.find((p) => p.name === current.name)?.id ?? projects[0]?.id ?? '',
-)
+const selectedProjectId = ref<string>('')
 
-const selectedProject = computed(
-  () => projects.find((p) => p.id === selectedProjectId.value) ?? projects[0],
-)
+// Seleciona o primeiro projeto assim que carregado se não houver um selecionado
+const selectedProject = computed(() => {
+  if (!projects.value.length) return null
+  const found = projects.value.find((p) => String(p.id) === String(selectedProjectId.value))
+  return found || projects.value[0]
+})
 
 const tabs = [
   { key: 'kanban', label: 'Kanban', icon: 'i-heroicons-squares-2x2' },
@@ -30,16 +37,28 @@ const priorityFilter = ref('Todas')
 const search = ref('')
 const projectOpen = ref(false)
 
-// Obter tarefas do Supabase
-const allTasks = useTasksData()
+// Opções dinâmicas de filtro baseadas nas tarefas
+const teamOptions = computed(() => {
+  const teams = new Set<string>()
+  allTasks.value.forEach((t) => {
+    if (!t.personal && t.team) teams.add(t.team)
+  })
+  return ['Todas', ...Array.from(teams)]
+})
 
-onMounted(() => {
-  fetchTasksFromSupabase()
+const responsibleOptions = computed(() => {
+  const resp = new Set<string>()
+  allTasks.value.forEach((t) => {
+    if (!t.personal && t.assignees?.length) {
+      t.assignees.forEach(a => resp.add(a.name))
+    }
+  })
+  return ['Todos', ...Array.from(resp)]
 })
 
 // Mapeamento dinâmico de tarefas reais do Supabase
 const selectedProjectTasks = computed(() => {
-  let list = allTasks.filter((t) => !t.personal)
+  let list = allTasks.value.filter((t) => !t.personal)
 
   if (selectedProject.value?.name) {
     const projName = selectedProject.value.name.toLowerCase()
@@ -53,6 +72,12 @@ const selectedProjectTasks = computed(() => {
     const term = search.value.trim().toLowerCase()
     list = list.filter((t) => t.title.toLowerCase().includes(term))
   }
+  if (teamFilter.value !== 'Todas') {
+    list = list.filter((t) => t.team === teamFilter.value)
+  }
+  if (responsibleFilter.value !== 'Todos') {
+    list = list.filter((t) => t.assignees?.some(a => a.name === responsibleFilter.value))
+  }
   if (priorityFilter.value !== 'Todas') {
     const pKey = priorityFilter.value.toLowerCase()
     list = list.filter((t) => t.priority === pKey)
@@ -60,6 +85,7 @@ const selectedProjectTasks = computed(() => {
 
   return list
 })
+
 const editTaskOpen = ref(false)
 const taskToEdit = ref<Task | null>(null)
 
@@ -68,10 +94,14 @@ function handleEditTask(task: Task) {
   editTaskOpen.value = true
 }
 
-function handleDeleteTask(taskId: string) {
+async function handleDeleteTask(taskId: string) {
   if (confirm('Tem certeza que deseja excluir esta tarefa permanentemente?')) {
-    deleteTaskFromSupabase(taskId)
+    await deleteTaskFromSupabase(taskId)
   }
+}
+
+async function handleKanbanMove(taskId: string, status: StatusKey) {
+  await updateTaskStatusInSupabase(taskId, status)
 }
 </script>
 
@@ -97,7 +127,7 @@ function handleDeleteTask(taskId: string) {
           <span class="text-left leading-tight">
             <span class="block text-xs text-slate-400">Projeto</span>
             <span class="block max-w-[12rem] truncate text-sm font-semibold text-slate-800 dark:text-slate-100">
-              {{ selectedProject?.name }}
+              {{ selectedProject?.name || 'Carregando projetos...' }}
             </span>
           </span>
           <UIcon name="i-heroicons-chevron-down" class="size-4 shrink-0 text-slate-400" />
@@ -109,13 +139,13 @@ function handleDeleteTask(taskId: string) {
               <button
                 type="button"
                 class="flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm transition-colors hover:bg-violet-50 dark:hover:bg-violet-950/30"
-                :class="selectedProjectId === p.id ? 'bg-violet-50 font-semibold text-violet-700 dark:bg-violet-950/30' : 'text-slate-700 dark:text-slate-200'"
+                :class="selectedProject?.id === p.id ? 'bg-violet-50 font-semibold text-violet-700 dark:bg-violet-950/30' : 'text-slate-700 dark:text-slate-200'"
                 @click="selectedProjectId = p.id; projectOpen = false"
               >
                 <span class="size-2.5 shrink-0 rounded-full" :class="p.color" />
                 <span class="min-w-0 flex-1 truncate">{{ p.name }}</span>
                 <UIcon
-                  v-if="selectedProjectId === p.id"
+                  v-if="selectedProject?.id === p.id"
                   name="i-heroicons-check"
                   class="size-4 shrink-0 text-violet-600"
                 />
@@ -147,8 +177,8 @@ function handleDeleteTask(taskId: string) {
 
     <!-- Sub-filtros -->
     <div class="flex flex-wrap items-center gap-3">
-      <UiLabeledSelect v-model="teamFilter" label="Equipe:" :items="['Todas']" class="w-40" />
-      <UiLabeledSelect v-model="responsibleFilter" label="Responsável:" :items="['Todos']" class="w-44" />
+      <UiLabeledSelect v-model="teamFilter" label="Equipe:" :items="teamOptions" class="w-44" />
+      <UiLabeledSelect v-model="responsibleFilter" label="Responsável:" :items="responsibleOptions" class="w-48" />
       <UiLabeledSelect v-model="priorityFilter" label="Prioridade:" :items="['Todas', 'Critica', 'Alta', 'Media', 'Baixa']" class="w-40" />
       <UInput
         v-model="search"
@@ -159,7 +189,14 @@ function handleDeleteTask(taskId: string) {
     </div>
 
     <!-- Conteúdo da aba -->
-    <QuadrosKanbanBoard v-if="activeTab === 'kanban'" :tasks="selectedProjectTasks" @edit="handleEditTask" @delete="handleDeleteTask" />
+    <QuadrosKanbanBoard
+      v-if="activeTab === 'kanban'"
+      :tasks="selectedProjectTasks"
+      :interactive="true"
+      @move="handleKanbanMove"
+      @edit="handleEditTask"
+      @delete="handleDeleteTask"
+    />
     <QuadrosGanttChart v-else-if="activeTab === 'timeline'" :tasks="selectedProjectTasks" @edit="handleEditTask" />
 
     <TarefasEditTaskModal v-model:open="editTaskOpen" :task-to-edit="taskToEdit" @updated="editTaskOpen = false" />

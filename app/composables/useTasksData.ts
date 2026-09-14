@@ -71,14 +71,14 @@ export function deletePersonalTask(taskId: string): void {
 
 export async function updateTaskInSupabase(taskId: string, payload: { nome?: string; descricao?: string; prioridade?: string; data_prazo?: string }): Promise<boolean> {
   try {
-    const config = useRuntimeConfig()
-    const authToken = useCookie<string | null>('auth_token')
-    if (!authToken.value) return false
+    const token = getAuthToken()
+    if (!token) return false
 
+    const config = useRuntimeConfig()
     const baseURL = (config.public.apiBase as string) || 'http://localhost:8080/api'
     const headers = {
       Accept: 'application/json',
-      Authorization: `Bearer ${authToken.value}`,
+      Authorization: `Bearer ${token}`,
     }
 
     const res = await $fetch<any>(`${ENDPOINTS.tasks}/${taskId}`, {
@@ -104,16 +104,90 @@ export async function updateTaskInSupabase(taskId: string, payload: { nome?: str
   }
 }
 
-export async function deleteTaskFromSupabase(taskId: string): Promise<boolean> {
+export async function updateTaskStatusInSupabase(taskId: string, status: string): Promise<Task | null> {
   try {
-    const config = useRuntimeConfig()
-    const authToken = useCookie<string | null>('auth_token')
-    if (!authToken.value) return false
+    const token = getAuthToken()
+    if (!token) return null
 
+    const config = useRuntimeConfig()
     const baseURL = (config.public.apiBase as string) || 'http://localhost:8080/api'
     const headers = {
       Accept: 'application/json',
-      Authorization: `Bearer ${authToken.value}`,
+      Authorization: `Bearer ${token}`,
+    }
+
+    const res = await $fetch<any>(`${ENDPOINTS.tasks}/${taskId}/status`, {
+      method: 'PATCH',
+      baseURL,
+      headers,
+      body: { status },
+    })
+
+    const updated = res?.data || res
+    if (updated && updated.id) {
+      const idx = tasksRef.value.findIndex(t => String(t.id) === String(taskId))
+      if (idx > -1) {
+        tasksRef.value[idx] = { ...tasksRef.value[idx], ...updated }
+      }
+      // Se concluiu ou mudou de status, recarrega para manter todos dashboards sincronizados
+      fetchTasksFromSupabase(true)
+      return updated
+    }
+
+    fetchTasksFromSupabase(true)
+    return null
+  } catch (e) {
+    console.error('Erro ao atualizar status da tarefa no Supabase:', e)
+    return null
+  }
+}
+
+export async function toggleSubtaskInSupabase(taskId: string, subtaskId: string): Promise<Task | null> {
+  try {
+    const token = getAuthToken()
+    if (!token) return null
+
+    const config = useRuntimeConfig()
+    const baseURL = (config.public.apiBase as string) || 'http://localhost:8080/api'
+    const headers = {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+    }
+
+    const res = await $fetch<any>(`${ENDPOINTS.tasks}/${taskId}/subtasks/${subtaskId}/toggle`, {
+      method: 'PATCH',
+      baseURL,
+      headers,
+    })
+
+    const updated = res?.data || res
+    if (updated && updated.id) {
+      const idx = tasksRef.value.findIndex(t => String(t.id) === String(taskId))
+      if (idx > -1) {
+        tasksRef.value[idx] = { ...tasksRef.value[idx], ...updated }
+      }
+      fetchTasksFromSupabase(true)
+      return updated
+    }
+
+    fetchTasksFromSupabase(true)
+    return null
+  } catch (e) {
+    console.error('Erro ao alternar subtarefa no Supabase:', e)
+    return null
+  }
+}
+
+export async function deleteTaskFromSupabase(taskId: string): Promise<boolean> {
+  try {
+    const token = getAuthToken()
+    if (!token) return false
+
+    const config = useRuntimeConfig()
+    const baseURL = (config.public.apiBase as string) || 'http://localhost:8080/api'
+    const headers = {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
     }
 
     await $fetch(`${ENDPOINTS.tasks}/${taskId}`, {

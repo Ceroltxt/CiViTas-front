@@ -54,11 +54,11 @@ const progress = computed(() => {
 async function onToggleSubtask(subtaskId: string) {
   try {
     const config = useRuntimeConfig()
-    const authToken = useCookie<string | null>('auth_token')
+    const token = getAuthToken()
     const baseURL = (config.public.apiBase as string) || 'http://localhost:8080/api'
     const headers: Record<string, string> = { Accept: 'application/json' }
-    if (authToken.value) {
-      headers.Authorization = `Bearer ${authToken.value}`
+    if (token) {
+      headers.Authorization = `Bearer ${token}`
     }
 
     await $fetch(`/tasks/${taskId}/subtasks/${subtaskId}/toggle`, {
@@ -66,7 +66,10 @@ async function onToggleSubtask(subtaskId: string) {
       baseURL,
       headers,
     })
-    await loadTaskDetails()
+    await Promise.all([
+      loadTaskDetails(),
+      fetchTasksFromSupabase(true),
+    ])
   } catch (e) {
     toggleSubtask(taskId, subtaskId)
   }
@@ -77,11 +80,11 @@ async function addComment() {
   if (!newComment.value.trim()) return
   try {
     const config = useRuntimeConfig()
-    const authToken = useCookie<string | null>('auth_token')
+    const token = getAuthToken()
     const baseURL = (config.public.apiBase as string) || 'http://localhost:8080/api'
     const headers: Record<string, string> = { Accept: 'application/json' }
-    if (authToken.value) {
-      headers.Authorization = `Bearer ${authToken.value}`
+    if (token) {
+      headers.Authorization = `Bearer ${token}`
     }
 
     await $fetch(`/tasks/${taskId}/comments`, {
@@ -119,11 +122,11 @@ async function deleteTask() {
 async function updateStatus(newStatus: string) {
   try {
     const config = useRuntimeConfig()
-    const authToken = useCookie<string | null>('auth_token')
+    const token = getAuthToken()
     const baseURL = (config.public.apiBase as string) || 'http://localhost:8080/api'
     const headers: Record<string, string> = { Accept: 'application/json' }
-    if (authToken.value) {
-      headers.Authorization = `Bearer ${authToken.value}`
+    if (token) {
+      headers.Authorization = `Bearer ${token}`
     }
 
     await $fetch(`/tasks/${taskId}/status`, {
@@ -132,7 +135,10 @@ async function updateStatus(newStatus: string) {
       headers,
       body: { status: newStatus },
     })
-    await loadTaskDetails()
+    await Promise.all([
+      loadTaskDetails(),
+      fetchTasksFromSupabase(true),
+    ])
   } catch (e) {
     console.error('Erro ao atualizar status:', e)
   }

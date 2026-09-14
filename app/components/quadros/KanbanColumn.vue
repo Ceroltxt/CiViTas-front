@@ -6,7 +6,7 @@ const emit = defineEmits<{
   edit: [task: Task]
   delete: [taskId: string]
   dragStart: [taskId: string]
-  drop: [status: StatusKey]
+  drop: [status: StatusKey, taskId?: string]
 }>()
 
 const meta = computed(() => useStatusMeta(props.status))
@@ -27,7 +27,14 @@ const COLUMN_TRACK: Record<StatusKey, string> = {
   'cancelado': 'bg-gray-100/70 dark:bg-gray-950/25',
 }
 
-const trackClass = computed(() => COLUMN_TRACK[props.status])
+const trackClass = computed(() => COLUMN_TRACK[props.status] || 'bg-slate-100/70 dark:bg-slate-950/25')
+
+function handleDrop(e: DragEvent) {
+  if (!props.interactive) return
+  e.preventDefault()
+  const taskId = e.dataTransfer?.getData('text/plain')
+  emit('drop', props.status, taskId || undefined)
+}
 </script>
 
 <template>
@@ -48,10 +55,11 @@ const trackClass = computed(() => COLUMN_TRACK[props.status])
 
     <!-- Fundo marcado atrás dos cartões -->
     <div
-      class="space-y-3 rounded-xl p-3"
-      :class="[trackClass, interactive && 'min-h-28 transition-colors outline outline-1 outline-transparent hover:outline-violet-300 dark:hover:outline-violet-700']"
+      class="space-y-3 rounded-xl p-3 min-h-28 transition-colors"
+      :class="[trackClass, interactive && 'outline outline-1 outline-transparent hover:outline-violet-300 dark:hover:outline-violet-700']"
       @dragover.prevent
-      @drop="interactive && emit('drop', status)"
+      @dragenter.prevent
+      @drop="handleDrop"
     >
       <QuadrosTaskCard
         v-for="task in tasks"
@@ -71,14 +79,5 @@ const trackClass = computed(() => COLUMN_TRACK[props.status])
         Nenhuma tarefa nesta coluna
       </p>
     </div>
-
-    <button
-      v-if="!isColaborador"
-      type="button"
-      class="mt-3 flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-slate-300 py-2.5 text-sm font-medium text-slate-500 transition-colors hover:border-violet-300 hover:text-violet-600 dark:border-slate-700"
-    >
-      <UIcon name="i-heroicons-plus" class="size-4" />
-      Adicionar tarefa
-    </button>
   </div>
 </template>
