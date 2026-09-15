@@ -16,7 +16,6 @@ const NAV_BY_ROLE: Record<AppRole, NavItem[]> = {
     { label: 'Dashboard', icon: 'i-heroicons-home', to: '/gestor' },
     { label: 'Minhas Equipes', icon: 'i-heroicons-user-group', to: '/gestor/equipes' },
     { label: 'Projetos', icon: 'i-heroicons-folder', to: '/gestor/projetos' },
-    { label: 'Quadros', icon: 'i-heroicons-view-columns', to: '/gestor/quadros' },
     { label: 'Relatórios', icon: 'i-heroicons-chart-bar', to: '/gestor/relatorios' },
     { label: 'Configurações', icon: 'i-heroicons-cog-6-tooth', to: '/gestor/configuracoes' },
   ],

@@ -317,7 +317,7 @@ const productivityRate = computed(() => {
                 {{ delayedCount > 0 ? 'Verifique as tarefas marcadas com atraso ou prazo estourado.' : 'Todas as atividades da equipe estão em dia.' }}
               </p>
             </div>
-            <UButton to="/gestor/quadros" color="white" variant="outline" size="sm" class="text-red-600 border-red-200 hover:bg-red-50 px-4">Ver tarefas</UButton>
+            <UButton to="/gestor/projetos" color="white" variant="outline" size="sm" class="text-red-600 border-red-200 hover:bg-red-50 px-4">Ver projetos</UButton>
           </div>
           
           <UDivider />

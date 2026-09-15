@@ -109,7 +109,7 @@ async function deleteTask() {
   if (!confirm('Tem certeza que deseja excluir esta tarefa permanentemente?')) return
   const success = await deleteTaskFromSupabase(taskId)
   if (success) {
-    navigateTo('/gestor/quadros')
+    navigateTo('/gestor/projetos')
   }
 }
 
