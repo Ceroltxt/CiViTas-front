@@ -121,8 +121,8 @@ async function loadSupabaseData() {
     }
 
     // Busca equipes reais
-    const teamsData = await $fetch<any>('/teams', { baseURL, headers })
-    const teamsList = Array.isArray(teamsData) ? teamsData : teamsData?.data
+    const fetchedTeams = await $fetch<any>('/teams', { baseURL, headers })
+    const teamsList = Array.isArray(fetchedTeams) ? fetchedTeams : fetchedTeams?.data
     if (Array.isArray(teamsList) && teamsList.length > 0) {
       availableTeams.value = teamsList.map((t: any) => ({
         id: String(t.id),
