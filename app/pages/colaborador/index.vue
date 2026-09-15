@@ -1,21 +1,20 @@
 <script setup lang="ts">
 import { dueDateOrder } from '~/utils/date'
 import type { TaskAuditEntry } from '~/types'
-import { fetchUserProjectsFromSupabase } from '~/composables/useUserProjects'
+import { fetchUserProjectsFromSupabase, useGestorProjectsRef, useProjectsLoading } from '~/composables/useUserProjects'
 import { useTasksLoading } from '~/composables/useTasksData'
 
 definePageMeta({ sidebarWidget: 'project' })
 
 const user = useCurrentUser()
 const isLoadingTasks = useTasksLoading()
+const projectsRef = useGestorProjectsRef()
+const isLoadingProjects = useProjectsLoading()
 
 onMounted(() => {
   fetchTasksFromSupabase(true)
   fetchUserProjectsFromSupabase(true)
 })
-const teamDetails = useTeamsData()
-const teamsModalOpen = ref(false)
-
 // Filtro de período do Dashboard
 const COSTA_ENTRY_DATE = '2026-06-01'
 const todayISO = computed(() => {
@@ -322,6 +321,10 @@ const recentActivities = computed<TaskAuditEntry[]>(() => {
 function openTask(taskId: string) {
   navigateTo(`/colaborador/tarefa/${taskId}`)
 }
+
+function openProject(projectId: string) {
+  navigateTo(`/colaborador/projetos/${projectId}`)
+}
 </script>
 
 <template>
@@ -508,13 +511,19 @@ function openTask(taskId: string) {
     <div class="grid grid-cols-1 gap-5 lg:grid-cols-2">
       <UiSectionCard title="Projetos">
         <template #action>
-          <UButton variant="link" trailing-icon="i-heroicons-arrow-right" label="Ver Todos" class="!p-0 text-indigo-500" @click="teamsModalOpen = true" />
+          <UButton to="/colaborador/projetos" variant="link" trailing-icon="i-heroicons-arrow-right" label="Ver Todos" class="!p-0 text-indigo-500" />
         </template>
-        <InicioProjectTeamsCard :team-details="teamDetails" />
+        <div v-if="isLoadingProjects" class="space-y-4">
+          <div v-for="n in 3" :key="n" class="h-10 animate-pulse rounded-lg bg-slate-100 dark:bg-slate-800" />
+        </div>
+        <InicioProjectsCard v-else-if="projectsRef.length" :projects="projectsRef.slice(0, 4)" @select="openProject" />
+        <div v-else class="py-7 text-center">
+          <UIcon name="i-heroicons-folder-open" class="mx-auto size-7 text-slate-300" />
+          <p class="mt-2 text-sm font-medium text-slate-500">Você ainda não está em nenhum projeto.</p>
+          <NuxtLink to="/colaborador/projetos" class="mt-2 inline-flex text-xs font-semibold text-indigo-500 hover:text-indigo-600">Ver meus projetos</NuxtLink>
+        </div>
       </UiSectionCard>
       <InicioRecentActivityCard :entries="recentActivities" />
     </div>
-
-    <InicioTeamsModal v-model:open="teamsModalOpen" :teams="teamDetails" />
   </div>
 </template>

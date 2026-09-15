@@ -55,13 +55,15 @@ export async function fetchUserProjectsFromSupabase(force = false): Promise<void
       if (Array.isArray(data)) {
         gestorProjectsRef.value = data.map(p => ({
           id: String(p.id),
-          name: p.name,
+          // A API de projetos usa campos em português nas rotas de gestão,
+          // enquanto o dashboard pode devolvê-los já normalizados.
+          name: p.name || p.nome || 'Projeto sem nome',
           color: p.color || 'bg-violet-500',
-          progress: p.progress || 0,
-          completedTasks: p.completedTasks || 0,
-          totalTasks: p.totalTasks || 0,
+          progress: Number(p.progress ?? p.progresso ?? 0),
+          completedTasks: Number(p.completedTasks ?? p.tarefas_concluidas ?? 0),
+          totalTasks: Number(p.totalTasks ?? p.total_tarefas ?? 0),
           teams: p.teams || [],
-          description: p.description || '',
+          description: p.description || p.descricao || '',
           prioridade: p.prioridade || p.priority || 'media',
           data_previsao_fim: p.data_previsao_fim || '',
         }))
