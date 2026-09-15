@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, reactive } from 'vue'
 import type { Task } from '~/types'
-import { getAuthToken } from '~/composables/useTasksData'
+import { getAuthToken, fetchTasksFromSupabase, useTasksRef } from '~/composables/useTasksData'
 import { fetchUserProjectsFromSupabase, useGestorProjectsRef } from '~/composables/useUserProjects'
 
 definePageMeta({ sidebarWidget: 'project' })
@@ -34,9 +34,12 @@ async function loadTeam() {
   isLoadingTeam.value = true
   try {
     // Busca dados da equipe via GET /teams (filtrando pelo ID)
-    const teams = await $fetch<any[]>('/teams', { baseURL: baseURL.value, headers: authHeaders() })
-    const found = Array.isArray(teams) ? teams.find((t: any) => String(t.id) === teamId) : null
-    if (found) teamData.value = found
+    const teamsRes = await $fetch<any>('/teams', { baseURL: baseURL.value, headers: authHeaders() })
+    const teamsArr = Array.isArray(teamsRes) ? teamsRes : teamsRes?.data
+    if (Array.isArray(teamsArr)) {
+      const found = teamsArr.find((t: any) => String(t.id) === teamId)
+      if (found) teamData.value = found
+    }
 
     // Busca membros da equipe via GET /teams/{id}/members
     const membersRes = await $fetch<any>(`/teams/${teamId}/members`, {
@@ -132,10 +135,16 @@ async function removeMember(memberId: string) {
 }
 
 // ─── Tarefas da equipe (do estado global de tasks) ────────────────────────────
-const allTasks = useTasksRef()
-const teamTasks = computed<Task[]>(() =>
-  allTasks.value.filter(t => !t.personal && t.project === project.value?.name)
-)
+const tasksRef = useTasksRef()
+onMounted(() => {
+  fetchTasksFromSupabase()
+})
+const teamTasks = computed<Task[]>(() => {
+  return tasksRef.value.filter(t => {
+    if (t.personal) return false
+    return t.teamId === teamId
+  })
+})
 
 const totalTasks = computed(() => teamTasks.value.length)
 const doneTasks = computed(() => teamTasks.value.filter(t => t.status === 'concluido').length)
@@ -172,6 +181,8 @@ function addNewSubtask() {
   newTask.subtask = ''
 }
 
+const toast = useToast()
+
 async function createTeamTask() {
   if (isCreatingTask.value || !newTask.title.trim() || !newTask.deadline) return
   isCreatingTask.value = true
@@ -180,32 +191,39 @@ async function createTeamTask() {
     ? Number(newTask.assigneeId) : null
 
   try {
-    await $fetch<any>('/tasks', {
+    const payload = {
+      nome: newTask.title.trim(),
+      descricao: newTask.description.trim() || undefined,
+      prioridade: newTask.priority,
+      data_prazo: newTask.deadline,
+      ID_projeto: Number(projectId),
+      ID_equipe: Number(teamId),
+      matricula_colaborador: assigneeIdNum ? [assigneeIdNum] : [],
+      subtarefas: newSubtasks.value,
+    }
+
+    const res = await $fetch<any>('/tasks', {
       method: 'POST',
       baseURL: baseURL.value,
       headers: authHeaders(),
-      body: {
-        nome: newTask.title.trim(),
-        descricao: newTask.description.trim() || undefined,
-        prioridade: newTask.priority,
-        data_prazo: newTask.deadline,
-        ID_projeto: Number(projectId),
-        ID_equipe: Number(teamId),
-        matricula_colaborador: assigneeIdNum ? [assigneeIdNum] : [],
-        subtarefas: newSubtasks.value,
-      },
+      body: payload,
     })
 
-    // Recarregar tarefas
-    const { fetchTasksFromSupabase } = await import('~/composables/useTasksData')
-    fetchTasksFromSupabase(true)
-  } catch (e) {
-    console.error('Erro ao criar tarefa:', e)
-  } finally {
+    // Recarregar tarefas globalmente de forma confiável
+    await fetchTasksFromSupabase(true)
+    
+    toast.add({ title: 'Sucesso', description: 'Tarefa criada com sucesso!', color: 'green' })
+
+    // Limpar o formulário apenas se der sucesso
     Object.assign(newTask, { title: '', description: '', assigneeId: '', priority: 'media', deadline: '', subtask: '' })
     newSubtasks.value = []
     memberSearch.value = ''
     createTaskOpen.value = false
+  } catch (e: any) {
+    console.error('Erro ao criar tarefa:', e)
+    const errorMsg = e?.response?._data?.message || e?.data?.message || 'Verifique os dados e tente novamente.'
+    toast.add({ title: 'Erro ao criar tarefa', description: errorMsg, color: 'red' })
+  } finally {
     isCreatingTask.value = false
   }
 }

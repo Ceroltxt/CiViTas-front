@@ -40,6 +40,10 @@ const availableAssignees = ref<AssigneeOption[]>([
 const availableProjects = ref<ProjectOption[]>([
   { id: '1', name: 'Nova Praça Central' },
 ])
+const selectedTeam = ref<string>('1')
+const availableTeams = ref<ProjectOption[]>([
+  { id: '1', name: 'Obras e Infraestrutura' },
+])
 const subtaskInput = ref('')
 const subtasks = ref<string[]>([])
 const notifyUpdates = ref(true)
@@ -106,7 +110,7 @@ async function loadSupabaseData() {
       }
     }
 
-    // Busca projetos reais do Supabase
+    // Busca projetos reais
     const projectsData = await $fetch<any[]>(ENDPOINTS.dashboard.projects, { baseURL, headers })
     if (Array.isArray(projectsData) && projectsData.length > 0) {
       availableProjects.value = projectsData.map((p: any) => ({
@@ -114,6 +118,17 @@ async function loadSupabaseData() {
         name: p.name,
       }))
       selectedProject.value = availableProjects.value[0].id
+    }
+
+    // Busca equipes reais
+    const teamsData = await $fetch<any>('/teams', { baseURL, headers })
+    const teamsList = Array.isArray(teamsData) ? teamsData : teamsData?.data
+    if (Array.isArray(teamsList) && teamsList.length > 0) {
+      availableTeams.value = teamsList.map((t: any) => ({
+        id: String(t.id),
+        name: t.name || t.nome
+      }))
+      selectedTeam.value = availableTeams.value[0].id
     }
   } catch (e) {
     console.error('Erro ao buscar dados do Supabase:', e)
@@ -236,6 +251,7 @@ async function createTask() {
         prioridade: priority.value,
         data_prazo: deadline.value,
         ID_projeto: isGestorOrAdmin.value && selectedProject.value ? Number(selectedProject.value) : null,
+        ID_equipe: isGestorOrAdmin.value && selectedTeam.value ? Number(selectedTeam.value) : null,
         matricula_colaborador: isGestorOrAdmin.value ? assigneeList : [],
         pessoal: !isGestorOrAdmin.value,
         subtarefas: subtasks.value,
@@ -243,23 +259,8 @@ async function createTask() {
     })
 
     // Adiciona a resposta da API no estado local da tela
-    const assignedUser = availableAssignees.value.find(a => a.id === selectedAssignee.value)
-
-    const createdId = apiResponse?.data?.id || apiResponse?.id
-    const newTask: Task = {
-      id: createdId ? String(createdId) : `tp-${Date.now()}`,
-      title: title.value.trim(),
-      description: description.value.trim(),
-      priority: priority.value as PriorityKey,
-      status: 'a-fazer',
-      personal: !isGestorOrAdmin.value,
-      dueDate: formatDate(deadline.value),
-      startDate: new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', ''),
-      assignees: assignedUser ? [{ id: assignedUser.id, name: assignedUser.name, role: assignedUser.role }] : [],
-      subtasks: subtasks.value.map((st, i) => ({ id: `st-${i}`, title: st, completed: false })),
-    }
-
-    addTask(newTask)
+    const { fetchTasksFromSupabase } = await import('~/composables/useTasksData')
+    fetchTasksFromSupabase(true)
     emit('created')
     closeModal()
   } catch (err: any) {
@@ -330,8 +331,8 @@ async function createTask() {
         <section class="space-y-4">
           <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100">Informações da Tarefa</h3>
 
-          <!-- Seleção de Projeto e Colaborador (apenas para Gestor/Admin) -->
-          <div v-if="isGestorOrAdmin" class="grid grid-cols-2 gap-4">
+          <!-- Seleção de Projeto, Equipe e Colaborador (apenas para Gestor/Admin) -->
+          <div v-if="isGestorOrAdmin" class="grid grid-cols-3 gap-4">
             <div>
               <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
                 Projeto <span class="text-rose-500">*</span>
@@ -351,7 +352,24 @@ async function createTask() {
 
             <div>
               <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
-                Colaborador Responsável <span class="text-rose-500">*</span>
+                Equipe <span class="text-rose-500">*</span>
+              </label>
+              <div class="relative">
+                <select
+                  v-model="selectedTeam"
+                  class="w-full h-[38px] appearance-none rounded-lg border border-slate-200 bg-white px-3 pr-8 text-sm text-slate-700 outline-none transition-colors focus:border-amber-500 focus:ring-1 focus:ring-amber-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                >
+                  <option v-for="team in availableTeams" :key="team.id" :value="team.id">
+                    {{ team.name }}
+                  </option>
+                </select>
+                <UIcon name="i-heroicons-chevron-down" class="size-4 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+            </div>
+
+            <div>
+              <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
+                Responsável <span class="text-rose-500">*</span>
               </label>
               <div class="relative">
                 <select
