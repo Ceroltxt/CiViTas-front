@@ -2,6 +2,7 @@ import type { PriorityKey, Task } from '~/types'
 import { mockProjects } from '~/mocks'
 import { ref, watch } from 'vue'
 import { ENDPOINTS } from '~/services/endpoints'
+import { getWorkspaceHeaders } from '~/composables/useWorkspace'
 
 const STORAGE_KEY = 'civitas-personal-tasks-v2'
 const WORK_TASKS_STORAGE_KEY = 'civitas-work-tasks-v2'
@@ -76,9 +77,10 @@ export async function updateTaskInSupabase(taskId: string, payload: { nome?: str
 
     const config = useRuntimeConfig()
     const baseURL = (config.public.apiBase as string) || 'http://localhost:8080/api'
-    const headers = {
+    const headers: Record<string, string> = {
       Accept: 'application/json',
       Authorization: `Bearer ${token}`,
+      ...getWorkspaceHeaders()
     }
 
     const res = await $fetch<any>(`${ENDPOINTS.tasks}/${taskId}`, {
@@ -95,8 +97,6 @@ export async function updateTaskInSupabase(taskId: string, payload: { nome?: str
         tasksRef.value[idx] = { ...tasksRef.value[idx], ...updated }
       }
     }
-
-    fetchTasksFromSupabase(true)
     return true
   } catch (e) {
     console.error('Erro ao atualizar tarefa no Supabase:', e)
@@ -111,9 +111,10 @@ export async function updateTaskStatusInSupabase(taskId: string, status: string)
 
     const config = useRuntimeConfig()
     const baseURL = (config.public.apiBase as string) || 'http://localhost:8080/api'
-    const headers = {
+    const headers: Record<string, string> = {
       Accept: 'application/json',
       Authorization: `Bearer ${token}`,
+      ...getWorkspaceHeaders()
     }
 
     const res = await $fetch<any>(`${ENDPOINTS.tasks}/${taskId}/status`, {
@@ -130,11 +131,8 @@ export async function updateTaskStatusInSupabase(taskId: string, status: string)
         tasksRef.value[idx] = { ...tasksRef.value[idx], ...updated }
       }
       // Se concluiu ou mudou de status, recarrega para manter todos dashboards sincronizados
-      fetchTasksFromSupabase(true)
       return updated
     }
-
-    fetchTasksFromSupabase(true)
     return null
   } catch (e) {
     console.error('Erro ao atualizar status da tarefa no Supabase:', e)
@@ -149,9 +147,10 @@ export async function toggleSubtaskInSupabase(taskId: string, subtaskId: string)
 
     const config = useRuntimeConfig()
     const baseURL = (config.public.apiBase as string) || 'http://localhost:8080/api'
-    const headers = {
+    const headers: Record<string, string> = {
       Accept: 'application/json',
       Authorization: `Bearer ${token}`,
+      ...getWorkspaceHeaders()
     }
 
     const res = await $fetch<any>(`${ENDPOINTS.tasks}/${taskId}/subtasks/${subtaskId}/toggle`, {
@@ -166,11 +165,8 @@ export async function toggleSubtaskInSupabase(taskId: string, subtaskId: string)
       if (idx > -1) {
         tasksRef.value[idx] = { ...tasksRef.value[idx], ...updated }
       }
-      fetchTasksFromSupabase(true)
       return updated
     }
-
-    fetchTasksFromSupabase(true)
     return null
   } catch (e) {
     console.error('Erro ao alternar subtarefa no Supabase:', e)
@@ -185,9 +181,10 @@ export async function deleteTaskFromSupabase(taskId: string): Promise<boolean> {
 
     const config = useRuntimeConfig()
     const baseURL = (config.public.apiBase as string) || 'http://localhost:8080/api'
-    const headers = {
+    const headers: Record<string, string> = {
       Accept: 'application/json',
       Authorization: `Bearer ${token}`,
+      ...getWorkspaceHeaders()
     }
 
     await $fetch(`${ENDPOINTS.tasks}/${taskId}`, {
@@ -200,8 +197,6 @@ export async function deleteTaskFromSupabase(taskId: string): Promise<boolean> {
     if (idx > -1) {
       tasksRef.value.splice(idx, 1)
     }
-
-    fetchTasksFromSupabase(true)
     return true
   } catch (e) {
     console.error('Erro ao excluir tarefa no Supabase:', e)
@@ -283,6 +278,7 @@ export function clearTasksState(): void {
 export async function fetchTasksFromSupabase(force = false): Promise<void> {
   if (typeof window === 'undefined') return
   if (isFetching) return
+  if (hasFetchedInitial && !force) return // Evita requisições globais desnecessárias
 
   const token = getAuthToken()
   if (!token) return
@@ -292,9 +288,10 @@ export async function fetchTasksFromSupabase(force = false): Promise<void> {
   try {
     const config = useRuntimeConfig()
     const baseURL = (config.public.apiBase as string) || 'http://localhost:8080/api'
-    const headers = {
+    const headers: Record<string, string> = {
       Accept: 'application/json',
       Authorization: `Bearer ${token}`,
+      ...getWorkspaceHeaders()
     }
 
     const res = await $fetch<any>(ENDPOINTS.tasks, { baseURL, headers })
@@ -415,5 +412,4 @@ export function useProjectDotColor(projectName?: string): string {
 
 export function addTask(task: Task): void {
   tasksRef.value.unshift(task.personal ? normalizePersonalTask(task) : task)
-  fetchTasksFromSupabase(true)
 }

@@ -6,8 +6,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
   const isPublicRoute = to.path === '/login' || to.path === '/cadastro'
 
   // 1. Se o usuário estiver acessando /login ou /cadastro diretamente, PERMITIR SEMPRE.
-  // Permite visualizar e usar a página de login sem ser forçado para outra rota.
-  if (isPublicRoute && to.path === '/login') {
+  if (isPublicRoute) {
     return
   }
 
@@ -35,11 +34,10 @@ export default defineNuxtRouteMiddleware(async (to) => {
   const user = auth.user.value
   const role = (user?.app_role || user?.role || (user as any)?.role_label || '').toLowerCase().trim()
 
-  // 4. Se acessar a raiz (/), redireciona para o perfil correspondente ou para /login
+  // 4. Se acessar a raiz (/), redireciona para /ponte ou para /login
   if (to.path === '/') {
     if (token.value && user) {
-      const targetRoute = auth.resolveRoleRoute(role)
-      return navigateTo(targetRoute)
+      return navigateTo('/ponte')
     }
     return navigateTo('/login')
   }

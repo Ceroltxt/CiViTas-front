@@ -66,10 +66,13 @@ async function onToggleSubtask(subtaskId: string) {
       baseURL,
       headers,
     })
-    await Promise.all([
-      loadTaskDetails(),
-      fetchTasksFromSupabase(true),
-    ])
+    await loadTaskDetails()
+    const { useTasksRef } = await import('~/composables/useTasksData')
+    const globalTasks = useTasksRef()
+    const idx = globalTasks.value.findIndex(t => String(t.id) === String(taskId))
+    if (idx > -1 && task.value) {
+      globalTasks.value[idx] = { ...globalTasks.value[idx], ...task.value }
+    }
   } catch (e) {
     toggleSubtask(taskId, subtaskId)
   }
@@ -126,10 +129,13 @@ async function updateStatus(newStatus: string) {
       headers,
       body: { status: newStatus },
     })
-    await Promise.all([
-      loadTaskDetails(),
-      fetchTasksFromSupabase(true),
-    ])
+    await loadTaskDetails()
+    const { useTasksRef } = await import('~/composables/useTasksData')
+    const globalTasks = useTasksRef()
+    const idx = globalTasks.value.findIndex(t => String(t.id) === String(taskId))
+    if (idx > -1 && task.value) {
+      globalTasks.value[idx] = { ...globalTasks.value[idx], ...task.value }
+    }
   } catch (e) {
     console.error('Erro ao atualizar status:', e)
   }

@@ -84,7 +84,7 @@ export function useAuth() {
           tokenCookie.value = 'mock-token-jwt-fake-' + role
           userState.value = mockUser
           
-          const targetRoute = resolveRoleRoute(role)
+          const targetRoute = '/ponte'
           isLoading.value = false
           return { success: true, targetRoute }
         }
@@ -104,8 +104,7 @@ export function useAuth() {
         clearTasksState()
         fetchTasksFromSupabase(true)
 
-        const role = res.funcionario.app_role || res.funcionario.cargo?.nome || 'colaborador'
-        const targetRoute = resolveRoleRoute(role)
+        const targetRoute = '/ponte'
 
         isLoading.value = false
         return { success: true, targetRoute }
@@ -181,12 +180,55 @@ export function useAuth() {
     }
   }
 
+  async function register(data: {
+    nome: string
+    email: string
+    password: string
+    sobrenome?: string
+    departamento?: string
+  }): Promise<{ success: boolean; error?: string }> {
+    isLoading.value = true
+    errorMessage.value = null
+
+    try {
+      const baseURL = (config.public.apiBase as string) || 'http://localhost:8080/api'
+      await $fetch<any>(ENDPOINTS.register, {
+        method: 'POST',
+        baseURL,
+        body: {
+          nome: data.nome,
+          email: data.email,
+          password: data.password,
+          sobrenome: data.sobrenome,
+          departamento: data.departamento,
+        },
+        headers: { Accept: 'application/json' },
+      })
+
+      // Realiza o login automático do usuário recém-criado
+      const loginRes = await login(data.email, data.password)
+      isLoading.value = false
+      return { success: true }
+    } catch (err: any) {
+      isLoading.value = false
+      let msg = 'Erro ao realizar cadastro.'
+      if (err?.data?.message) {
+        msg = err.data.message
+      } else if (err?.data?.errors) {
+        msg = Object.values(err.data.errors).flat().join(' ')
+      }
+      errorMessage.value = msg
+      return { success: false, error: msg }
+    }
+  }
+
   return {
     token: tokenCookie,
     user: userState,
     isLoading,
     errorMessage,
     login,
+    register,
     logout,
     fetchUser,
     resolveRoleRoute,

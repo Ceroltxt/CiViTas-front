@@ -1,6 +1,8 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'blank' })
 
+const { register, isLoading, errorMessage } = useAuth()
+
 const nome = ref('')
 const email = ref('')
 const senha = ref('')
@@ -8,6 +10,7 @@ const confirmarSenha = ref('')
 const departamento = ref('')
 const telefone = ref('')
 const aceitaTermos = ref(false)
+const erroLocal = ref<string | null>(null)
 
 const requisitosSenha = computed(() => ({
   maiusculaENumero: /[A-Z]/.test(senha.value) && /\d/.test(senha.value),
@@ -20,8 +23,20 @@ const senhaValida = computed(() => Object.values(requisitosSenha.value).every(Bo
 
 async function handleRegister() {
   if (!aceitaTermos.value || !senhaValida.value) return
-  console.log('Cadastro:', { nome: nome.value, email: email.value, senha: senha.value, departamento: departamento.value, telefone: telefone.value })
-  await navigateTo('/login')
+  erroLocal.value = null
+
+  const res = await register({
+    nome: nome.value,
+    email: email.value,
+    password: senha.value,
+    departamento: departamento.value,
+  })
+
+  if (res.success) {
+    await navigateTo('/ponte')
+  } else {
+    erroLocal.value = res.error || errorMessage.value || 'Erro ao criar conta.'
+  }
 }
 </script>
 
@@ -52,6 +67,14 @@ async function handleRegister() {
           alt="Logo Civitas"
           class="w-32 mx-auto"
         />
+
+        <div
+          v-if="erroLocal"
+          class="p-3 text-sm text-red-600 bg-red-50 dark:bg-red-950/50 dark:text-red-400 rounded-lg border border-red-200 dark:border-red-900 flex items-center gap-2"
+        >
+          <UIcon name="i-heroicons-exclamation-circle" class="w-5 h-5 shrink-0" />
+          <span>{{ erroLocal }}</span>
+        </div>
 
         <form @submit.prevent="handleRegister" class="space-y-4">
 
@@ -168,7 +191,8 @@ async function handleRegister() {
             color="primary"
             block
             class="mt-2"
-            :disabled="!aceitaTermos || !senhaValida"
+            :loading="isLoading"
+            :disabled="!aceitaTermos || !senhaValida || isLoading"
           >
             Criar conta
           </UButton>

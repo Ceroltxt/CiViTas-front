@@ -32,6 +32,10 @@ export function useApi() {
     if (authToken.value) {
       headers.Authorization = `Bearer ${authToken.value}`
     }
+    const workspaceCookie = useCookie<string | null>('active_workspace_id')
+    if (workspaceCookie.value) {
+      headers['X-Workspace-Id'] = workspaceCookie.value
+    }
     return headers
   }
 

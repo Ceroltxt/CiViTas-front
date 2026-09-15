@@ -45,7 +45,14 @@ function toggleTheme() {
 const auth = useAuth()
 
 const userMenu = computed(() => {
-  const primary = [{ label: 'Meu perfil', icon: 'i-heroicons-user' }]
+  const primary = [
+    { label: 'Meu perfil', icon: 'i-heroicons-user' },
+    {
+      label: 'Alternar Workspace',
+      icon: 'i-heroicons-squares-2x2',
+      to: '/ponte',
+    },
+  ]
   if (appRole.value === 'colaborador') {
     primary.push({
       label: 'Configurações',
