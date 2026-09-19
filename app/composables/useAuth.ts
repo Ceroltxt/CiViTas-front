@@ -1,7 +1,7 @@
 import { useState, useCookie, navigateTo, useRuntimeConfig } from '#imports'
 import { ENDPOINTS } from '~/services/endpoints'
 import { useApi } from '~/services/http'
-import { clearTasksState, fetchTasksFromSupabase } from '~/composables/useTasksData'
+import { clearTasksState } from '~/composables/useTasksData'
 import { clearProjectsState } from '~/composables/useUserProjects'
 
 export interface AuthFuncionario {
@@ -102,7 +102,7 @@ export function useAuth() {
         tokenCookie.value = res.token
         userState.value = res.funcionario
         clearTasksState()
-        fetchTasksFromSupabase(true)
+        clearProjectsState()
 
         const targetRoute = '/ponte'
 

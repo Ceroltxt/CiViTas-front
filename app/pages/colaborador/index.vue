@@ -12,8 +12,10 @@ const projectsRef = useGestorProjectsRef()
 const isLoadingProjects = useProjectsLoading()
 
 onMounted(() => {
-  fetchTasksFromSupabase(true)
-  fetchUserProjectsFromSupabase(true)
+  // O pré-carregamento começa no login/seleção do workspace. Não forçar uma
+  // nova chamada aqui evita pedir os mesmos dados duas vezes.
+  fetchTasksFromSupabase()
+  fetchUserProjectsFromSupabase()
 })
 // Filtro de período do Dashboard
 const COSTA_ENTRY_DATE = '2026-06-01'

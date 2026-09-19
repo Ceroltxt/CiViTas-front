@@ -222,8 +222,9 @@ async function enterWorkspace(workspaceId: string | number, role: string) {
   clearTasksState()
   fetchTasksFromSupabase(true)
 
-  const { clearProjectsState } = await import('~/composables/useUserProjects')
+  const { clearProjectsState, fetchUserProjectsFromSupabase } = await import('~/composables/useUserProjects')
   clearProjectsState()
+  void fetchUserProjectsFromSupabase(true)
 
   navigateTo(`/${role.toLowerCase()}`)
 }

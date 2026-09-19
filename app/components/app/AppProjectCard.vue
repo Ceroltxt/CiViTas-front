@@ -5,7 +5,9 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{ togglePosition: [] }>()
 
-const projects = useUserProjects()
+// Mantém a ref, em vez de uma cópia do array. Após o login a busca substitui
+// o array de projetos; uma cópia só seria atualizada quando a sidebar remontasse.
+const projects = useGestorProjectsRef()
 const expandedCookie = useCookie<string[]>('civitas_expanded_projects', { default: () => [] })
 const route = useRoute()
 const basePath = computed(() => {

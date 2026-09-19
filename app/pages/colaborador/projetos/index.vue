@@ -10,7 +10,7 @@ const isLoadingProjects = useProjectsLoading()
 const tasks = useTasksRef()
 const search = ref('')
 
-onMounted(() => fetchUserProjectsFromSupabase(true))
+onMounted(() => fetchUserProjectsFromSupabase())
 
 function projectTone(color: string) {
   const tones: Record<string, { surface: string, text: string }> = {

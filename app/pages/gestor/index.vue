@@ -44,8 +44,8 @@ async function fetchTeams() {
 
 async function loadDashboardData() {
   await Promise.all([
-    fetchUserProjectsFromSupabase(true),
-    fetchTasksFromSupabase(true),
+    fetchUserProjectsFromSupabase(),
+    fetchTasksFromSupabase(),
     fetchTeams(),
   ])
 }
