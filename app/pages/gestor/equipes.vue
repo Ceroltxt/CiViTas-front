@@ -55,7 +55,6 @@ function getTeamStatus(teamId: string) {
   return { label: 'Ativa', class: 'text-violet-700 bg-violet-50 ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-500/30' }
 }
 
-const newTeamOpen = ref(false)
 </script>
 
 <template>
@@ -70,13 +69,6 @@ const newTeamOpen = ref(false)
         </p>
       </div>
 
-      <UButton
-        color="primary"
-        icon="i-heroicons-plus-circle"
-        label="Nova Equipe"
-        class="bg-violet-600 hover:bg-violet-700 text-white"
-        @click="newTeamOpen = true"
-      />
     </div>
 
     <!-- Lista de Projetos -->
@@ -174,7 +166,5 @@ const newTeamOpen = ref(false)
         <p class="mt-3 text-sm font-medium text-slate-500">Você ainda não lidera nenhuma equipe.</p>
       </div>
     </div>
-
-    <EquipesNewTeamModal v-model:open="newTeamOpen" />
   </div>
 </template>
