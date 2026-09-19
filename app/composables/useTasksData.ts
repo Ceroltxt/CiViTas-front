@@ -70,7 +70,7 @@ export function deletePersonalTask(taskId: string): void {
   deleteTaskFromSupabase(taskId)
 }
 
-export async function updateTaskInSupabase(taskId: string, payload: { nome?: string; descricao?: string; prioridade?: string; data_prazo?: string }): Promise<boolean> {
+export async function updateTaskInSupabase(taskId: string, payload: { nome?: string; descricao?: string; prioridade?: string; data_prazo?: string; subtarefas?: any[]; matricula_colaborador?: number[] }): Promise<boolean> {
   try {
     const token = getAuthToken()
     if (!token) return false

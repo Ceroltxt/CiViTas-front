@@ -276,119 +276,65 @@ async function createTask() {
 <template>
   <UModal
     v-model:open="open"
-    :ui="{ content: 'max-w-xl sm:max-w-lg' }"
+    :ui="{ content: 'max-w-3xl overflow-hidden rounded-2xl' }"
   >
     <template #header>
       <div class="flex items-center justify-between w-full">
-        <h2 class="text-lg font-bold text-slate-900 dark:text-slate-100">
-          {{ isGestorOrAdmin ? 'Atribuir Nova Tarefa' : 'Nova Tarefa Pessoal' }}
-        </h2>
-        <button
-          type="button"
-          class="flex items-center justify-center size-8 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-          @click="closeModal"
-        >
-          <UIcon name="i-heroicons-x-mark" class="size-5" />
-        </button>
+        <div class="flex items-center gap-3">
+          <span
+            class="grid size-10 place-items-center rounded-xl text-white"
+            :class="isGestorOrAdmin ? 'bg-gradient-to-br from-amber-500 to-orange-500' : 'bg-gradient-to-br from-violet-500 to-indigo-600'"
+          >
+            <UIcon name="i-heroicons-clipboard-document-list" class="size-5" />
+          </span>
+          <div>
+            <h2 class="font-bold text-slate-900 dark:text-slate-100">
+              {{ isGestorOrAdmin ? 'Atribuir Nova Tarefa' : 'Nova Tarefa Pessoal' }}
+            </h2>
+            <p class="text-xs text-slate-500">Defina a atividade, responsável e prazo.</p>
+          </div>
+        </div>
+        <UButton icon="i-heroicons-x-mark" color="neutral" variant="ghost" @click="closeModal" />
       </div>
     </template>
 
     <template #body>
-      <div class="space-y-6">
-        <!-- Banner informativo dinâmico -->
-        <div
-          class="flex items-center gap-3 rounded-xl px-4 py-3"
-          :class="isGestorOrAdmin ? 'bg-amber-50 dark:bg-amber-950/30' : 'bg-violet-50 dark:bg-violet-950/30'"
-        >
-          <UIcon
-            :name="isGestorOrAdmin ? 'i-heroicons-user-group' : 'i-heroicons-user-circle'"
-            class="size-5 shrink-0"
-            :class="isGestorOrAdmin ? 'text-amber-500' : 'text-violet-500'"
-          />
-          <p class="text-sm text-slate-600 dark:text-slate-300">
-            <template v-if="isGestorOrAdmin">
-              Você está criando uma tarefa corporativa e atribuindo ao <strong class="text-amber-600 dark:text-amber-400">colaborador selecionado</strong>.
-            </template>
-            <template v-else>
-              Esta tarefa é pessoal e ficará visível <strong class="text-violet-600 dark:text-violet-400">apenas para você</strong>.
-            </template>
-          </p>
-        </div>
+      <!-- Alerta de Erro -->
+      <div
+        v-if="errorMessage"
+        class="mb-4 p-3 bg-rose-100 border border-rose-400 text-rose-700 rounded-lg text-xs font-semibold flex items-center gap-2"
+      >
+        <span>⚠️</span>
+        <span>{{ errorMessage }}</span>
+      </div>
 
-        <!-- Alerta de Erro -->
-        <div
-          v-if="errorMessage"
-          class="p-3 bg-rose-100 border border-rose-400 text-rose-700 rounded-lg text-xs font-semibold flex items-center gap-2"
-        >
-          <span>⚠️</span>
-          <span>{{ errorMessage }}</span>
-        </div>
+      <!-- Banner informativo dinâmico -->
+      <div
+        class="mb-4 flex items-center gap-3 rounded-xl px-4 py-3"
+        :class="isGestorOrAdmin ? 'bg-amber-50 dark:bg-amber-950/30' : 'bg-violet-50 dark:bg-violet-950/30'"
+      >
+        <UIcon
+          :name="isGestorOrAdmin ? 'i-heroicons-user-group' : 'i-heroicons-user-circle'"
+          class="size-5 shrink-0"
+          :class="isGestorOrAdmin ? 'text-amber-500' : 'text-violet-500'"
+        />
+        <p class="text-sm text-slate-600 dark:text-slate-300">
+          <template v-if="isGestorOrAdmin">
+            Você está criando uma tarefa corporativa e atribuindo ao <strong class="text-amber-600 dark:text-amber-400">colaborador selecionado</strong>.
+          </template>
+          <template v-else>
+            Esta tarefa é pessoal e ficará visível <strong class="text-violet-600 dark:text-violet-400">apenas para você</strong>.
+          </template>
+        </p>
+      </div>
 
-        <!-- Separador -->
-        <hr class="border-slate-100 dark:border-slate-800" />
-
-        <!-- Informações Gerais -->
-        <section class="space-y-4">
-          <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100">Informações da Tarefa</h3>
-
-          <!-- Seleção de Projeto, Equipe e Colaborador (apenas para Gestor/Admin) -->
-          <div v-if="isGestorOrAdmin" class="grid grid-cols-3 gap-4">
-            <div>
-              <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
-                Projeto <span class="text-rose-500">*</span>
-              </label>
-              <div class="relative">
-                <select
-                  v-model="selectedProject"
-                  class="w-full h-[38px] appearance-none rounded-lg border border-slate-200 bg-white px-3 pr-8 text-sm text-slate-700 outline-none transition-colors focus:border-amber-500 focus:ring-1 focus:ring-amber-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
-                >
-                  <option v-for="proj in availableProjects" :key="proj.id" :value="proj.id">
-                    {{ proj.name }}
-                  </option>
-                </select>
-                <UIcon name="i-heroicons-chevron-down" class="size-4 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-              </div>
-            </div>
-
-            <div>
-              <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
-                Equipe <span class="text-rose-500">*</span>
-              </label>
-              <div class="relative">
-                <select
-                  v-model="selectedTeam"
-                  class="w-full h-[38px] appearance-none rounded-lg border border-slate-200 bg-white px-3 pr-8 text-sm text-slate-700 outline-none transition-colors focus:border-amber-500 focus:ring-1 focus:ring-amber-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
-                >
-                  <option v-for="team in availableTeams" :key="team.id" :value="team.id">
-                    {{ team.name }}
-                  </option>
-                </select>
-                <UIcon name="i-heroicons-chevron-down" class="size-4 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-              </div>
-            </div>
-
-            <div>
-              <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
-                Responsável <span class="text-rose-500">*</span>
-              </label>
-              <div class="relative">
-                <select
-                  v-model="selectedAssignee"
-                  class="w-full h-[38px] appearance-none rounded-lg border border-slate-200 bg-white px-3 pr-8 text-sm text-slate-700 outline-none transition-colors focus:border-amber-500 focus:ring-1 focus:ring-amber-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
-                >
-                  <option v-for="user in availableAssignees" :key="user.id" :value="user.id">
-                    {{ user.name }}
-                  </option>
-                </select>
-                <UIcon name="i-heroicons-chevron-down" class="size-4 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-              </div>
-            </div>
-          </div>
-
+      <div class="grid divide-y divide-slate-200 rounded-xl border border-slate-200 bg-white md:grid-cols-[1.55fr_0.85fr] md:divide-x md:divide-y-0 dark:divide-slate-700 dark:border-slate-700 dark:bg-slate-950/40">
+        <!-- COLUNA ESQUERDA: Título, Descrição, Subtarefas -->
+        <section class="space-y-5 p-5">
           <!-- Título -->
           <div>
             <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
-              Título da Tarefa <span class="text-rose-500">*</span>
+              Título <span class="text-rose-500">*</span>
             </label>
             <UInput
               v-model="title"
@@ -402,9 +348,7 @@ async function createTask() {
 
           <!-- Descrição -->
           <div>
-            <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
-              Descrição
-            </label>
+            <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">Descrição</label>
             <div class="relative">
               <UTextarea
                 v-model="description"
@@ -420,141 +364,191 @@ async function createTask() {
             </div>
           </div>
 
-          <!-- Prioridade + Prazo Final -->
-          <div class="grid grid-cols-2 gap-4">
+          <!-- Subtarefas -->
+          <div>
+            <div class="mb-2 flex items-center justify-between">
+              <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-200">Subtarefas</h3>
+            </div>
+            <div class="flex gap-2">
+              <UInput
+                v-model="subtaskInput"
+                class="flex-1"
+                placeholder="Adicionar subtarefa"
+                :disabled="isSubmitting"
+                @keydown="onSubtaskKeydown"
+              />
+              <UButton
+                variant="outline"
+                icon="i-heroicons-plus"
+                :disabled="isSubmitting || !subtaskInput.trim()"
+                @click="addSubtask"
+              />
+            </div>
+            <div v-if="subtasks.length === 0" class="mt-3 flex flex-col items-center justify-center rounded-xl bg-slate-50 py-6 dark:bg-slate-800/50">
+              <UIcon name="i-heroicons-clipboard-document-list" class="size-7 text-slate-300 dark:text-slate-600 mb-1.5" />
+              <p class="text-xs font-medium text-slate-400 dark:text-slate-500">Nenhuma subtarefa adicionada</p>
+            </div>
+            <ul v-else class="mt-2 space-y-1.5 max-h-[140px] overflow-y-auto scroll-thin">
+              <li
+                v-for="(st, i) in subtasks"
+                :key="st + '-' + i"
+                draggable="true"
+                class="flex items-center gap-2 rounded-lg border border-slate-100 bg-white px-3 py-2 text-sm text-slate-700 transition-all cursor-move hover:shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                :class="{ 'opacity-50': draggedIndex === i }"
+                @dragstart="onDragStart(i, $event)"
+                @dragenter.prevent="onDragEnter(i)"
+                @dragover.prevent
+                @dragend="onDragEnd"
+              >
+                <UIcon name="i-heroicons-bars-2" class="size-4 text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing shrink-0" />
+                <input 
+                  v-model="subtasks[i]" 
+                  type="text"
+                  class="flex-1 bg-transparent text-sm text-slate-700 outline-none border-b border-transparent focus:border-violet-500 hover:border-slate-200 transition-colors dark:text-slate-200" 
+                />
+                <button type="button" class="text-slate-300 hover:text-rose-500 transition-colors shrink-0" @click="removeSubtask(i)">
+                  <UIcon name="i-heroicons-x-mark" class="size-3.5" />
+                </button>
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <!-- COLUNA DIREITA: Responsável, Prioridade, Prazo, Projeto -->
+        <aside class="space-y-5 bg-slate-50/60 p-5 dark:bg-slate-900/40">
+          
+          <template v-if="isGestorOrAdmin">
+            <!-- Projeto (apenas para Gestor/Admin) -->
             <div>
               <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
-                Prioridade <span class="text-rose-500">*</span>
+                Projeto <span class="text-rose-500">*</span>
               </label>
               <div class="relative">
                 <select
-                  v-model="priority"
-                  class="w-full h-[38px] appearance-none rounded-lg border px-3 pr-8 text-sm outline-none transition-colors focus:border-amber-400 focus:ring-1 focus:ring-amber-400 dark:bg-slate-900 dark:text-slate-200"
-                  :class="errors.priority
-                    ? 'border-rose-400 bg-rose-50/50 text-slate-700 dark:border-rose-500'
-                    : 'border-slate-200 bg-white text-slate-700 dark:border-slate-700'"
+                  v-model="selectedProject"
+                  class="w-full h-[38px] appearance-none rounded-lg border border-slate-200 bg-white px-3 pr-8 text-sm text-slate-700 outline-none transition-colors focus:border-amber-500 focus:ring-1 focus:ring-amber-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
                   :disabled="isSubmitting"
                 >
-                  <option value="" disabled>Selecione a prioridade</option>
-                  <option value="alta">Alta</option>
-                  <option value="media">Média</option>
-                  <option value="baixa">Baixa</option>
+                  <option v-for="proj in availableProjects" :key="proj.id" :value="proj.id">
+                    {{ proj.name }}
+                  </option>
                 </select>
                 <UIcon name="i-heroicons-chevron-down" class="size-4 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
-              <p v-if="errors.priority" class="mt-1 text-xs text-rose-500">Selecione a prioridade</p>
-              <!-- Pills de prioridade -->
-              <div class="mt-2 flex flex-wrap gap-2">
-                <button
-                  v-for="p in priorityPills"
-                  :key="p.value"
-                  type="button"
-                  class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold transition-colors"
-                  :class="priority === p.value
-                    ? 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-300'
-                    : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'"
-                  @click="priority = p.value"
+            </div>
+
+            <!-- Equipe (apenas para Gestor/Admin) -->
+            <div>
+              <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
+                Equipe <span class="text-rose-500">*</span>
+              </label>
+              <div class="relative">
+                <select
+                  v-model="selectedTeam"
+                  class="w-full h-[38px] appearance-none rounded-lg border border-slate-200 bg-white px-3 pr-8 text-sm text-slate-700 outline-none transition-colors focus:border-amber-500 focus:ring-1 focus:ring-amber-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                  :disabled="isSubmitting"
                 >
-                  <span class="size-2.5 rounded-full" :class="p.dot" />
-                  {{ p.label }}
-                </button>
+                  <option v-for="team in availableTeams" :key="team.id" :value="team.id">
+                    {{ team.name }}
+                  </option>
+                </select>
+                <UIcon name="i-heroicons-chevron-down" class="size-4 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
             </div>
 
+            <!-- Responsável (apenas para Gestor/Admin) -->
             <div>
               <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
-                Prazo Final <span class="text-rose-500">*</span>
+                Responsável <span class="text-rose-500">*</span>
               </label>
-              <UInput
-                v-model="deadline"
-                type="date"
-                icon="i-heroicons-calendar-days"
-                class="w-full"
-                :class="{ 'ring-1 ring-rose-400 rounded-lg': errors.deadline || errors.deadlinePast }"
-                :min="todayISO"
-                :disabled="isSubmitting"
-              />
-              <p v-if="errors.deadline" class="mt-1 text-xs text-rose-500">Campo obrigatório</p>
-              <p v-else-if="errors.deadlinePast" class="mt-1 text-xs text-rose-500">A data deve ser hoje ou futura</p>
+              <div class="relative">
+                <select
+                  v-model="selectedAssignee"
+                  class="w-full h-[38px] appearance-none rounded-lg border border-slate-200 bg-white px-3 pr-8 text-sm text-slate-700 outline-none transition-colors focus:border-amber-500 focus:ring-1 focus:ring-amber-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                  :disabled="isSubmitting"
+                >
+                  <option v-for="user in availableAssignees" :key="user.id" :value="user.id">
+                    {{ user.name }}
+                  </option>
+                </select>
+                <UIcon name="i-heroicons-chevron-down" class="size-4 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
             </div>
-          </div>
-        </section>
+          </template>
 
-        <!-- Subtarefas -->
-        <section class="space-y-3">
-          <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100">Subtarefas</h3>
+          <template v-else>
+            <!-- Responsável Fixo (Colaborador Pessoal) -->
+            <div>
+              <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">Responsável</label>
+              <div class="flex items-center gap-2.5 rounded-lg border border-slate-200 bg-white px-3 py-2.5 opacity-75 cursor-not-allowed dark:border-slate-700 dark:bg-slate-900">
+                <UAvatar
+                  :src="auth.user.value?.avatar"
+                  :alt="auth.user.value?.name || 'Você'"
+                  size="2xs"
+                />
+                <span class="text-sm text-slate-700 dark:text-slate-200 truncate">{{ auth.user.value?.name || 'Você' }}</span>
+                <UIcon name="i-heroicons-lock-closed" class="size-3.5 text-slate-400 ml-auto shrink-0" />
+              </div>
+            </div>
+          </template>
 
-          <!-- Input de subtarefa -->
-          <div class="relative">
-            <UInput
-              v-model="subtaskInput"
-              placeholder="Adicionar uma subtarefa..."
-              class="w-full"
-              :disabled="isSubmitting"
-              @keydown="onSubtaskKeydown"
-            />
-            <button
-              type="button"
-              class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center size-6 rounded-md text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
-              @click="addSubtask"
-            >
-              <UIcon name="i-heroicons-plus" class="size-4" />
-            </button>
-          </div>
-
-          <!-- Lista de subtarefas -->
-          <div v-if="subtasks.length === 0" class="flex flex-col items-center justify-center rounded-xl bg-slate-50 py-8 dark:bg-slate-800/50">
-            <UIcon name="i-heroicons-clipboard-document-list" class="size-8 text-slate-300 dark:text-slate-600 mb-2" />
-            <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Nenhuma subtarefa adicionada</p>
-          </div>
-
-          <ul v-else class="space-y-1.5">
-            <li
-              v-for="(st, i) in subtasks"
-              :key="st + '-' + i"
-              draggable="true"
-              @dragstart="onDragStart(i, $event)"
-              @dragenter.prevent="onDragEnter(i)"
-              @dragover.prevent
-              @dragend="onDragEnd"
-              class="flex items-center gap-2 rounded-lg border border-slate-100 bg-white px-3 py-2 text-sm text-slate-700 transition-all cursor-move hover:shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
-              :class="{ 'opacity-50': draggedIndex === i }"
-            >
-              <UIcon name="i-heroicons-bars-2" class="size-4 text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing" />
-              <input 
-                v-model="subtasks[i]" 
-                type="text"
-                class="flex-1 bg-transparent text-sm text-slate-700 outline-none border-b border-transparent focus:border-amber-500 hover:border-slate-200 transition-colors dark:text-slate-200" 
-              />
-              <button type="button" class="text-slate-300 hover:text-rose-500 transition-colors" @click="removeSubtask(i)">
-                <UIcon name="i-heroicons-x-mark" class="size-3.5" />
+          <!-- Prioridade -->
+          <div>
+            <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
+              Prioridade <span class="text-rose-500">*</span>
+            </label>
+            <div class="grid grid-cols-3 gap-1.5">
+              <button
+                v-for="p in priorityPills"
+                :key="p.value"
+                type="button"
+                class="rounded-lg border px-2 py-2 text-xs font-semibold transition-colors"
+                :class="priority === p.value
+                  ? (isGestorOrAdmin ? 'border-amber-400 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-300' : 'border-violet-400 bg-violet-50 text-violet-700 dark:border-violet-600 dark:bg-violet-500/15 dark:text-violet-300')
+                  : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400'"
+                :disabled="isSubmitting"
+                @click="priority = p.value"
+              >
+                {{ p.label }}
               </button>
-            </li>
-          </ul>
-        </section>
+            </div>
+            <p v-if="errors.priority" class="mt-1 text-xs text-rose-500">Selecione a prioridade</p>
+          </div>
+
+          <!-- Prazo -->
+          <div>
+            <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
+              Prazo <span class="text-rose-500">*</span>
+            </label>
+            <UInput
+              v-model="deadline"
+              type="date"
+              icon="i-heroicons-calendar-days"
+              class="w-full"
+              :class="{ 'ring-1 ring-rose-400 rounded-lg': errors.deadline || errors.deadlinePast }"
+              :min="todayISO"
+              :disabled="isSubmitting"
+            />
+            <p v-if="errors.deadline" class="mt-1 text-xs text-rose-500">Campo obrigatório</p>
+            <p v-else-if="errors.deadlinePast" class="mt-1 text-xs text-rose-500">A data deve ser hoje ou futura</p>
+          </div>
+        </aside>
       </div>
     </template>
 
     <template #footer>
-      <div class="flex w-full gap-3">
-        <button
-          type="button"
-          class="flex-1 h-[42px] rounded-lg border border-slate-200 bg-white text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-          @click="closeModal"
+      <div class="flex w-full justify-end gap-2">
+        <UButton color="neutral" variant="outline" @click="closeModal" :disabled="isSubmitting">Cancelar</UButton>
+        <UButton
+          color="primary"
+          variant="solid"
+          class="bg-orange-500 hover:bg-orange-600 text-white"
           :disabled="isSubmitting"
-        >
-          Cancelar
-        </button>
-        <button
-          type="button"
-          class="flex-1 h-[42px] rounded-lg bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 text-sm font-bold text-white shadow-sm transition-all hover:shadow-md hover:brightness-110 flex items-center justify-center gap-2"
-          :class="isSubmitting && 'opacity-50 pointer-events-none cursor-not-allowed'"
-          :disabled="isSubmitting"
+          :loading="isSubmitting"
           @click="createTask"
         >
-          <UIcon v-if="isSubmitting" name="i-heroicons-arrow-path" class="size-4 animate-spin" />
-          <span>{{ isGestorOrAdmin ? 'Atribuir Tarefa' : 'Criar Tarefa Pessoal' }}</span>
-        </button>
+          {{ isGestorOrAdmin ? 'Atribuir Tarefa' : 'Criar Tarefa' }}
+        </UButton>
       </div>
     </template>
   </UModal>
