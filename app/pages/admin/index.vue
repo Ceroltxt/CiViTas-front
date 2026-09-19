@@ -233,7 +233,7 @@ const activeProjects = computed(() => {
       tasksCompleted: completed,
       tasksTotal: projTasks.length,
       progress: p.progress || 0,
-      deadline: p.data_previsao_fim ? new Date(p.data_previsao_fim).toLocaleDateString('pt-BR') : 'A definir',
+      deadline: p.data_previsao_fim || 'A definir',
       icon: 'i-heroicons-briefcase',
       iconBg: iconBgs[idx % iconBgs.length],
       iconColor: iconColors[idx % iconColors.length],

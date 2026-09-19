@@ -119,6 +119,7 @@ function openProject(projectId: string) {
           </p>
 
           <div class="mt-5 flex items-center gap-5 text-xs text-slate-500 dark:text-slate-400">
+            <span class="flex items-center gap-1.5"><UIcon name="i-heroicons-user" class="size-4" /> Macena Souza</span>
             <span v-if="project.data_previsao_fim" class="flex items-center gap-1.5">
               <UIcon name="i-heroicons-calendar-days" class="size-4" />
               {{ project.data_previsao_fim }}

@@ -65,7 +65,7 @@ export async function fetchUserProjectsFromSupabase(force = false): Promise<void
           teams: p.teams || [],
           description: p.description || p.descricao || '',
           prioridade: p.prioridade || p.priority || 'media',
-          data_previsao_fim: p.data_previsao_fim || '',
+          data_previsao_fim: p.data_previsao_fim ? new Date(p.data_previsao_fim).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : '',
         }))
         lastFetchedToken = token
       }
@@ -104,6 +104,7 @@ export async function fetchAllProjectsFromSupabase(): Promise<ProjectProgress[]>
         completedTasks: 0,
         totalTasks: 0,
         teams: p.teams || [],
+        data_previsao_fim: p.data_previsao_fim ? new Date(p.data_previsao_fim).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : '',
       }))
     }
   } catch (e) {
