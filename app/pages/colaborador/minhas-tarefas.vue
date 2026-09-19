@@ -26,7 +26,7 @@ const viewOptions = [
   { id: 'calendario', label: 'Calendário', icon: 'i-heroicons-calendar-days' },
 ] as const
 const activeView = ref<typeof viewOptions[number]['id']>('lista')
-const calendarCurrent = ref({ year: 2026, month: 4 })
+const calendarCurrent = ref({ year: new Date().getFullYear(), month: new Date().getMonth() })
 
 watch(() => route.query.aba, (newAba) => {
   if (newAba === 'pessoais' || newAba === 'trabalho') {
@@ -314,7 +314,7 @@ const calendarEvents = computed<CalendarEvent[]>(() => filtered.value.flatMap((t
   const colorByPriority: Record<PriorityKey, CalendarEvent['color']> = {
     critica: 'pink', alta: 'violet', media: 'blue', baixa: 'green',
   }
-  const isEditable = task.personal || (task.assignees && task.assignees.some(a => a.id === currentUser.id || a.name === currentUser.name))
+  const isEditable = !!task.personal
   return [{ id: task.id, title: task.title, startDay, length: 1, color: colorByPriority[task.priority], editable: isEditable }]
 }))
 
@@ -328,9 +328,17 @@ function goToCurrentMonth() {
   calendarCurrent.value = { year: now.getFullYear(), month: now.getMonth() }
 }
 
-/** Todas as tarefas de trabalho são exportadas, sem depender dos filtros da tela. */
-const workTasksForExport = computed(() => {
-  let list = tasks.filter((task) => !task.personal)
+/** Todas as tarefas do usuário logado (trabalho e pessoais) são exportadas, sem depender dos filtros da tela. */
+const userTasksForExport = computed(() => {
+  let list = tasks.value.filter((t) => {
+    if (t.personal) return true
+    if (currentUser) {
+      if (!t.assignees || !t.assignees.some(a => String(a.id) === String(currentUser.id) || a.name === currentUser.name)) {
+        return false
+      }
+    }
+    return true
+  })
 
   if (sortBy.value === 'Status') {
     list = [...list].sort((a, b) => (statusRank.get(a.status) ?? 99) - (statusRank.get(b.status) ?? 99))
@@ -348,12 +356,12 @@ function escapeCsvValue(value: string | number | undefined): string {
   return /[;"\r\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text
 }
 
-function exportWorkTasks() {
-  downloadTasksAsCsv(workTasksForExport.value, 'tarefas-de-trabalho.csv')
+function exportAllTasks() {
+  downloadTasksAsCsv(userTasksForExport.value, 'minhas-tarefas.csv')
 }
 
 function exportSelectedWorkTasks() {
-  const selectedWorkTasks = workTasksForExport.value.filter((task) => selectedTasks.value.includes(task.id))
+  const selectedWorkTasks = userTasksForExport.value.filter((task) => selectedTasks.value.includes(task.id))
   downloadTasksAsCsv(selectedWorkTasks, 'tarefas-de-trabalho-selecionadas.csv')
   selectedTasks.value = []
   isSelecting.value = false
@@ -367,13 +375,14 @@ function exportSelectedPersonalTasks() {
 }
 
 function downloadTasksAsCsv(tasksToExport: Task[], filename: string) {
-  const header = ['Tarefa', 'Projeto', 'Status', 'Prioridade', 'Responsável', 'Prazo', 'Avaliação']
+  const header = ['Tipo', 'Tarefa', 'Projeto', 'Status', 'Prioridade', 'Responsável', 'Prazo', 'Avaliação']
   const rows = tasksToExport.map((task) => [
+    task.personal ? 'Pessoal' : 'Trabalho',
     task.title,
     task.project,
     useStatusMeta(task.status).label,
     usePriorityMeta(task.priority).label,
-    task.personal ? currentUser.name : task.assignees.map((assignee) => assignee.name).join(', '),
+    task.personal ? currentUser?.name : (task.assignees ? task.assignees.map((a) => a.name).join(', ') : ''),
     task.dueDate,
     task.stars,
   ])
@@ -430,7 +439,7 @@ function clearFilter(key: 'project' | 'status' | 'priority') {
           variant="outline"
           icon="i-heroicons-arrow-down-tray"
           label="Exportar"
-          @click="exportWorkTasks"
+          @click="exportAllTasks"
         />
         <UButton
           icon="i-heroicons-plus"

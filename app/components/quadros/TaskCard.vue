@@ -47,7 +47,7 @@ const assignee = computed(() => props.task.personal ? currentUser : props.task.a
         name="i-heroicons-check-circle-solid"
         class="size-5 shrink-0 text-emerald-500"
       />
-      <UDropdownMenu v-if="interactive" :items="actions">
+      <UDropdownMenu v-if="interactive && task.personal" :items="actions">
         <UButton
           color="neutral"
           variant="ghost"

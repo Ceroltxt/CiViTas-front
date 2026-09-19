@@ -246,19 +246,21 @@ onMounted(() => {
 
                 <!-- Opções de hover à direita do nome -->
                 <div class="ml-auto flex items-center gap-1 opacity-0 group-hover/row:opacity-100 transition-opacity">
-                  <UPopover>
-                    <UButton color="neutral" variant="ghost" size="xs" icon="i-heroicons-plus" class="text-slate-400 hover:text-slate-600 p-1" />
-                    <template #content>
-                      <div class="p-2 w-56 flex flex-col gap-2 shadow-sm rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                        <span class="text-xs font-semibold text-slate-500">Criar subtask</span>
-                        <div class="flex gap-1">
-                          <UInput placeholder="Inserir nome" size="sm" class="flex-1" />
-                          <UButton label="Criar" color="primary" size="sm" class="bg-orange-400 hover:bg-orange-500 text-white border-orange-500 font-medium" />
+                  <template v-if="task.personal">
+                    <UPopover>
+                      <UButton color="neutral" variant="ghost" size="xs" icon="i-heroicons-plus" class="text-slate-400 hover:text-slate-600 p-1" />
+                      <template #content>
+                        <div class="p-2 w-56 flex flex-col gap-2 shadow-sm rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                          <span class="text-xs font-semibold text-slate-500">Criar subtask</span>
+                          <div class="flex gap-1">
+                            <UInput placeholder="Inserir nome" size="sm" class="flex-1" />
+                            <UButton label="Criar" color="primary" size="sm" class="bg-orange-400 hover:bg-orange-500 text-white border-orange-500 font-medium" />
+                          </div>
                         </div>
-                      </div>
-                    </template>
-                  </UPopover>
-                  <UButton color="neutral" variant="ghost" size="xs" icon="i-heroicons-pencil" class="text-slate-400 hover:text-slate-600 p-1" @click="$emit('edit', task)" />
+                      </template>
+                    </UPopover>
+                    <UButton color="neutral" variant="ghost" size="xs" icon="i-heroicons-pencil" class="text-slate-400 hover:text-slate-600 p-1" @click="$emit('edit', task)" />
+                  </template>
                 </div>
               </div>
               
