@@ -18,10 +18,12 @@ const allTasks = useTasksRef()
 const isLoadingProjects = useProjectsLoading()
 const isLoadingTasks = useTasksLoading()
 
-const teamsData = ref<any[]>([])
-const isLoadingTeams = ref(true)
+const teamsData = useState<any[]>('gestor_teams_cache', () => [])
+const isTeamsLoaded = useState<boolean>('gestor_teams_loaded', () => false)
+const isLoadingTeams = ref(!isTeamsLoaded.value)
 
 async function fetchTeams() {
+  if (isTeamsLoaded.value) return
   isLoadingTeams.value = true
   try {
     const config = useRuntimeConfig()
@@ -35,6 +37,7 @@ async function fetchTeams() {
     if (Array.isArray(t)) {
       teamsData.value = t
     }
+    isTeamsLoaded.value = true
   } catch (e) {
     console.error('Erro ao buscar equipes no Gestor:', e)
   } finally {

@@ -17,13 +17,17 @@ const firstName = computed(() => {
 })
 
 // ─── Estado Real da API ───────────────────────────────────────────────────────
-const projects = ref<any[]>([])
+const projects = useState<any[]>('admin_projects_cache', () => [])
 const allTasks = useTasksRef()
-const teams = ref<any[]>([])
-const colaboradores = ref<any[]>([])
-const isLoading = ref(true)
+const teams = useState<any[]>('admin_teams_cache', () => [])
+const colaboradores = useState<any[]>('admin_colabs_cache', () => [])
+const isDataLoaded = useState<boolean>('admin_dashboard_loaded', () => false)
+const isLoading = ref(!isDataLoaded.value)
 
 async function loadData() {
+  if (isDataLoaded.value) {
+    return
+  }
   isLoading.value = true
   try {
     const config = useRuntimeConfig()
@@ -44,6 +48,7 @@ async function loadData() {
     projects.value = Array.isArray(projData) ? projData : []
     teams.value = Array.isArray(teamsData) ? teamsData : []
     colaboradores.value = Array.isArray(colabsData) ? colabsData : []
+    isDataLoaded.value = true
   } catch (e) {
     console.error('Erro ao carregar dados do Dashboard Admin:', e)
   } finally {
