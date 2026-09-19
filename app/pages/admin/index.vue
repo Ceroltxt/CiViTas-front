@@ -246,9 +246,21 @@ const activeProjects = computed(() => {
   })
 })
 
+import { useDashboardDatePicker } from '~/composables/useDashboardDatePicker'
+const {
+  dateFrom, dateTo, dateLabel, calendarMonth, calendarMonthLabel, calendarDays, weekDays,
+  canShowPreviousMonth, canShowNextMonth, changeCalendarMonth, beginCalendarSelection,
+  extendCalendarSelection, endCalendarSelection, handleCalendarDateClick, isSelectedCalendarDate, resetFilter
+} = useDashboardDatePicker()
+
+function escapeCSV(value: string | number) {
+  const text = String(value)
+  return /[;"\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text
+}
+
 function exportDashboardCsv() {
   const rows = [
-    ['Dashboard Admin - Relatório Geral'],
+    ['Dashboard Admin - Relatório Geral', dateLabel.value],
     [''],
     ['Métricas Gerais'],
     ['Métrica', 'Valor'],
@@ -263,11 +275,12 @@ function exportDashboardCsv() {
     ...risks.value.map(r => [r.projectName, r.description, r.severity]),
   ]
 
-  const csvContent = 'data:text/csv;charset=utf-8,' + rows.map(e => e.join(',')).join('\n')
-  const encodedUri = encodeURI(csvContent)
+  const csvContent = '\uFEFF' + rows.map(e => e.map(escapeCSV).join(';')).join('\n')
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
-  link.setAttribute('href', encodedUri)
-  link.setAttribute('download', 'relatorio_admin.csv')
+  link.setAttribute('href', url)
+  link.setAttribute('download', `relatorio_admin_${dateLabel.value.replace(/\s+/g, '_').toLowerCase()}.csv`)
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
@@ -287,25 +300,105 @@ function exportDashboardCsv() {
           Aqui está o panorama geral da organização e dos projetos em tempo real.
         </p>
       </div>
-      <div class="flex items-center gap-2">
+      <div class="flex flex-wrap items-center gap-2">
+        <UButton
+          color="white"
+          icon="i-heroicons-arrow-down-tray"
+          label="Exportar"
+          class="border border-transparent shadow-sm font-medium text-slate-700 transition-colors hover:border-violet-200 hover:bg-violet-50 hover:text-violet-700 dark:text-slate-200 dark:hover:border-violet-800 dark:hover:bg-violet-950/30 dark:hover:text-violet-200"
+          @click="exportDashboardCsv"
+        />
+        <UPopover :popper="{ placement: 'bottom-end' }">
+          <UButton
+            color="white"
+            icon="i-heroicons-calendar-days"
+            :label="dateLabel"
+            class="shadow-sm font-medium text-slate-700 dark:text-slate-200 min-w-32 justify-between"
+            trailing-icon="i-heroicons-chevron-down-20-solid"
+          />
+          <template #content>
+            <div class="w-[20rem] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900">
+              <div class="border-b border-slate-100 px-4 pb-3 pt-4 dark:border-slate-800">
+                <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">Filtrar atividades</p>
+                <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Clique em um dia ou arraste até a data final desejada.</p>
+              </div>
+
+              <div
+                class="select-none p-3 touch-none"
+                @pointermove="extendCalendarSelection"
+                @pointerup="endCalendarSelection"
+              >
+                <div class="rounded-xl bg-slate-50 p-3 dark:bg-slate-800/60">
+                  <div class="mb-3 flex items-center justify-between px-0.5">
+                    <button
+                      type="button"
+                      aria-label="Mês anterior"
+                      class="grid size-7 place-items-center rounded-md text-slate-500 transition-colors hover:bg-white hover:text-violet-600 disabled:cursor-not-allowed disabled:opacity-30 dark:hover:bg-slate-700"
+                      :disabled="!canShowPreviousMonth"
+                      @click="changeCalendarMonth(-1)"
+                    >
+                      <UIcon name="i-heroicons-chevron-left" class="size-4" />
+                    </button>
+                    <span class="text-sm font-semibold capitalize text-slate-700 dark:text-slate-200">{{ calendarMonthLabel }}</span>
+                    <button
+                      type="button"
+                      aria-label="Próximo mês"
+                      class="grid size-7 place-items-center rounded-md text-slate-500 transition-colors hover:bg-white hover:text-violet-600 disabled:cursor-not-allowed disabled:opacity-30 dark:hover:bg-slate-700"
+                      :disabled="!canShowNextMonth"
+                      @click="changeCalendarMonth(1)"
+                    >
+                      <UIcon name="i-heroicons-chevron-right" class="size-4" />
+                    </button>
+                  </div>
+
+                  <div class="grid grid-cols-7 gap-y-1 text-center">
+                    <span v-for="(weekday, index) in weekDays" :key="index" class="pb-1 text-[10px] font-bold text-slate-400">{{ weekday }}</span>
+                    <button
+                      v-for="day in calendarDays"
+                      :key="day.iso"
+                      type="button"
+                      :data-calendar-date="day.iso"
+                      :disabled="day.disabled"
+                      class="relative mx-auto grid size-8 place-items-center rounded-lg text-xs font-medium transition-colors disabled:cursor-not-allowed"
+                      :class="[
+                        day.disabled ? 'text-slate-300 dark:text-slate-600' : day.currentMonth ? 'text-slate-700 hover:bg-violet-100 dark:text-slate-200 dark:hover:bg-violet-900/40' : 'text-slate-400 hover:bg-violet-100 dark:text-slate-500',
+                        isSelectedCalendarDate(day.iso) && !day.disabled ? 'bg-violet-600 text-white hover:bg-violet-600 dark:text-white dark:hover:bg-violet-600' : '',
+                      ]"
+                      @pointerdown="beginCalendarSelection(day.iso, $event)"
+                      @click="handleCalendarDateClick(day.iso)"
+                    >
+                      {{ day.label }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mx-4 mb-4 rounded-xl border border-violet-100 bg-violet-50 px-3 py-2.5 dark:border-violet-900/50 dark:bg-violet-950/30">
+                <div class="flex items-center justify-between gap-3">
+                  <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Período selecionado</span>
+                  <span class="truncate text-xs font-semibold text-violet-700 dark:text-violet-300">{{ dateLabel }}</span>
+                </div>
+                <button
+                  type="button"
+                  class="mt-2 flex items-center gap-1 text-xs font-semibold text-violet-600 transition-colors hover:text-violet-800 dark:text-violet-300 dark:hover:text-violet-100"
+                  @click="resetFilter"
+                >
+                  <UIcon name="i-heroicons-arrow-path" class="size-3.5" />
+                  Limpar filtro
+                </button>
+              </div>
+            </div>
+          </template>
+        </UPopover>
         <UButton
           color="white"
           variant="solid"
           icon="i-heroicons-arrow-path"
-          class="text-slate-600"
+          class="text-slate-600 ml-2"
           :loading="isLoading"
           @click="loadData"
         >
           Atualizar Dados
-        </UButton>
-        <UButton
-          color="white"
-          variant="solid"
-          icon="i-heroicons-document-arrow-down"
-          class="text-slate-600"
-          @click="exportDashboardCsv"
-        >
-          Exportar Relatório
         </UButton>
       </div>
     </div>
