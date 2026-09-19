@@ -8,13 +8,19 @@ definePageMeta({ sidebarWidget: 'project' })
 
 type ProjectStatus = 'planejamento' | 'ativo' | 'concluido' | 'pausado' | 'cancelado'
 
-const projects = ref<any[]>([])
-const isLoading = ref(true)
+const projects = useState<any[]>('admin_projects_page_cache', () => [])
+const isDataLoaded = useState<boolean>('admin_projects_page_loaded', () => false)
+const isLoading = ref(!isDataLoaded.value)
 
 async function loadProjects() {
+  if (isDataLoaded.value) return
   isLoading.value = true
-  projects.value = await fetchAllProjectsFromSupabase()
-  isLoading.value = false
+  try {
+    projects.value = await fetchAllProjectsFromSupabase()
+    isDataLoaded.value = true
+  } finally {
+    isLoading.value = false
+  }
 }
 
 onMounted(loadProjects)

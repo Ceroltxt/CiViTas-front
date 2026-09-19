@@ -6,15 +6,18 @@ import { fetchAllProjectsFromSupabase } from '~/composables/useUserProjects'
 
 definePageMeta({ sidebarWidget: 'project' })
 
-const projects = ref<any[]>([])
+const projects = useState<any[]>('admin_quadros_projects_cache', () => [])
+const isDataLoaded = useState<boolean>('admin_quadros_loaded', () => false)
 const allTasks = useTasksRef()
 
 onMounted(async () => {
+  if (isDataLoaded.value) return
   const [projData] = await Promise.all([
     fetchAllProjectsFromSupabase(),
     fetchTasksFromSupabase(true),
   ])
   projects.value = Array.isArray(projData) ? projData : []
+  isDataLoaded.value = true
 })
 
 const selectedProjectId = ref<string>('')

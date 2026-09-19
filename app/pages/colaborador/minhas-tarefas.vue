@@ -10,7 +10,7 @@ const currentUser = useCurrentUser()
 const isLoadingTasks = useTasksLoading()
 
 onMounted(() => {
-  fetchTasksFromSupabase(true)
+  fetchTasksFromSupabase()
 })
 const mainTabs = [
   { id: 'trabalho', label: 'Trabalho', icon: 'i-heroicons-briefcase', tooltip: 'Tarefas de Trabalho' },

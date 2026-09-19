@@ -10,7 +10,7 @@ const currentUser = useCurrentUser()
 const gestorProjectsRef = useGestorProjectsRef()
 
 onMounted(async () => {
-  await fetchUserProjectsFromSupabase(true)
+  await fetchUserProjectsFromSupabase()
 })
 
 const leadershipProjects = computed<any[]>(() => gestorProjectsRef.value)
