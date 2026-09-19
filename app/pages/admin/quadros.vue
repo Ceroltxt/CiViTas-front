@@ -4,7 +4,7 @@ import type { Task, StatusKey } from '~/types'
 import { fetchTasksFromSupabase, useTasksRef, updateTaskStatusInSupabase, deleteTaskFromSupabase } from '~/composables/useTasksData'
 import { fetchAllProjectsFromSupabase } from '~/composables/useUserProjects'
 
-definePageMeta({ sidebarWidget: 'none' })
+definePageMeta({ sidebarWidget: 'project' })
 
 const projects = ref<any[]>([])
 const allTasks = useTasksRef()

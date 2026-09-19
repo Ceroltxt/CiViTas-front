@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { fetchAllProjectsFromSupabase } from '~/composables/useUserProjects'
 import { useTasksRef } from '~/composables/useTasksData'
 
-definePageMeta({ sidebarWidget: 'none' })
+definePageMeta({ sidebarWidget: 'project' })
 
 type ProjectStatus = 'planejamento' | 'ativo' | 'concluido' | 'pausado' | 'cancelado'
 
