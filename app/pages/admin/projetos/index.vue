@@ -35,11 +35,11 @@ const isAdmin = computed(() => {
   return r === 'admin' || r === 'administrador'
 })
 
-// ─── Drag & Drop (Mover) ────────────────────────────────────────────────────
+// ─── Reordenação Simples (Teclado) ──────────────────────────────────────────
 const STORAGE_KEY = 'civitas_project_order_admin'
 const projectOrder = ref<string[]>([])
-const draggedProjectId = ref<string | null>(null)
-const dragOverProjectId = ref<string | null>(null)
+const movingProjectId = ref<string | null>(null)
+const initialOrderBackup = ref<string[]>([])
 
 function loadOrder() {
   try {
@@ -123,6 +123,7 @@ const newProjectOpen = ref(false)
 const router = useRouter()
 
 function openProject(projectId: string) {
+  if (movingProjectId.value) return
   router.push(`/admin/projetos/${projectId}`)
 }
 
@@ -136,7 +137,6 @@ const editModalOpen = ref(false)
 const deleteModalOpen = ref(false)
 const selectedProject = ref<any>(null)
 const isDeleting = ref(false)
-const isDragMode = ref(false)
 
 const toast = useToast()
 
@@ -145,10 +145,10 @@ function getDropdownItems(project: any) {
 
   // Mover — available to everyone
   items.push({
-    label: isDragMode.value ? 'Sair do modo mover' : 'Mover',
+    label: 'Mover',
     icon: 'i-heroicons-arrows-up-down',
     onSelect() {
-      isDragMode.value = !isDragMode.value
+      startMoving(project.id)
     },
   })
 
@@ -209,54 +209,57 @@ function handleUpdated() {
   loadProjects()
 }
 
-// ─── Drag handlers ───────────────────────────────────────────────────────────
-function onDragStart(e: DragEvent, projectId: string) {
-  if (!isDragMode.value) {
+// ─── Moving handlers ─────────────────────────────────────────────────────────
+function startMoving(projectId: string) {
+  movingProjectId.value = projectId
+  // Garante que todos os projetos atuais estejam na ordem
+  projectOrder.value = filteredProjects.value.map(p => p.id)
+  initialOrderBackup.value = [...projectOrder.value]
+  window.addEventListener('keydown', handleKeydown)
+}
+
+function handleKeydown(e: KeyboardEvent) {
+  if (!movingProjectId.value) return
+  
+  if (e.key === 'Escape') {
+    cancelMoving()
+  } else if (e.key === 'Enter') {
+    confirmMoving()
+  } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
     e.preventDefault()
-    return
-  }
-  draggedProjectId.value = projectId
-  if (e.dataTransfer) {
-    e.dataTransfer.effectAllowed = 'move'
-    e.dataTransfer.setData('text/plain', projectId)
+    shiftProject(-1)
+  } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+    e.preventDefault()
+    shiftProject(1)
   }
 }
 
-function onDragOver(e: DragEvent, projectId: string) {
-  if (!isDragMode.value) return
-  e.preventDefault()
-  dragOverProjectId.value = projectId
-}
-
-function onDragLeave() {
-  dragOverProjectId.value = null
-}
-
-function onDrop(e: DragEvent, targetId: string) {
-  if (!isDragMode.value) return
-  e.preventDefault()
-  dragOverProjectId.value = null
-
-  const sourceId = draggedProjectId.value
-  if (!sourceId || sourceId === targetId) return
-
-  // Build current order from filteredProjects
-  const currentIds = filteredProjects.value.map(p => p.id)
-  const sourceIdx = currentIds.indexOf(sourceId)
-  const targetIdx = currentIds.indexOf(targetId)
-  if (sourceIdx === -1 || targetIdx === -1) return
-
-  currentIds.splice(sourceIdx, 1)
-  currentIds.splice(targetIdx, 0, sourceId)
-
+function shiftProject(direction: number) {
+  const currentIds = [...projectOrder.value]
+  const idx = currentIds.indexOf(movingProjectId.value!)
+  if (idx === -1) return
+  
+  const newIdx = idx + direction
+  if (newIdx < 0 || newIdx >= currentIds.length) return
+  
+  // Troca de lugar
+  const temp = currentIds[newIdx]
+  currentIds[newIdx] = currentIds[idx]
+  currentIds[idx] = temp
+  
   projectOrder.value = currentIds
-  saveOrder()
-  draggedProjectId.value = null
 }
 
-function onDragEnd() {
-  draggedProjectId.value = null
-  dragOverProjectId.value = null
+function confirmMoving() {
+  saveOrder()
+  movingProjectId.value = null
+  window.removeEventListener('keydown', handleKeydown)
+}
+
+function cancelMoving() {
+  projectOrder.value = initialOrderBackup.value
+  movingProjectId.value = null
+  window.removeEventListener('keydown', handleKeydown)
 }
 </script>
 
@@ -269,14 +272,13 @@ function onDragEnd() {
       </div>
 
       <div class="flex items-center gap-3">
-        <!-- Drag mode toggle -->
         <UButton
-          v-if="isDragMode"
+          v-if="movingProjectId"
           color="primary"
           variant="soft"
           icon="i-heroicons-check"
-          label="Concluir reordenação"
-          @click="isDragMode = false"
+          label="Confirmar (Enter)"
+          @click="confirmMoving"
         />
         <UButton
           color="primary"
@@ -308,10 +310,10 @@ function onDragEnd() {
       <UInput v-model="search" icon="i-heroicons-magnifying-glass" placeholder="Buscar projetos..." class="w-full sm:w-64" />
     </div>
 
-    <!-- Drag mode banner -->
-    <div v-if="isDragMode" class="flex items-center gap-3 rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-700 dark:border-violet-500/30 dark:bg-violet-500/10 dark:text-violet-300">
+    <!-- Move mode banner -->
+    <div v-if="movingProjectId" class="flex items-center gap-3 rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-700 dark:border-violet-500/30 dark:bg-violet-500/10 dark:text-violet-300">
       <UIcon name="i-heroicons-arrows-up-down" class="size-5" />
-      <span>Modo de reordenação ativado. Arraste os projetos para a posição desejada.</span>
+      <span class="font-medium">Modo de reordenação:</span> Use as setas do teclado (Esquerda/Direita) para mover. Pressione <strong class="bg-white/50 px-1 rounded border border-violet-200 dark:bg-black/20 dark:border-violet-500/30">Enter</strong> para confirmar ou <strong class="bg-white/50 px-1 rounded border border-violet-200 dark:bg-black/20 dark:border-violet-500/30">Esc</strong> para cancelar.
     </div>
 
     <!-- Loading skeleton -->
@@ -323,20 +325,13 @@ function onDragEnd() {
       <article
         v-for="project in filteredProjects"
         :key="project.id"
-        class="group overflow-hidden rounded-2xl border border-slate-200 bg-white text-left transition-all hover:-translate-y-0.5 hover:border-orange-200 hover:shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:hover:border-orange-500/30"
+        class="group overflow-hidden rounded-2xl border bg-white text-left transition-all duration-300 dark:bg-slate-900"
         :class="{
-          'cursor-grab': isDragMode,
-          'cursor-pointer': !isDragMode,
-          'ring-2 ring-violet-400 ring-offset-2': dragOverProjectId === project.id,
-          'opacity-50': draggedProjectId === project.id,
+          'cursor-pointer hover:-translate-y-0.5 hover:border-orange-200 hover:shadow-sm dark:hover:border-orange-500/30 border-slate-200 dark:border-slate-800': movingProjectId !== project.id,
+          'ring-4 ring-violet-500 scale-[1.02] shadow-xl z-10 border-violet-300 dark:border-violet-600': movingProjectId === project.id,
+          'opacity-60 grayscale': movingProjectId && movingProjectId !== project.id
         }"
-        :draggable="isDragMode"
-        @click="!isDragMode && openProject(project.id)"
-        @dragstart="onDragStart($event, project.id)"
-        @dragover="onDragOver($event, project.id)"
-        @dragleave="onDragLeave"
-        @drop="onDrop($event, project.id)"
-        @dragend="onDragEnd"
+        @click="openProject(project.id)"
       >
         <div class="p-5 pb-4">
           <div class="flex items-start justify-between gap-3">
