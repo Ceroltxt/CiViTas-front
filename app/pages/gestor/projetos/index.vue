@@ -7,49 +7,41 @@ definePageMeta({ sidebarWidget: 'project' })
 
 type ProjectStatus = 'planejamento' | 'ativo' | 'concluido' | 'pausado' | 'cancelado'
 
-// Projetos alocados ao gestor logado (ref reativa singleton — sem flickering)
 const gestorProjects = useGestorProjectsRef()
 const isLoadingProjects = useProjectsLoading()
-// Reaproveita o pré-carregamento iniciado no login/seleção do workspace.
 onMounted(() => fetchUserProjectsFromSupabase())
 
 const tasks = useTasksRef()
 const search = ref('')
 const selectedStatus = ref<'todos' | ProjectStatus>('todos')
 
+// ─── Drag & Drop (Mover) ────────────────────────────────────────────────────
+const STORAGE_KEY = 'civitas_project_order_gestor'
+const projectOrder = ref<string[]>([])
+const draggedProjectId = ref<string | null>(null)
+const dragOverProjectId = ref<string | null>(null)
+const isDragMode = ref(false)
+
+function loadOrder() {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY)
+    if (stored) projectOrder.value = JSON.parse(stored)
+  } catch {}
+}
+
+function saveOrder() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(projectOrder.value))
+}
+
+onMounted(loadOrder)
+
+// ─── Status meta ─────────────────────────────────────────────────────────────
 const statusMeta: Record<ProjectStatus, { label: string, class: string, dot: string }> = {
   planejamento: { label: 'Planejamento', class: 'bg-violet-50 text-violet-700 ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-500/30', dot: 'bg-violet-500' },
   ativo: { label: 'Ativo', class: 'bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/30', dot: 'bg-emerald-500' },
   concluido: { label: 'Concluído', class: 'bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/30', dot: 'bg-blue-500' },
   pausado: { label: 'Pausado', class: 'bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/30', dot: 'bg-amber-500' },
   cancelado: { label: 'Cancelado', class: 'bg-rose-50 text-rose-700 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/30', dot: 'bg-rose-500' },
-}
-
-const projectStatus: Record<string, ProjectStatus> = {
-  p1: 'ativo',
-  p2: 'planejamento',
-  p3: 'concluido',
-  p4: 'pausado',
-  p5: 'cancelado',
-  p6: 'ativo',
-}
-
-const projectDescriptions: Record<string, string> = {
-  p1: 'Revitalização e acompanhamento das entregas da praça central.',
-  p2: 'Planejamento das manutenções preventivas da frota municipal.',
-  p3: 'Revisão técnica e documental dos processos de licitação.',
-  p4: 'Evolução dos serviços digitais voltados ao cidadão.',
-  p5: 'Organização, análise e aprovação de alvarás.',
-  p6: 'Acompanhamento de melhorias na infraestrutura urbana.',
-}
-
-const projectInfo: Record<string, { priority: string, deadline: string }> = {
-  p1: { priority: 'Alta', deadline: '30 Ago' },
-  p2: { priority: 'Média', deadline: '15 Set' },
-  p3: { priority: 'Alta', deadline: '20 Jul' },
-  p4: { priority: 'Média', deadline: '10 Ago' },
-  p5: { priority: 'Baixa', deadline: 'Indefinido' },
-  p6: { priority: 'Alta', deadline: '05 Set' },
 }
 
 function projectTone(color: string) {
@@ -88,11 +80,22 @@ const projectCards = computed(() => gestorProjects.value.map((project) => {
 
 const filteredProjects = computed(() => {
   const term = search.value.trim().toLocaleLowerCase('pt-BR')
-  return projectCards.value.filter((project) => {
+  let result = projectCards.value.filter((project) => {
     const matchesStatus = selectedStatus.value === 'todos' || project.status === selectedStatus.value
     const matchesSearch = !term || project.name.toLocaleLowerCase('pt-BR').includes(term)
     return matchesStatus && matchesSearch
   })
+
+  if (projectOrder.value.length > 0) {
+    const orderMap = new Map(projectOrder.value.map((id, idx) => [id, idx]))
+    result = [...result].sort((a, b) => {
+      const ai = orderMap.has(a.id) ? orderMap.get(a.id)! : 9999
+      const bi = orderMap.has(b.id) ? orderMap.get(b.id)! : 9999
+      return ai - bi
+    })
+  }
+
+  return result
 })
 
 const auth = useAuth()
@@ -102,12 +105,59 @@ const isRoleAdmin = computed(() => {
 })
 
 const newProjectOpen = ref(false)
-
 const router = useRouter()
 
 function openProject(projectId: string) {
   router.push(`/gestor/projetos/${projectId}`)
 }
+
+// ─── Context menu ────────────────────────────────────────────────────────────
+function getDropdownItems() {
+  return [[{
+    label: isDragMode.value ? 'Sair do modo mover' : 'Mover',
+    icon: 'i-heroicons-arrows-up-down',
+    onSelect() {
+      isDragMode.value = !isDragMode.value
+    },
+  }]]
+}
+
+// ─── Drag handlers ───────────────────────────────────────────────────────────
+function onDragStart(e: DragEvent, projectId: string) {
+  if (!isDragMode.value) { e.preventDefault(); return }
+  draggedProjectId.value = projectId
+  if (e.dataTransfer) {
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', projectId)
+  }
+}
+
+function onDragOver(e: DragEvent, projectId: string) {
+  if (!isDragMode.value) return
+  e.preventDefault()
+  dragOverProjectId.value = projectId
+}
+
+function onDragLeave() { dragOverProjectId.value = null }
+
+function onDrop(e: DragEvent, targetId: string) {
+  if (!isDragMode.value) return
+  e.preventDefault()
+  dragOverProjectId.value = null
+  const sourceId = draggedProjectId.value
+  if (!sourceId || sourceId === targetId) return
+  const currentIds = filteredProjects.value.map(p => p.id)
+  const sourceIdx = currentIds.indexOf(sourceId)
+  const targetIdx = currentIds.indexOf(targetId)
+  if (sourceIdx === -1 || targetIdx === -1) return
+  currentIds.splice(sourceIdx, 1)
+  currentIds.splice(targetIdx, 0, sourceId)
+  projectOrder.value = currentIds
+  saveOrder()
+  draggedProjectId.value = null
+}
+
+function onDragEnd() { draggedProjectId.value = null; dragOverProjectId.value = null }
 </script>
 
 <template>
@@ -119,6 +169,14 @@ function openProject(projectId: string) {
       </div>
 
       <div class="flex items-center gap-3">
+        <UButton
+          v-if="isDragMode"
+          color="primary"
+          variant="soft"
+          icon="i-heroicons-check"
+          label="Concluir reordenação"
+          @click="isDragMode = false"
+        />
         <UButton
           v-if="isRoleAdmin"
           color="primary"
@@ -150,6 +208,12 @@ function openProject(projectId: string) {
       <UInput v-model="search" icon="i-heroicons-magnifying-glass" placeholder="Buscar projetos" class="w-full sm:w-56" />
     </div>
 
+    <!-- Drag mode banner -->
+    <div v-if="isDragMode" class="flex items-center gap-3 rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-700 dark:border-violet-500/30 dark:bg-violet-500/10 dark:text-violet-300">
+      <UIcon name="i-heroicons-arrows-up-down" class="size-5" />
+      <span>Modo de reordenação ativado. Arraste os projetos para a posição desejada.</span>
+    </div>
+
     <!-- Loading skeleton -->
     <div v-if="isLoadingProjects && gestorProjects.length === 0" class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
       <div v-for="n in 3" :key="n" class="h-56 animate-pulse rounded-2xl border border-slate-200 bg-slate-100 dark:border-slate-800 dark:bg-slate-800" />
@@ -160,17 +224,42 @@ function openProject(projectId: string) {
         v-for="project in filteredProjects"
         :key="project.id"
         class="group overflow-hidden rounded-2xl border border-slate-200 bg-white text-left transition-all hover:-translate-y-0.5 hover:border-orange-200 hover:shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:hover:border-orange-500/30"
-        @click="openProject(project.id)"
+        :class="{
+          'cursor-grab': isDragMode,
+          'cursor-pointer': !isDragMode,
+          'ring-2 ring-violet-400 ring-offset-2': dragOverProjectId === project.id,
+          'opacity-50': draggedProjectId === project.id,
+        }"
+        :draggable="isDragMode"
+        @click="!isDragMode && openProject(project.id)"
+        @dragstart="onDragStart($event, project.id)"
+        @dragover="onDragOver($event, project.id)"
+        @dragleave="onDragLeave"
+        @drop="onDrop($event, project.id)"
+        @dragend="onDragEnd"
       >
         <div class="p-5 pb-4">
           <div class="flex items-start justify-between gap-3">
             <span class="grid size-14 place-items-center rounded-2xl" :class="projectTone(project.color).surface">
               <UIcon name="i-heroicons-folder" class="size-7" :class="projectTone(project.color).text" />
             </span>
-            <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1" :class="statusMeta[project.status].class">
-              <span class="size-1.5 rounded-full" :class="statusMeta[project.status].dot" />
-              {{ statusMeta[project.status].label }}
-            </span>
+            <div class="flex items-center gap-2">
+              <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1" :class="statusMeta[project.status].class">
+                <span class="size-1.5 rounded-full" :class="statusMeta[project.status].dot" />
+                {{ statusMeta[project.status].label }}
+              </span>
+              <UDropdownMenu :items="getDropdownItems()">
+                <UButton
+                  color="neutral"
+                  variant="ghost"
+                  size="xs"
+                  icon="i-heroicons-ellipsis-vertical"
+                  aria-label="Ações do projeto"
+                  class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                  @click.stop
+                />
+              </UDropdownMenu>
+            </div>
           </div>
           <div class="mt-4">
             <h2 class="text-lg font-bold text-slate-800 dark:text-slate-100">{{ project.name }}</h2>
