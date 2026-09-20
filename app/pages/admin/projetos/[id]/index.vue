@@ -56,6 +56,83 @@ function teamTone(color: string) {
 }
 const isCreateTeamOpen = ref(false)
 const refreshProjects = () => fetchUserProjectsFromSupabase(true)
+
+// ─── Team Actions ────────────────────────────────────────────────────────────
+import { deleteTeamFromSupabase } from '~/composables/useTeamsData'
+
+const isEditTeamOpen = ref(false)
+const selectedTeamToEdit = ref<any>(null)
+
+const isDeleteTeamOpen = ref(false)
+const selectedTeamToDelete = ref<any>(null)
+const isDeletingTeam = ref(false)
+const toast = useToast()
+const router = useRouter()
+
+function openEditTeam(team: any) {
+  selectedTeamToEdit.value = team
+  isEditTeamOpen.value = true
+}
+
+function openDeleteTeam(team: any) {
+  selectedTeamToDelete.value = team
+  isDeleteTeamOpen.value = true
+}
+
+function handleTeamUpdated() {
+  refreshProjects()
+}
+
+async function confirmDeleteTeam() {
+  if (!selectedTeamToDelete.value) return
+  isDeletingTeam.value = true
+
+  const success = await deleteTeamFromSupabase(selectedTeamToDelete.value.id)
+  isDeletingTeam.value = false
+
+  if (success) {
+    toast.add({
+      title: 'Equipe excluída',
+      description: 'A equipe foi excluída permanentemente.',
+      color: 'success',
+      icon: 'i-heroicons-check-circle'
+    })
+    isDeleteTeamOpen.value = false
+    selectedTeamToDelete.value = null
+    refreshProjects()
+  } else {
+    toast.add({
+      title: 'Erro',
+      description: 'Não foi possível excluir a equipe.',
+      color: 'error',
+      icon: 'i-heroicons-x-circle'
+    })
+  }
+}
+
+function getTeamDropdownItems(team: any) {
+  return [[
+    {
+      label: 'Editar Equipe',
+      icon: 'i-heroicons-pencil-square',
+      onSelect() {
+        openEditTeam(team)
+      }
+    },
+    {
+      label: 'Excluir Equipe',
+      icon: 'i-heroicons-trash',
+      color: 'error' as const,
+      onSelect() {
+        openDeleteTeam(team)
+      }
+    }
+  ]]
+}
+
+function goTeam(teamId: string) {
+  router.push(`/admin/projetos/${project.value?.id}/equipe/${teamId}`)
+}
 </script>
 
 <template>
@@ -88,11 +165,11 @@ const refreshProjects = () => fetchUserProjectsFromSupabase(true)
     />
    </div>
    <div v-if="project.teams?.length" class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-     <NuxtLink
+     <article
       v-for="team in project.teams"
       :key="team.id"
-      :to="`/admin/projetos/${project.id}/equipe/${team.id}`"
-      class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 transition-colors hover:border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-slate-600"
+      @click="goTeam(team.id)"
+      class="group relative flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 transition-colors hover:border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-slate-600"
      >
       <span class="grid size-10 shrink-0 place-items-center rounded-lg text-sm font-bold text-white" :class="team.color || 'bg-violet-500'">
        {{ team.initial || (team.name || 'EQ').substring(0,2).toUpperCase() }}
@@ -104,8 +181,26 @@ const refreshProjects = () => fetchUserProjectsFromSupabase(true)
        </div>
        <p class="mt-0.5 text-xs text-slate-400">{{ team.memberCount || team.membros?.length || 0 }} membros</p>
       </div>
-      <UIcon name="i-heroicons-chevron-right" class="size-4 shrink-0 text-slate-300" />
-     </NuxtLink>
+      
+      <div class="flex items-center gap-1 shrink-0">
+        <UIcon name="i-heroicons-chevron-right" class="size-4 shrink-0 text-slate-300" />
+        
+        <UDropdownMenu 
+          v-if="['Administrador', 'Admin'].includes(useCurrentUser().role)" 
+          :items="getTeamDropdownItems(team)"
+        >
+          <UButton
+            color="neutral"
+            variant="ghost"
+            size="xs"
+            icon="i-heroicons-ellipsis-vertical"
+            aria-label="Ações da equipe"
+            class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+            @click.stop
+          />
+        </UDropdownMenu>
+      </div>
+     </article>
    </div>
    <div v-else class="mt-4 text-center py-6 text-sm text-slate-500 border border-dashed border-slate-200 dark:border-slate-700 rounded-xl">
      Este projeto ainda não possui nenhuma equipe.
@@ -145,5 +240,20 @@ const refreshProjects = () => fetchUserProjectsFromSupabase(true)
     v-model:open="isCreateTeamOpen"
     :project-id="project.id"
     @created="refreshProjects"
+  />
+
+  <ModalEditTeam
+    v-if="selectedTeamToEdit"
+    v-model:open="isEditTeamOpen"
+    :team="selectedTeamToEdit"
+    @updated="handleTeamUpdated"
+  />
+
+  <ModalConfirmDeleteTeam
+    v-if="selectedTeamToDelete"
+    v-model:open="isDeleteTeamOpen"
+    :team-name="selectedTeamToDelete.name || selectedTeamToDelete.nome"
+    :is-deleting="isDeletingTeam"
+    @confirm="confirmDeleteTeam"
   />
 </template>
