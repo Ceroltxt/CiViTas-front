@@ -15,7 +15,19 @@ const config = useRuntimeConfig()
 const baseURL = computed(() => (config.public.apiBase as string) || 'http://localhost:8080/api')
 function authHeaders() {
   const t = getAuthToken()
-  return { Accept: 'application/json', ...(t ? { Authorization: `Bearer ${t}` } : {}) }
+  const headers: Record<string, string> = { Accept: 'application/json', ...(t ? { Authorization: `Bearer ${t}` } : {}) }
+  
+  if (typeof document !== 'undefined') {
+    const match = document.cookie.match(/(?:^|;\s*)active_workspace_id=([^;]*)/)
+    if (match?.[1]) {
+      let val = decodeURIComponent(match[1])
+      if (val.startsWith('"') && val.endsWith('"')) {
+        val = val.slice(1, -1)
+      }
+      headers['X-Workspace-Id'] = val
+    }
+  }
+  return headers
 }
 
 // ─── Dados do projeto (da ref reativa compartilhada) ─────────────────────────
