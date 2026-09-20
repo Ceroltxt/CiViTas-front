@@ -78,10 +78,10 @@ async function handleSubmit() {
     membros: state.membros.map(Number),
   }
 
-  const success = await createTeamInSupabase(payload)
+  const result = await createTeamInSupabase(payload)
   isLoading.value = false
 
-  if (success) {
+  if (result.success) {
     toast.add({
       title: 'Equipe criada!',
       description: `A equipe "${state.nome}" foi criada com sucesso.`,
@@ -91,7 +91,7 @@ async function handleSubmit() {
     emit('created')
     closeModal()
   } else {
-    errorMessage.value = 'Erro ao criar equipe. Verifique os dados e tente novamente.'
+    errorMessage.value = 'Erro: ' + (result.error || 'Verifique os dados e tente novamente.')
   }
 }
 </script>

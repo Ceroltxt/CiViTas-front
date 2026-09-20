@@ -14,11 +14,14 @@ function getApiConfig() {
   if (token) {
     headers.Authorization = `Bearer ${token}`
   }
-  // Lê o workspace ativo do cookie (mesmo padrão do useApi/http.ts)
   if (typeof document !== 'undefined') {
     const match = document.cookie.match(/(?:^|;\s*)active_workspace_id=([^;]*)/)
     if (match?.[1]) {
-      headers['X-Workspace-Id'] = decodeURIComponent(match[1])
+      let val = decodeURIComponent(match[1])
+      if (val.startsWith('"') && val.endsWith('"')) {
+        val = val.slice(1, -1)
+      }
+      headers['X-Workspace-Id'] = val
     }
   }
   return { baseURL, headers, token }
@@ -46,41 +49,37 @@ export async function fetchTeamsFromSupabase(): Promise<void> {
 }
 
 export async function fetchGestoresFromSupabase(): Promise<UserSummary[]> {
-  const fallback = [{ id: '2', name: 'Milani Ribeiro', role: 'Gestor' }]
   try {
     const { baseURL, headers, token } = getApiConfig()
-    if (!token) return fallback
+    if (!token) return []
 
     const res = await $fetch<any>('/gestores', { baseURL, headers })
     const list = Array.isArray(res) ? res : res?.data
-    const result = Array.isArray(list) ? list : []
-    return result.length > 0 ? result : fallback
+    return Array.isArray(list) ? list : []
   } catch (e) {
     console.error('Erro ao buscar gestores do Supabase:', e)
-    return fallback
+    return []
   }
 }
 
 export async function fetchColaboradoresFromSupabase(): Promise<UserSummary[]> {
-  const fallback = [{ id: '1', name: 'Costa Neves', role: 'Colaborador' }]
   try {
     const { baseURL, headers, token } = getApiConfig()
-    if (!token) return fallback
+    if (!token) return []
 
     const res = await $fetch<any>('/colaboradores', { baseURL, headers })
     const list = Array.isArray(res) ? res : res?.data
-    const result = Array.isArray(list) ? list : []
-    return result.length > 0 ? result : fallback
+    return Array.isArray(list) ? list : []
   } catch (e) {
     console.error('Erro ao buscar colaboradores do Supabase:', e)
-    return fallback
+    return []
   }
 }
 
-export async function createTeamInSupabase(payload: { nome: string; matricula_gestor: number; ID_projeto?: number | null; membros?: number[] }): Promise<boolean> {
+export async function createTeamInSupabase(payload: { nome: string; matricula_gestor: number; ID_projeto?: number | null; membros?: number[], descricao?: string, prazo?: string }): Promise<{success: boolean, error?: string}> {
   try {
     const { baseURL, headers, token } = getApiConfig()
-    if (!token) return false
+    if (!token) return { success: false, error: 'Usuário não autenticado' }
 
     const res = await $fetch<any>(ENDPOINTS.teams, {
       method: 'POST',
@@ -95,10 +94,10 @@ export async function createTeamInSupabase(payload: { nome: string; matricula_ge
     }
 
     fetchTeamsFromSupabase()
-    return true
-  } catch (e) {
+    return { success: true }
+  } catch (e: any) {
     console.error('Erro ao criar equipe no Supabase:', e)
-    return false
+    return { success: false, error: e.response?._data?.message || e.message || 'Erro desconhecido' }
   }
 }
 
