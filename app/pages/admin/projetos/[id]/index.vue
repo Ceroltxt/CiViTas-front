@@ -55,6 +55,7 @@ function teamTone(color: string) {
   return teamColorMap[color] ?? { bg: 'bg-slate-100 dark:bg-slate-800', text: 'text-slate-700 dark:text-slate-300' }
 }
 const isCreateTeamOpen = ref(false)
+const refreshProjects = () => fetchUserProjectsFromSupabase(true)
 </script>
 
 <template>
@@ -70,32 +71,44 @@ const isCreateTeamOpen = ref(false)
   <div class="grid grid-cols-2 gap-3 lg:grid-cols-4"><div v-for="stat in [{ label: 'Total', value: projectTasks.length, icon: 'i-heroicons-chart-bar' }, { label: 'Concluídas', value: done, icon: 'i-heroicons-check-circle' }, { label: 'Em andamento', value: progress, icon: 'i-heroicons-clock' }, { label: 'Atrasadas', value: delayed, icon: 'i-heroicons-exclamation-triangle' }]" :key="stat.label" class="rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div class="flex items-center gap-3"><span class="grid size-9 place-items-center rounded-lg bg-orange-50 text-orange-600"><UIcon :name="stat.icon" class="size-4" /></span><div><p class="text-xl font-bold text-slate-800 dark:text-slate-100">{{ stat.value }}</p><p class="text-xs text-slate-500">{{ stat.label }}</p></div></div></div></div>
 
   <!-- Equipes do projeto -->
-  <section v-if="project.teams?.length" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
    <div class="flex items-center justify-between">
     <div class="flex items-center gap-2">
      <UIcon name="i-heroicons-user-group" class="size-5 text-violet-500" />
-     <h2 class="font-semibold text-slate-800 dark:text-slate-100">Equipes que você faz parte neste projeto</h2>
+     <h2 class="font-semibold text-slate-800 dark:text-slate-100">Equipes do projeto</h2>
     </div>
+    <UButton
+      v-if="['Administrador', 'Admin'].includes(useCurrentUser().role)"
+      color="primary"
+      variant="solid"
+      size="sm"
+      icon="i-heroicons-plus"
+      label="Criar Equipe"
+      @click="isCreateTeamOpen = true"
+    />
    </div>
-   <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+   <div v-if="project.teams?.length" class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
      <NuxtLink
       v-for="team in project.teams"
       :key="team.id"
       :to="`/admin/projetos/${project.id}/equipe/${team.id}`"
       class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 transition-colors hover:border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-slate-600"
      >
-      <span class="grid size-10 shrink-0 place-items-center rounded-lg text-sm font-bold text-white" :class="team.color">
-       {{ team.initial }}
+      <span class="grid size-10 shrink-0 place-items-center rounded-lg text-sm font-bold text-white" :class="team.color || 'bg-violet-500'">
+       {{ team.initial || (team.name || 'EQ').substring(0,2).toUpperCase() }}
       </span>
       <div class="min-w-0 flex-1">
        <div class="flex items-center gap-2">
-        <p class="truncate text-sm font-semibold text-slate-700 dark:text-slate-200">{{ team.name }}</p>
-        <span class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold" :class="[teamTone(team.color).bg, teamTone(team.color).text]">{{ team.role }}</span>
+        <p class="truncate text-sm font-semibold text-slate-700 dark:text-slate-200">{{ team.name || team.nome }}</p>
+        <span class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold" :class="[teamTone(team.color || 'bg-violet-500').bg, teamTone(team.color || 'bg-violet-500').text]">{{ team.role || 'Membro' }}</span>
        </div>
-       <p class="mt-0.5 text-xs text-slate-400">{{ team.memberCount }} membros</p>
+       <p class="mt-0.5 text-xs text-slate-400">{{ team.memberCount || team.membros?.length || 0 }} membros</p>
       </div>
       <UIcon name="i-heroicons-chevron-right" class="size-4 shrink-0 text-slate-300" />
      </NuxtLink>
+   </div>
+   <div v-else class="mt-4 text-center py-6 text-sm text-slate-500 border border-dashed border-slate-200 dark:border-slate-700 rounded-xl">
+     Este projeto ainda não possui nenhuma equipe.
    </div>
   </section>
 
@@ -127,5 +140,10 @@ const isCreateTeamOpen = ref(false)
    </div>
   </section>
  </div>
-  <ModalCreateTeam v-model="isCreateTeamOpen" />
+  <ModalCreateTeam
+    v-if="project"
+    v-model:open="isCreateTeamOpen"
+    :project-id="project.id"
+    @created="refreshProjects"
+  />
 </template>

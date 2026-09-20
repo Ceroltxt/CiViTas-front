@@ -6,19 +6,33 @@ import { ref } from 'vue'
 const teamsRef = ref<TeamDetail[]>([])
 let isFetchingTeams = false
 
+function getApiConfig() {
+  const config = useRuntimeConfig()
+  const token = getAuthToken()
+  const baseURL = (config.public.apiBase as string) || 'http://localhost:8080/api'
+  const headers: Record<string, string> = { Accept: 'application/json' }
+  if (token) {
+    headers.Authorization = `Bearer ${token}`
+  }
+  // Lê o workspace ativo do cookie (mesmo padrão do useApi/http.ts)
+  if (typeof document !== 'undefined') {
+    const match = document.cookie.match(/(?:^|;\s*)active_workspace_id=([^;]*)/)
+    if (match?.[1]) {
+      headers['X-Workspace-Id'] = decodeURIComponent(match[1])
+    }
+  }
+  return { baseURL, headers, token }
+}
+
 export async function fetchTeamsFromSupabase(): Promise<void> {
   if (typeof window === 'undefined') return
   if (isFetchingTeams) return
 
-  const token = getAuthToken()
+  const { baseURL, headers, token } = getApiConfig()
   if (!token) return
 
   isFetchingTeams = true
   try {
-    const config = useRuntimeConfig()
-    const baseURL = (config.public.apiBase as string) || 'http://localhost:8080/api'
-    const headers = { Accept: 'application/json', Authorization: `Bearer ${token}` }
-
     const res = await $fetch<any>(ENDPOINTS.teams, { baseURL, headers })
     const list = Array.isArray(res) ? res : res?.data
     if (Array.isArray(list)) {
@@ -33,12 +47,8 @@ export async function fetchTeamsFromSupabase(): Promise<void> {
 
 export async function fetchGestoresFromSupabase(): Promise<UserSummary[]> {
   try {
-    const config = useRuntimeConfig()
-    const token = getAuthToken()
+    const { baseURL, headers, token } = getApiConfig()
     if (!token) return []
-
-    const baseURL = (config.public.apiBase as string) || 'http://localhost:8080/api'
-    const headers = { Accept: 'application/json', Authorization: `Bearer ${token}` }
 
     const res = await $fetch<any>('/gestores', { baseURL, headers })
     const list = Array.isArray(res) ? res : res?.data
@@ -49,14 +59,24 @@ export async function fetchGestoresFromSupabase(): Promise<UserSummary[]> {
   }
 }
 
+export async function fetchColaboradoresFromSupabase(): Promise<UserSummary[]> {
+  try {
+    const { baseURL, headers, token } = getApiConfig()
+    if (!token) return []
+
+    const res = await $fetch<any>('/colaboradores', { baseURL, headers })
+    const list = Array.isArray(res) ? res : res?.data
+    return Array.isArray(list) ? list : []
+  } catch (e) {
+    console.error('Erro ao buscar colaboradores do Supabase:', e)
+    return []
+  }
+}
+
 export async function createTeamInSupabase(payload: { nome: string; matricula_gestor: number; ID_projeto?: number | null; membros?: number[] }): Promise<boolean> {
   try {
-    const config = useRuntimeConfig()
-    const token = getAuthToken()
+    const { baseURL, headers, token } = getApiConfig()
     if (!token) return false
-
-    const baseURL = (config.public.apiBase as string) || 'http://localhost:8080/api'
-    const headers = { Accept: 'application/json', Authorization: `Bearer ${token}` }
 
     const res = await $fetch<any>(ENDPOINTS.teams, {
       method: 'POST',
@@ -80,12 +100,8 @@ export async function createTeamInSupabase(payload: { nome: string; matricula_ge
 
 export async function updateTeamInSupabase(id: string, payload: { nome?: string; matricula_gestor?: number; membros?: number[] }): Promise<boolean> {
   try {
-    const config = useRuntimeConfig()
-    const token = getAuthToken()
+    const { baseURL, headers, token } = getApiConfig()
     if (!token) return false
-
-    const baseURL = (config.public.apiBase as string) || 'http://localhost:8080/api'
-    const headers = { Accept: 'application/json', Authorization: `Bearer ${token}` }
 
     await $fetch<any>(`${ENDPOINTS.teams}/${id}`, {
       method: 'PUT',
@@ -104,12 +120,8 @@ export async function updateTeamInSupabase(id: string, payload: { nome?: string;
 
 export async function deleteTeamFromSupabase(id: string): Promise<boolean> {
   try {
-    const config = useRuntimeConfig()
-    const token = getAuthToken()
+    const { baseURL, headers, token } = getApiConfig()
     if (!token) return false
-
-    const baseURL = (config.public.apiBase as string) || 'http://localhost:8080/api'
-    const headers = { Accept: 'application/json', Authorization: `Bearer ${token}` }
 
     await $fetch(`${ENDPOINTS.teams}/${id}`, {
       method: 'DELETE',
