@@ -42,7 +42,7 @@ async function loadData() {
       fetchAllProjectsFromSupabase(),
       $fetch<any[]>('/teams', { baseURL, headers }).catch(() => []),
       $fetch<any[]>('/colaboradores', { baseURL, headers }).catch(() => []),
-      fetchTasksFromSupabase(true),
+      fetchTasksFromSupabase(),
     ])
 
     projects.value = Array.isArray(projData) ? projData : []

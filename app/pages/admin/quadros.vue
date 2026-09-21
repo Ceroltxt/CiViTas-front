@@ -14,7 +14,7 @@ onMounted(async () => {
   if (isDataLoaded.value) return
   const [projData] = await Promise.all([
     fetchAllProjectsFromSupabase(),
-    fetchTasksFromSupabase(true),
+    fetchTasksFromSupabase(),
   ])
   projects.value = Array.isArray(projData) ? projData : []
   isDataLoaded.value = true
