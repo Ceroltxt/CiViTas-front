@@ -7,6 +7,7 @@ import chartProjectHealth from '~/components/chart/chartProjectHealth.vue'
 import chartProductivityTrend from '~/components/chart/chartProductivityTrend.vue'
 import { fetchAllProjectsFromSupabase } from '~/composables/useUserProjects'
 import { fetchTasksFromSupabase, useTasksRef, getAuthToken } from '~/composables/useTasksData'
+import { getWorkspaceHeaders } from '~/composables/useWorkspace'
 
 definePageMeta({ sidebarWidget: 'project' })
 
@@ -24,8 +25,8 @@ const colaboradores = useState<any[]>('admin_colabs_cache', () => [])
 const isDataLoaded = useState<boolean>('admin_dashboard_loaded', () => false)
 const isLoading = ref(!isDataLoaded.value)
 
-async function loadData() {
-  if (isDataLoaded.value) {
+async function loadData(force = false) {
+  if (isDataLoaded.value && !force && teams.value.length > 0) {
     return
   }
   isLoading.value = true
@@ -33,7 +34,10 @@ async function loadData() {
     const config = useRuntimeConfig()
     const baseURL = (config.public.apiBase as string) || 'http://localhost:8080/api'
     const token = getAuthToken()
-    const headers: Record<string, string> = { Accept: 'application/json' }
+    const headers: Record<string, string> = {
+      Accept: 'application/json',
+      ...getWorkspaceHeaders(),
+    }
     if (token) {
       headers.Authorization = `Bearer ${token}`
     }
