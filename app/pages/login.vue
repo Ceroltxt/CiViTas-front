@@ -1,24 +1,27 @@
 <script setup lang="ts">
-definePageMeta({ layout: 'blank' })
+import { ref } from "vue";
+definePageMeta({ layout: "blank" });
 
-const email = ref('')
-const password = ref('')
+const email = ref("");
+const password = ref("");
+const showPassword = ref(false);
 
-const auth = useAuth()
-const { login, isLoading, errorMessage } = auth
+const auth = useAuth();
+const { login, isLoading, errorMessage } = auth;
 
 async function handleLogin() {
-  if (!email.value || !password.value) return
-  const result = await login(email.value, password.value)
+  if (!email.value || !password.value) return;
+  const result = await login(email.value, password.value);
   if (result.success && result.targetRoute) {
-    await navigateTo(result.targetRoute)
+    await navigateTo(result.targetRoute);
   }
 }
 </script>
 
 <template>
-  <div class="flex min-h-screen bg-gradient-to-r from-purple-600/95 via-red-400/95 to-amber-400/95">
-
+  <div
+    class="flex min-h-screen bg-linear-to-r from-purple-600/95 via-red-400/95 to-amber-400/95"
+  >
     <!-- ilustração -->
     <div class="hidden md:flex flex-1 items-center justify-center p-8 lg:p-16">
       <!-- imagem da logo no fundo -->
@@ -36,8 +39,9 @@ async function handleLogin() {
 
     <!-- card de login -->
     <div class="flex flex-1 items-center justify-center p-4 md:p-8">
-      <div class="w-full max-w-sm bg-white dark:bg-slate-800 rounded-xl shadow-2xl p-8 md:p-10 space-y-6">
-
+      <div
+        class="w-full max-w-sm bg-white dark:bg-slate-800 rounded-xl shadow-2xl p-8 md:p-10 space-y-6"
+      >
         <img
           src="/civitas-logo-transparent.png"
           alt="Logo Civitas"
@@ -52,7 +56,7 @@ async function handleLogin() {
             :description="errorMessage"
             color="error"
             variant="soft"
-            icon="i-lucide-alert-circle"
+            icon="i-heroicons-shield-exclamation"
             class="text-xs"
           />
 
@@ -70,20 +74,35 @@ async function handleLogin() {
           <UFormField label="Senha" name="password">
             <template #hint>
               <NuxtLink
-                to="/forgot-password"
-                class="text-xs text-blue-500 hover:underline"
+                to="recuperacao-senha"
+                @click="navigateTo('/recuperacao-senha')"
+                class="text-xs text-blue-500 hover:underline" 
               >
                 Esqueceu sua senha?
-              </NuxtLink>
+              </NuxtLink> <!-- acredito que o problema estaja no backend, pq essa página esta classificada como pathPublic, ent deve ser um problema com os tokens do backend -->
             </template>
+
             <UInput
               v-model="password"
-              type="password"
+              :type="showPassword ? 'text' : 'password'"
               required
               placeholder="Digite sua senha"
               class="w-full"
               :disabled="isLoading"
-            />
+            >
+              <template #trailing>
+                <UButton
+                  color="neutral"
+                  variant="ghost"
+                  :icon="
+                    showPassword ? 'i-heroicons-eye-slash' : 'i-heroicons-eye'
+                  "
+                  :aria-label="showPassword ? 'Ocultar senha' : 'Mostrar senha'"
+                  :disabled="isLoading"
+                  @click="showPassword = !showPassword"
+                />
+              </template>
+            </UInput>
           </UFormField>
 
           <UButton
@@ -108,9 +127,7 @@ async function handleLogin() {
         >
           Não tenho conta
         </UButton>
-
       </div>
     </div>
-
   </div>
 </template>
