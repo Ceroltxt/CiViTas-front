@@ -7,7 +7,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
     to.path === "/login" ||
     to.path === "/cadastro" ||
     to.path === "/esqueci-senha" ||
-    to.path === "/recuperar-senha";
+    to.path === "/reset-password";
 
   // 1. Se o usuário estiver acessando /login ou /cadastro diretamente, PERMITIR SEMPRE.
   if (isPublicRoute) {

@@ -74,12 +74,12 @@ async function handleLogin() {
           <UFormField label="Senha" name="password">
             <template #hint>
               <NuxtLink
-                to="recuperacao-senha"
-                @click="navigateTo('/recuperacao-senha')"
+                to="reset-password"
+                @click="navigateTo('/reset-password')"
                 class="text-xs text-blue-500 hover:underline" 
               >
                 Esqueceu sua senha?
-              </NuxtLink> <!-- acredito que o problema estaja no backend, pq essa página esta classificada como pathPublic, ent deve ser um problema com os tokens do backend -->
+              </NuxtLink> 
             </template>
 
             <UInput
