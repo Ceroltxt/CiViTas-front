@@ -283,10 +283,10 @@ function cancelMoving() {
           </div>
         </div>
         <div class="flex items-center justify-between border-t border-slate-100 bg-slate-50/60 px-5 py-3 dark:border-slate-800 dark:bg-slate-900/60">
-          <button type="button" class="flex items-center gap-1.5 text-sm font-semibold text-orange-600 transition-colors hover:text-orange-700 dark:text-orange-300" @click.stop="openProject(project.id)">
+          <button type="button" class="flex items-center gap-1.5 text-sm font-semibold text-slate-800 dark:text-slate-600 transition-colors hover:text-orange-500" @click.stop="openProject(project.id)">
             Ver projeto <UIcon name="i-heroicons-arrow-right" class="size-4" />
           </button>
-          <button type="button" class="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 transition-colors hover:border-orange-200 hover:text-orange-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300" @click.stop="openProject(project.id)">
+          <button type="button" class="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-semibold text-slate-600  hover:border-orange-500  transition-colors hover:text-orange-500 disabled:cursor-not-allowed disabled:opacity-30 dark:hover:bg-slate-800/70 cursor-pointer" @click.stop="openProject(project.id)">
             <UIcon name="i-heroicons-list-bullet" class="size-4" />
             Tarefas
           </button>

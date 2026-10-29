@@ -134,17 +134,17 @@ function exportLogs() {
       <div class="flex items-center gap-3">
         <UButton
           color="neutral"
-          variant="outline"
+          variant="ghost"
           icon="i-heroicons-arrow-down-tray"
           label="Exportar Logs"
-          class="bg-white hover:bg-slate-50 text-slate-700 border-slate-200 font-semibold"
+          class="border border-transparent shadow-sm font-medium text-slate-700 transition-colors hover:border-violet-200 hover:bg-violet-50 hover:text-violet-700 dark:text-slate-200 dark:hover:border-violet-800 dark:hover:bg-violet-950/30 dark:hover:text-violet-200 cursor-pointer"
           @click="exportLogs"
         />
 
         <div class="h-6 w-px bg-slate-200 dark:bg-slate-800" />
 
         <span class="text-sm text-slate-500 font-medium">Itens:</span>
-        <USelect v-model="perPage" :items="[5, 10, 25, 50]" class="w-18 bg-white" />
+        <USelect v-model="perPage" :items="[5, 10, 25, 50]" class="w-18 border border-transparent shadow-sm font-medium text-slate-700 transition-colors hover:border-violet-200 hover:bg-violet-50 hover:text-violet-700 dark:text-slate-200 dark:hover:border-violet-800 dark:hover:bg-violet-950/30 dark:hover:text-violet-200 cursor-pointer" />
 
         <div class="flex overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700">
           <button
@@ -171,7 +171,7 @@ function exportLogs() {
 
     <UiSectionCard class="!p-0">
       <!-- Filtros -->
-      <div class="grid grid-cols-2 gap-4 p-5 md:grid-cols-3 lg:grid-cols-5 border-b border-slate-100 dark:border-slate-800">
+      <div class="grid grid-cols-2 gap-4 p-5 md:grid-cols-3 lg:grid-cols-5 border-b border-slate-100 dark:border-slate-900">
         <!-- Projetos -->
         <div>
           <label class="mb-1.5 block text-sm font-semibold text-slate-500 dark:text-slate-400">Projetos</label>
@@ -179,7 +179,7 @@ function exportLogs() {
             v-model="selectedProjeto"
             :items="projetoItems"
             trailing-icon="i-heroicons-chevron-down"
-            class="w-full text-slate-600 bg-white border border-slate-200 dark:border-slate-800"
+            class="w-full text-slate-600 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800"
           />
         </div>
 
@@ -190,7 +190,7 @@ function exportLogs() {
             v-model="selectedEquipe"
             :items="equipeItems"
             trailing-icon="i-heroicons-chevron-down"
-            class="w-full text-slate-600 bg-white border border-slate-200 dark:border-slate-800"
+            class="w-full text-slate-600 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800"
           />
         </div>
 
@@ -201,7 +201,7 @@ function exportLogs() {
             v-model="selectedGestor"
             :items="gestorItems"
             trailing-icon="i-heroicons-chevron-down"
-            class="w-full text-slate-600 bg-white border border-slate-200 dark:border-slate-800"
+            class="w-full text-slate-600 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800"
           />
         </div>
 
@@ -212,7 +212,7 @@ function exportLogs() {
             v-model="selectedTarefa"
             :items="tarefaItems"
             trailing-icon="i-heroicons-chevron-down"
-            class="w-full text-slate-600 bg-white border border-slate-200 dark:border-slate-800"
+            class="w-full text-slate-600 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800"
           />
         </div>
 
@@ -223,7 +223,7 @@ function exportLogs() {
             v-model="selectedPeriodo"
             :items="periodoItems"
             trailing-icon="i-heroicons-chevron-down"
-            class="w-full text-slate-600 bg-white border border-slate-200 dark:border-slate-800"
+            class="w-full text-slate-600 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800"
           />
         </div>
       </div>

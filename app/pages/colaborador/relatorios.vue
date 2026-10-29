@@ -120,14 +120,14 @@ function exportLogs() {
           variant="outline"
           icon="i-heroicons-arrow-down-tray"
           label="Exportar Logs"
-          class="bg-white hover:bg-slate-50 text-slate-700 border-slate-200 font-semibold"
+          class="border border-transparent shadow-sm font-medium text-slate-700 transition-colors hover:border-violet-200 hover:bg-violet-50 hover:text-violet-700 dark:text-slate-200 dark:hover:border-violet-800 dark:hover:bg-violet-950/30 dark:hover:text-violet-200 cursor-pointer"
           @click="exportLogs"
         />
 
         <div class="h-6 w-px bg-slate-200 dark:bg-slate-800" />
 
         <span class="text-sm text-slate-500 font-medium">Itens:</span>
-        <USelect v-model="perPage" :items="[5, 10, 15, 20]" class="w-18 bg-white" />
+        <USelect v-model="perPage" :items="[5, 10, 15, 20]" class="w-18 border border-transparent shadow-sm font-medium text-slate-700 transition-colors hover:border-violet-200 hover:bg-violet-50 hover:text-violet-700 dark:text-slate-200 dark:hover:border-violet-800 dark:hover:bg-violet-950/30 dark:hover:text-violet-200 cursor-pointer" />
 
         <div class="flex overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700">
           <button

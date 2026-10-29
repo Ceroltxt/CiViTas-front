@@ -36,7 +36,7 @@ watch(sidebarCollapsed, (isCollapsed) => {
       <!-- Sidebar de ícones (ou completa se expandida) -->
       <div 
         class="flex h-full flex-col border-r border-slate-200 dark:border-slate-800 overflow-hidden transition-all duration-300"
-        :class="sidebarCollapsed ? 'w-[72px]' : 'w-64'"
+        :class="sidebarCollapsed ? 'w-18' : 'w-64'"
       >
         <AppSidebar :widget="widget" :collapsed="sidebarCollapsed" @toggle-projects="showSecondary = !showSecondary" />
       </div>
@@ -59,7 +59,7 @@ watch(sidebarCollapsed, (isCollapsed) => {
       </template>
     </USlideover>
 
-    <!-- Conteúdo -->
+    <!-- Conteúdo, ou seja a p´´agina principal, não a sidebar -->
     <div class="flex min-w-0 flex-1 flex-col transition-all duration-300">
       <AppHeader @open-menu="mobileOpen = true" />
       <main ref="main" class="scroll-thin flex-1 overflow-y-auto">

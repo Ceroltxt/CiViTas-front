@@ -35,9 +35,11 @@ function changePassword() {
         <p class="text-sm text-slate-400">Gerencie sua conta e preferências do sistema</p>
       </div>
       <UButton
-        icon="i-heroicons-check"
+        color="primary"
+        variant="outline"
+        icon="i-heroicons-check-badge"
         label="Salvar Alterações"
-        class="bg-[#bd52c9] hover:bg-[#a942b4] text-white font-semibold flex items-center gap-1.5 px-4 py-2 rounded-lg"
+        class="border border-transparent shadow-sm text-slate-700 transition-colors hover:border-orange-200 hover:bg-orange-50 hover:text-orange-700 dark:text-slate-200 dark:hover:border-orange-800 dark:hover:bg-orange-950/30 dark:hover:text-orange-200 font-semibold flex items-center gap-1.5 px-4 py-2 rounded-lg"
         @click="saveChanges"
       />
     </div>
@@ -49,11 +51,11 @@ function changePassword() {
           <UAvatar :src="user.avatar" :alt="name" size="xl" class="size-16" />
           <div class="space-y-1">
             <UButton
-              color="neutral"
+              color="secondary"
               variant="outline"
               icon="i-heroicons-camera"
               label="Alterar foto"
-              class="bg-white text-slate-700 border-slate-200"
+              class="border border-transparent shadow-sm font-medium text-violet-700 transition-colors hover:border-violet-200 hover:bg-violet-50 hover:text-violet-700 dark:text-slate-200 dark:hover:border-violet-800 dark:hover:bg-violet-950/30 dark:hover:text-violet-200"
             />
             <p class="text-xs text-slate-400">JPG, GIF ou PNG. Máximo de 2MB.</p>
           </div>
@@ -88,13 +90,13 @@ function changePassword() {
           </div>
           <USwitch v-model="notifications" />
         </div>
-        <div class="flex items-center justify-between py-4">
+        <!--<div class="flex items-center justify-between py-4">
           <div>
             <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">Resumo semanal por e-mail</p>
             <p class="text-xs text-slate-400">Receba um relatório com as atividades e progresso da sua equipe toda sexta-feira</p>
           </div>
           <USwitch v-model="weeklyDigest" />
-        </div>
+        </div>-->
       </div>
     </UiSectionCard>
 
@@ -106,11 +108,10 @@ function changePassword() {
           <p class="text-xs text-slate-400">A última alteração foi feita há 3 meses</p>
         </div>
         <UButton
-          color="neutral"
           variant="outline"
           icon="i-heroicons-key"
           label="Alterar Senha"
-          class="bg-white hover:bg-slate-50 text-slate-700 border-slate-200"
+          class="border border-transparent shadow-sm font-medium text-slate-700 transition-colors hover:border-orange-200 hover:bg-orange-50 hover:text-orange-700 dark:text-slate-200 dark:hover:border-orange-800 dark:hover:bg-orange-950/30 dark:hover:text-orange-200"
           @click="changePassword"
         />
       </div>

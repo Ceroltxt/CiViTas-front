@@ -111,7 +111,7 @@ function styleForRole(roleRaw: string) {
       displayName: 'Painel Administrativo',
       roleDesc: 'Acesso total ao sistema',
       icon: 'i-lucide-folder',
-      iconBg: 'bg-[#fde8e8]',
+      iconBg: 'bg-rose-200',
       iconColor: 'text-[#ef4444]',
       badgeIcon: 'i-lucide-crown',
       badgeClass: 'text-[#f43f5e]',

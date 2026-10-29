@@ -50,6 +50,7 @@ function isNavActive(to: string) {
         <template v-if="!workspaceHidden || collapsed">
           <div class="space-y-1">
             <NuxtLink
+            class="hover:bg-orange-50 dark:hover:bg-slate-600 dark:hover:text-slate-400"
               v-for="item in nav"
               :key="item.to"
               :to="item.to"

@@ -350,7 +350,7 @@ function openProject(projectId: string) {
             color="white"
             icon="i-heroicons-calendar-days"
             :label="dateLabel"
-            class="shadow-sm font-medium text-slate-700 dark:text-slate-200 min-w-32 justify-between"
+            class="border border-transparent shadow-sm font-medium text-slate-700 transition-colors hover:border-violet-200 hover:bg-violet-50 hover:text-violet-700 dark:text-slate-200 dark:hover:border-violet-800 dark:hover:bg-violet-950/30 dark:hover:text-violet-200 min-w-32 justify-between"
             trailing-icon="i-heroicons-chevron-down-20-solid"
           />
           <template #content>

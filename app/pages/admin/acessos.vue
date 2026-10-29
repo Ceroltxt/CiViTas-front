@@ -150,7 +150,8 @@ const items: DropdownMenuItem[][] = [
       <div class="flex items-center gap-3">
         <UModal title="Convidar colaborador">
           <UButton
-            color="primary"
+            class="cursor-pointer"
+            color="secondary"
             icon="i-heroicons-plus"
             label="Convidar"
           />
