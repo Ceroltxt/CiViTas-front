@@ -169,7 +169,10 @@ function exportLogs() {
       </div>
     </div>
 
-    <UiSectionCard class="!p-0">
+    <!-- Importação e exportação CSV -->
+    <RelatoriosCsvActions />
+
+    <UiSectionCard class="p-0!">
       <!-- Filtros -->
       <div class="grid grid-cols-2 gap-4 p-5 md:grid-cols-3 lg:grid-cols-5 border-b border-slate-100 dark:border-slate-800">
         <!-- Projetos -->

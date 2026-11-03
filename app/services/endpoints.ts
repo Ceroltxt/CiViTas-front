@@ -20,10 +20,15 @@ export const ENDPOINTS = {
   projects: '/dashboard/projects',
   teams: '/teams',
   tasks: '/tasks',
+  projectsExport: '/projects/export',
+  tasksExport: '/tasks/export',
+  tasksImportPreview: '/tasks/import/preview',
+  tasksImportConfirm: '/tasks/import/confirm',
   boardTasks: '/board/tasks',
   timeline: '/board/timeline',
   calendarEvents: '/calendar/events',
   auditLogs: '/audit-logs',
+  auditLogsExport: '/audit-logs/export',
   adminDashboard: '/admin/dashboard',
 } as const
 

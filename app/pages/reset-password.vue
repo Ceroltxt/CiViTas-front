@@ -28,7 +28,7 @@ function handleLogin() {
     <div class="hidden md:flex flex-1 items-center justify-center p-8 lg:p-16">
       <!-- imagem da logo no fundo -->
       <img
-        src="../../equipe-icon.png"
+        src="/equipe-icon.png"
         class="absolute w-2/3 max-w-md pointer-events-none select-none"
       />
     </div>

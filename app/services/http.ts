@@ -1,19 +1,16 @@
+
 /**
  * Cliente HTTP do app.
  *
  * Centraliza as chamadas à API com duas garantias importantes:
  *  1. Toda resposta é validada pelo schema correspondente antes de chegar à UI.
- *  2. Enquanto `NUXT_PUBLIC_API_BASE` estiver vazio (sem backend ainda), o
- *     cliente devolve os dados mock — também validados pelo mesmo schema.
- *
- * Resultado: o dia em que o backend existir, basta definir a variável de
- * ambiente; nenhuma tela precisa mudar.
+ *  2. Enquanto `NUXT_PUBLIC_API_BASE` estiver vazio, o cliente devolve os dados mock.
  */
 import type { Schema } from '~/utils/validation'
 
 export interface RequestOptions {
-  /** Query string opcional (ex.: filtros, paginação). */
   query?: Record<string, unknown>
+  headers?: Record<string, string>
 }
 
 export function useApi() {
@@ -21,7 +18,6 @@ export function useApi() {
   const baseURL = (config.public.apiBase as string | undefined) || ''
   const authToken = useCookie<string | null>('auth_token')
 
-  /** Indica se já existe um backend configurado. */
   const hasBackend = baseURL.length > 0
 
   function getHeaders(customHeaders?: Record<string, string>): Record<string, string> {
@@ -29,20 +25,20 @@ export function useApi() {
       Accept: 'application/json',
       ...customHeaders,
     }
+
     if (authToken.value) {
       headers.Authorization = `Bearer ${authToken.value}`
     }
+
     const workspaceCookie = useCookie<string | null>('active_workspace_id')
+
     if (workspaceCookie.value) {
       headers['X-Workspace-Id'] = workspaceCookie.value
     }
+
     return headers
   }
 
-  /**
-   * Busca um recurso e valida com `schema`. Sem backend configurado, resolve
-   * com `fallback()` (mock) — mantendo o mesmo contrato.
-   */
   async function get<T>(
     path: string,
     schema: Schema<T>,
@@ -58,12 +54,10 @@ export function useApi() {
       query: options.query,
       headers: getHeaders(options.headers),
     })
+
     return schema.parse(raw, path)
   }
 
-  /**
-   * Envia dados via POST para a API.
-   */
   async function post<T>(
     path: string,
     body: Record<string, unknown>,
@@ -75,6 +69,7 @@ export function useApi() {
       if (fallback && schema) {
         return schema.parse(fallback(), path)
       }
+
       return (fallback ? fallback() : {}) as T
     }
 
@@ -93,5 +88,69 @@ export function useApi() {
     return raw as T
   }
 
-  return { get, post, hasBackend, baseURL }
+  /**
+   * Envia arquivos usando multipart/form-data.
+   * O navegador define automaticamente o Content-Type e o boundary.
+   */
+  async function postFile<T>(
+    path: string,
+    file: File,
+  ): Promise<T> {
+    if (!hasBackend) {
+      throw new Error('O backend não está configurado.')
+    }
+
+    const formData = new FormData()
+    formData.append('file', file)
+
+    return await $fetch<T>(path, {
+      method: 'POST',
+      baseURL,
+      body: formData,
+      headers: getHeaders(),
+    })
+  }
+
+  /**
+   * Baixa arquivos CSV da API.
+   */
+  async function downloadCsv(
+    path: string,
+    query: Record<string, unknown> = {},
+    filename = `exportacao-${new Date().toISOString().slice(0, 10)}.csv`,
+  ): Promise<void> {
+    if (!hasBackend) {
+      throw new Error('O backend não está configurado.')
+    }
+
+    const blob = await $fetch<Blob>(path, {
+      baseURL,
+      query,
+      headers: getHeaders({ Accept: 'text/csv' }),
+      responseType: 'blob',
+    })
+
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+
+    link.href = url
+    link.download = filename
+
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+
+    window.setTimeout(() => {
+      URL.revokeObjectURL(url)
+    }, 1000)
+  }
+
+  return {
+    get,
+    post,
+    postFile,
+    downloadCsv,
+    hasBackend,
+    baseURL,
+  }
 }

@@ -46,7 +46,7 @@ function toggleProject(projectId: string) {
       <div v-for="project in projects" :key="project.id" class="group snap-start">
         <NuxtLink
           :to="`${basePath}/projetos/${project.id}`"
-          class="flex h-9 items-center gap-3 rounded-lg px-2.5 transition-colors hover:bg-orange-50/70 dark:hover:bg-slate-800 cursor-pointer"
+          class="flex h-9 items-center gap-3 rounded-lg px-2.5 transition-colors hover:bg-orange-50/70 dark:hover:bg-slate-500 cursor-pointer"
         >
           <span class="size-2.5 shrink-0 rounded-full" :class="project.color" />
           <span class="min-w-0 flex-1 truncate text-sm font-medium text-slate-600 dark:text-slate-300">

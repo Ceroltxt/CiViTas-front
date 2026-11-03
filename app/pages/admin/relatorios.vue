@@ -1,7 +1,15 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useApi } from '~/composables/useApi'
+import { ENDPOINTS } from '~/services/endpoints'
 
 definePageMeta({ sidebarWidget: 'project' })
+const { downloadCsv } = useApi()
+
+const dataInicial = ref('')
+const dataFinal = ref('')
+const exportando = ref(false)
+const erroExportacao = ref('')
 
 const perPage = ref(10)
 const view = ref<'list' | 'grid'>('list')
@@ -117,8 +125,35 @@ const paginatedLogs = computed(() => {
   return filteredLogs.value.slice(0, Number(perPage.value))
 })
 
-function exportLogs() {
-  alert('Logs exportados com sucesso!')
+
+async function exportLogs() {
+  if (
+    dataInicial.value &&
+    dataFinal.value &&
+    dataInicial.value > dataFinal.value
+  ) {
+    erroExportacao.value =
+      'A data inicial não pode ser posterior à data final.'
+    return
+  }
+
+  exportando.value = true
+  erroExportacao.value = ''
+
+  const query: Record<string, string> = {}
+
+  if (dataInicial.value) query.from = dataInicial.value
+  if (dataFinal.value) query.to = dataFinal.value
+
+  try {
+    await downloadCsv(ENDPOINTS.auditLogsExport, query)
+  } catch (error) {
+    console.error('Erro ao exportar os logs:', error)
+    erroExportacao.value =
+      'Não foi possível exportar os logs. Verifique sua conexão e autenticação.'
+  } finally {
+    exportando.value = false
+  }
 }
 </script>
 
@@ -138,6 +173,8 @@ function exportLogs() {
           icon="i-heroicons-arrow-down-tray"
           label="Exportar Logs"
           class="bg-white hover:bg-slate-50 text-slate-700 border-slate-200 font-semibold"
+          :loading="exportando"
+          :disabled="exportando"
           @click="exportLogs"
         />
 
@@ -169,9 +206,19 @@ function exportLogs() {
       </div>
     </div>
 
-    <UiSectionCard class="!p-0">
+    <p
+      v-if="erroExportacao"
+      role="alert"
+      class="text-sm text-red-600 dark:text-red-400"
+    >
+      {{ erroExportacao }}
+    </p>
+
+    <RelatoriosCsvActions />
+
+    <UiSectionCard class="p-0">
       <!-- Filtros -->
-      <div class="grid grid-cols-2 gap-4 p-5 md:grid-cols-3 lg:grid-cols-5 border-b border-slate-100 dark:border-slate-800">
+      <div class="grid grid-cols-2 gap-4 p-5 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 border-b border-slate-100 dark:border-slate-800">
         <!-- Projetos -->
         <div>
           <label class="mb-1.5 block text-sm font-semibold text-slate-500 dark:text-slate-400">Projetos</label>
@@ -216,14 +263,37 @@ function exportLogs() {
           />
         </div>
 
-        <!-- Período -->
+
+        <!-- Data inicial -->
         <div>
-          <label class="mb-1.5 block text-sm font-semibold text-slate-500 dark:text-slate-400">Período</label>
-          <USelect
-            v-model="selectedPeriodo"
-            :items="periodoItems"
-            trailing-icon="i-heroicons-chevron-down"
-            class="w-full text-slate-600 bg-white border border-slate-200 dark:border-slate-800"
+          <label
+            for="dataInicial"
+            class="mb-1.5 block text-sm font-semibold text-slate-500 dark:text-slate-400"
+          >
+            Data inicial
+          </label>
+          <input
+            id="dataInicial"
+            v-model="dataInicial"
+            type="date"
+            class="w-full rounded-md border border-slate-200 bg-white p-2 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300"
+          />
+        </div>
+
+        <!-- Data final -->
+        <div>
+          <label
+            for="dataFinal"
+            class="mb-1.5 block text-sm font-semibold text-slate-500 dark:text-slate-400"
+          >
+            Data final
+          </label>
+          <input
+            id="dataFinal"
+            v-model="dataFinal"
+            type="date"
+            :min="dataInicial || undefined"
+            class="w-full rounded-md border border-slate-200 bg-white p-2 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300"
           />
         </div>
       </div>
