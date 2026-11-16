@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, watch } from 'vue'
 import { createTeamInSupabase, fetchGestoresFromSupabase, fetchColaboradoresFromSupabase } from '~/composables/useTeamsData'
 
 const open = defineModel<boolean>('open', { default: false })
@@ -41,9 +41,11 @@ async function loadUsers() {
   }))
 }
 
-onMounted(() => {
-  loadUsers()
-})
+watch(open, (isOpen) => {
+  if (isOpen) {
+    loadUsers()
+  }
+}, { immediate: true })
 
 function closeModal() {
   open.value = false

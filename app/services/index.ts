@@ -96,6 +96,14 @@ export function fetchAuditLogs(count = 10) {
   })
 }
 
+export function fetchRanking() {
+  return useApi().get(
+    ENDPOINTS.ranking,
+    v.array(rankingEntrySchema),
+    () => mockRanking,
+  )
+}
+
 /**
  * Agregado da tela inicial. No backend, idealmente um único endpoint
  * (`/dashboard/overview`) devolve tudo; aqui montamos a partir das partes.
